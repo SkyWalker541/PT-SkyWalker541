@@ -1,0 +1,20 @@
+# PT SkyWalker541  v1.5.0
+# by SkyWalker541  |  RetroArch GLSL preset
+# File: PT_SkyWalker541.glslp
+#
+# Single-pass setup. White detection uses OrigTexture — RetroArch's built-in
+# uniform for the raw unprocessed input frame. No passthrough pass required.
+#
+# Installation:
+#   Place PT_SkyWalker541.glslp and PT_SkyWalker541.glsl in the same folder.
+#   Load PT_SkyWalker541.glslp from RetroArch's shader menu.
+#
+# The shader works at any scale mode — aspect ratio, integer, custom.
+
+shaders = 1
+
+shader0        = PT_SkyWalker541.glsl
+filter_linear0 = false
+scale_type0    = viewport
+scale_x0       = 1.0
+scale_y0       = 1.0

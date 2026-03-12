@@ -1,0 +1,24 @@
+# PT SkyWalker541  v1.5.0
+# by SkyWalker541  |  RetroArch Slang preset
+# File: PT_SkyWalker541.slangp
+#
+# Single-pass setup. White detection uses the Original texture semantic —
+# RetroArch's built-in binding for the raw unprocessed input frame.
+# No passthrough pass required.
+#
+# Installation:
+#   Place PT_SkyWalker541.slangp and PT_SkyWalker541.slang in the same folder.
+#   Load PT_SkyWalker541.slangp from RetroArch's shader menu.
+#
+# Requires Vulkan, glcore, D3D11, D3D12, or Metal video driver.
+# For the gl driver, use PT_SkyWalker541.glslp instead.
+#
+# The shader works at any scale mode — aspect ratio, integer, custom.
+
+shaders = 1
+
+shader0        = PT_SkyWalker541.slang
+filter_linear0 = false
+scale_type0    = viewport
+scale_x0       = 1.0
+scale_y0       = 1.0
