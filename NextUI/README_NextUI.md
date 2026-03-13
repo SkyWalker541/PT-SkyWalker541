@@ -1,6 +1,6 @@
 # PT SkyWalker541
 ### Pixel Transparency Shader for NextUI / minarch
-**by SkyWalker541 | v1.5.0 | TrimUI Brick — NextUI custom firmware**
+**by SkyWalker541 | v1.5.0 | NextUI / minarch**
 
 ---
 
@@ -65,7 +65,7 @@ PT_SkyWalker541_Integer.cfg
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
-Set **PT_SYSTEM** first, then apply the device and shader settings for your system below. These are the settings used for the sample screenshots and verified on TrimUI Brick.
+Set **PT_SYSTEM** first, then apply the device and shader settings for your system below. These are the verified settings for each system.
 
 > **Important — Dark Filter Level:** Always set the device Dark Filter Level to **0** and use the shader's own **PT_DARK_FILTER_LEVEL** parameter instead. Running both at once doubles the effect.
 
@@ -101,14 +101,14 @@ The original DMG and Pocket both used a slow, ghosting LCD with no backlight —
 | PT_SENSITIVITY | 0.85 *(default — only active when PT_SYSTEM = 0)* |
 | PT_PIXEL_MODE | 0 (White only) |
 | PT_BASE_ALPHA | 0.20 |
-| PT_WHITE_TRANSPARENCY | 0.50 |
+| PT_WHITE_TRANSPARENCY | 0.20 |
 | PT_BRIGHTNESS_MODE | 0 (Simple) |
 | PT_PALETTE | 1 (Pocket grey) |
 | PT_PALETTE_INTENSITY | 1.00 |
 | PT_DARK_FILTER_LEVEL | 10 |
 | PT_PIXEL_BORDER | 1 (Subtle) |
-| PT_SHADOW_OFFSET_X | 1.0 |
-| PT_SHADOW_OFFSET_Y | 1.0 |
+| PT_SHADOW_OFFSET_X | 2.0 |
+| PT_SHADOW_OFFSET_Y | 2.0 |
 | PT_SHADOW_OPACITY | 0.30 |
 | PT_CHROMA | 0.20 |
 | PT_VIGNETTE | 0.08 |
@@ -142,14 +142,14 @@ Similar LCD construction to the original GB but with improved colour response an
 | PT_SENSITIVITY | 0.85 *(default — only active when PT_SYSTEM = 0)* |
 | PT_PIXEL_MODE | 0 (White only) |
 | PT_BASE_ALPHA | 0.20 |
-| PT_WHITE_TRANSPARENCY | 0.50 |
+| PT_WHITE_TRANSPARENCY | 0.20 |
 | PT_BRIGHTNESS_MODE | 0 (Simple) |
 | PT_PALETTE | 1 (Pocket grey) |
 | PT_PALETTE_INTENSITY | 1.00 |
 | PT_DARK_FILTER_LEVEL | 10 *(softens aggressive GBC colour palettes)* |
 | PT_PIXEL_BORDER | 1 (Subtle) |
-| PT_SHADOW_OFFSET_X | 1.0 |
-| PT_SHADOW_OFFSET_Y | 1.0 |
+| PT_SHADOW_OFFSET_X | 2.0 |
+| PT_SHADOW_OFFSET_Y | 2.0 |
 | PT_SHADOW_OPACITY | 0.30 |
 | PT_CHROMA | 0.20 |
 | PT_VIGNETTE | 0.08 |
@@ -187,8 +187,8 @@ The GBA SP used a front-lit screen — dramatically brighter and more vivid than
 | PT_PALETTE_INTENSITY | 1.00 |
 | PT_DARK_FILTER_LEVEL | 0 |
 | PT_PIXEL_BORDER | 0 (Off) |
-| PT_SHADOW_OFFSET_X | 1.0 |
-| PT_SHADOW_OFFSET_Y | 1.0 |
+| PT_SHADOW_OFFSET_X | 2.0 |
+| PT_SHADOW_OFFSET_Y | 2.0 |
 | PT_SHADOW_OPACITY | 0.20 |
 | PT_CHROMA | 0.10 |
 | PT_VIGNETTE | 0.05 |
@@ -228,8 +228,8 @@ The original GBA had a dim, washed-out reflective screen with no backlight. Colo
 | PT_PALETTE_INTENSITY | 1.00 |
 | PT_DARK_FILTER_LEVEL | 0 |
 | PT_PIXEL_BORDER | 0 (Off) |
-| PT_SHADOW_OFFSET_X | 1.0 |
-| PT_SHADOW_OFFSET_Y | 1.0 |
+| PT_SHADOW_OFFSET_X | 2.0 |
+| PT_SHADOW_OFFSET_Y | 2.0 |
 | PT_SHADOW_OPACITY | 0.20 |
 | PT_CHROMA | 0.10 |
 | PT_VIGNETTE | 0.12 |
@@ -418,14 +418,14 @@ To change a default value, open either `.glsl` file in any text editor and find 
 #define PT_SENSITIVITY        0.85
 #define PT_PIXEL_MODE         0.0
 #define PT_BASE_ALPHA         0.20
-#define PT_WHITE_TRANSPARENCY 0.50
+#define PT_WHITE_TRANSPARENCY 0.20
 #define PT_BRIGHTNESS_MODE    0.0
 #define PT_PALETTE            1.0
 #define PT_PALETTE_INTENSITY  1.0
 #define PT_DARK_FILTER_LEVEL  10.0
 #define PT_PIXEL_BORDER       1.0
-#define PT_SHADOW_OFFSET_X    1.0
-#define PT_SHADOW_OFFSET_Y    1.0
+#define PT_SHADOW_OFFSET_X    2.0
+#define PT_SHADOW_OFFSET_Y    2.0
 #define PT_SHADOW_OPACITY     0.30
 #define PT_CHROMA             0.20
 #define PT_VIGNETTE           0.08
@@ -441,130 +441,9 @@ Change the number on the right of any line to set a new default. These values lo
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
-Both shaders are written for **NextUI / minarch** on the **TrimUI Brick**. Shadow offsets and pixel borders are calculated using coordinate methods proven on NextUI — they work correctly at any device resolution and scale mode.
+Both shaders are written for **NextUI / minarch**. Shadow offsets and pixel borders are calculated using coordinate methods proven on NextUI — they work correctly at any device resolution and scale mode.
 
 The shaders use only `Texture` / `Source` as input. They do not require `OrigTexture` or multipass support.
-
----
-
-```
-╔══════════════════════════════════════════════════════════════════╗
-║  BEFORE & AFTER                                                  ║
-╚══════════════════════════════════════════════════════════════════╝
-```
-
-> All screenshots taken on TrimUI Brick running NextUI with `PT_SkyWalker541_Aspect.glsl` using aspect ratio scaling.
-
----
-
-### Game Boy — Gargoyle's Quest *(Capcom, 1990)*
-
-| Without Shader | With Shader |
-|:---:|:---:|
-| ![Gargoyle's Quest without shader](https://github.com/SkyWalker541/PT-SkyWalker541-Low-GPU-Cost-Pixel-Transparency-Shader/blob/main/Sample%20Screenshots/Gargoyle's%20Quest.2026-03-07-12-05-31.png) | ![Gargoyle's Quest with shader](https://github.com/SkyWalker541/PT-SkyWalker541-Low-GPU-Cost-Pixel-Transparency-Shader/blob/main/Sample%20Screenshots/Gargoyle's%20Quest.2026-03-07-12-05-19.png) |
-
-<details>
-<summary>Settings used</summary>
-
-**Device settings**
-| Setting | Value |
-|---|---|
-| Scale mode | Aspect |
-| Screen effect | None |
-| Color correction | Disabled |
-| Frontlight position | Central |
-| Dark filter level | 0 |
-| Interframe blending | Disabled |
-| GB Colorization | Disabled |
-
-**Shader settings**
-| Parameter | Value |
-|---|---|
-| PT_SYSTEM | 1 (GB) |
-| PT_PIXEL_MODE | 0 (White only) |
-| PT_PALETTE | 1 (Pocket) |
-| PT_PIXEL_BORDER | 1 (Subtle) |
-| PT_DARK_FILTER_LEVEL | 10 |
-| PT_SHADOW_OFFSET_X | 1.0 |
-| PT_SHADOW_OFFSET_Y | 1.0 |
-| PT_SHADOW_OPACITY | 0.30 |
-| PT_VIGNETTE | 0.08 |
-| All others | Default |
-
-</details>
-
----
-
-### Game Boy Color — Dragon Warrior Monsters *(Enix, 1998)*
-
-| Without Shader | With Shader |
-|:---:|:---:|
-| ![Dragon Warrior Monsters without shader](https://github.com/SkyWalker541/PT-SkyWalker541-Low-GPU-Cost-Pixel-Transparency-Shader/blob/main/Sample%20Screenshots/Dragon%20Warrior%20Monsters.2026-03-07-12-09-02.png) | ![Dragon Warrior Monsters with shader](https://github.com/SkyWalker541/PT-SkyWalker541-Low-GPU-Cost-Pixel-Transparency-Shader/blob/main/Sample%20Screenshots/Dragon%20Warrior%20Monsters.2026-03-07-12-08-55.png) |
-
-<details>
-<summary>Settings used</summary>
-
-**Device settings**
-| Setting | Value |
-|---|---|
-| Scale mode | Aspect |
-| Screen effect | None |
-| Color correction | GBC Only |
-| Frontlight position | Central |
-| Dark filter level | 0 |
-| Interframe blending | Disabled |
-
-**Shader settings**
-| Parameter | Value |
-|---|---|
-| PT_SYSTEM | 2 (GBC) |
-| PT_PIXEL_MODE | 0 (White only) |
-| PT_PALETTE | 1 (Pocket) |
-| PT_PIXEL_BORDER | 1 (Subtle) |
-| PT_DARK_FILTER_LEVEL | 10 |
-| PT_SHADOW_OFFSET_X | 1.0 |
-| PT_SHADOW_OFFSET_Y | 1.0 |
-| PT_SHADOW_OPACITY | 0.30 |
-| PT_VIGNETTE | 0.08 |
-| All others | Default |
-
-</details>
-
----
-
-### Game Boy Advance — Castlevania: Aria of Sorrow *(Konami, 2003)*
-
-| Without Shader | With Shader |
-|:---:|:---:|
-| ![Aria of Sorrow without shader](https://github.com/SkyWalker541/PT-SkyWalker541-Low-GPU-Cost-Pixel-Transparency-Shader/blob/main/Sample%20Screenshots/Castlevania%20-%20Aria%20of%20Sorrow.2026-03-07-12-12-12.png) | ![Aria of Sorrow with shader](https://github.com/SkyWalker541/PT-SkyWalker541-Low-GPU-Cost-Pixel-Transparency-Shader/blob/main/Sample%20Screenshots/Castlevania%20-%20Aria%20of%20Sorrow.2026-03-07-12-12-02.png) |
-
-<details>
-<summary>Settings used</summary>
-
-**Device settings**
-| Setting | Value |
-|---|---|
-| Scale mode | Aspect |
-| Screen effect | None |
-| Color correction | Enabled |
-| Interframe blending | Enabled |
-
-**Shader settings**
-| Parameter | Value |
-|---|---|
-| PT_SYSTEM | 3 (GBA SP) |
-| PT_PIXEL_MODE | 0 (White only) |
-| PT_PALETTE | 3 (White) |
-| PT_PIXEL_BORDER | 0 (Off) |
-| PT_DARK_FILTER_LEVEL | 0 |
-| PT_BRIGHTNESS_MODE | 1 (Perceptual) |
-| PT_SHADOW_OFFSET_X | 1.0 |
-| PT_SHADOW_OFFSET_Y | 1.0 |
-| PT_SHADOW_OPACITY | 0.20 |
-| PT_VIGNETTE | 0.05 |
-| All others | Default |
-
-</details>
 
 ---
 
@@ -579,7 +458,7 @@ The shaders use only `Texture` / `Source` as input. They do not require `OrigTex
 | Version | Notes |
 |---|---|
 | v1.5.0 | Unified version number across all PT_SkyWalker541 variants (Standard, Pro, NextUI). Added cross-references between variant READMEs. Strengthened OrigTexture forward-reference to clarify planned architectural scope |
-| v1.3.0 | Added PT_SYSTEM = 4 (GBA Original, threshold 0.38) tuned for the original GBA's dim, creamy whites on NextUI. PT_BRIGHTNESS_MODE default changed from Perceptual (1) to Simple (0) — cheaper on PowerVR, correct for GB/GBC out of the box. Fixed pixel border alignment — `pixelBorderFactor` now receives the snapped texel-centre coordinate, removing half-texel misalignment across both variants |
+| v1.3.0 | Added PT_SYSTEM = 4 (GBA Original, threshold 0.38) tuned for the original GBA's dim, creamy whites on NextUI. PT_BRIGHTNESS_MODE default changed from Perceptual (1) to Simple (0) — cheaper on PowerVR, correct for GB/GBC out of the box |
 | v1.2.2 | Replaced noiseHash with reference shader's cheaper single-pass hash — no visible change to grain quality, lower arithmetic cost per fragment |
 | v1.2.1 | Updated defaults to period-authentic values — shadow offset 1.5→1.0, shadow opacity 0.50→0.30, vignette 0.12→0.08 |
 | v1.1.6 | Removed shadow blur entirely — single texture tap. At GB/GBC/GBA pixel scales, blur is imperceptible at any typical display resolution |
