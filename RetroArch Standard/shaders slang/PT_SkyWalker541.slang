@@ -64,7 +64,7 @@
 // └──────────────────────────────────┘
 #pragma parameter PT_PIXEL_MODE      "Pixel mode (0=White, 1=Bright, 2=All)"  0.0 0.0 2.0 1.0
 #pragma parameter PT_BASE_ALPHA      "  Base transparency amount"              0.20 0.0 1.0 0.01
-#pragma parameter PT_WHITE_TRANSPARENCY "  White pixel min transparency"       0.50 0.0 1.0 0.01
+#pragma parameter PT_WHITE_TRANSPARENCY "  White pixel min transparency"       0.20 0.0 1.0 0.01
 
 // ┌──────────────────────────────────┐
 // │  Brightness                      │
@@ -90,8 +90,8 @@
 // ┌──────────────────────────────────┐
 // │  Drop Shadow                     │
 // └──────────────────────────────────┘
-#pragma parameter PT_SHADOW_OFFSET_X "Shadow X offset"                        1.0 -10.0 10.0 0.5
-#pragma parameter PT_SHADOW_OFFSET_Y "Shadow Y offset"                        1.0 -10.0 10.0 0.5
+#pragma parameter PT_SHADOW_OFFSET_X "Shadow X offset"                        2.0 -10.0 10.0 0.5
+#pragma parameter PT_SHADOW_OFFSET_Y "Shadow Y offset"                        2.0 -10.0 10.0 0.5
 #pragma parameter PT_SHADOW_OPACITY  "Shadow opacity (0=off)"                 0.30 0.0 1.0 0.01
 
 // ┌──────────────────────────────────┐
@@ -141,11 +141,17 @@ layout(std140, set = 0, binding = 0) uniform UBO {
 layout(location = 0) in  vec4 Position;
 layout(location = 1) in  vec2 TexCoord;
 layout(location = 0) out vec2 vTexCoord;
+layout(location = 1) out float vShadowScale;
 
 void main()
 {
-    gl_Position = global.MVP * Position;
-    vTexCoord   = TexCoord;
+    gl_Position  = global.MVP * Position;
+    vTexCoord    = TexCoord;
+    // Scale shadow offset to output resolution so it appears consistent
+    // regardless of how much the source frame is being scaled up.
+    float sx     = params.OutputSize.x / params.SourceSize.x;
+    float sy     = params.OutputSize.y / params.SourceSize.y;
+    vShadowScale = sqrt(sx * sy);
 }
 
 // ╔══════════════════════════════════════════════════════════════╗
@@ -154,6 +160,7 @@ void main()
 #pragma stage fragment
 
 layout(location = 0) in  vec2 vTexCoord;
+layout(location = 1) in  float vShadowScale;
 layout(location = 0) out vec4 FragColor;
 
 // Source:   colour-corrected processed frame (display output + shadow sampling)
@@ -200,7 +207,7 @@ float getBrightness(vec3 c)
 
 // Resolve system preset → detection threshold.
 // Thresholds tuned for raw pre-correction pixel values (Original semantic).
-//   GB:          0.88 — no backlight, aggressive
+//   GB:          0.90 — no backlight, aggressive
 //   GBC:         0.85 — no backlight, moderate
 //   GBA SP:      0.80 — front-lit, conservative
 //   GBA Original: 0.75 — no backlight, dim/creamy whites, most aggressive
@@ -208,7 +215,7 @@ float getBrightness(vec3 c)
 float resolveThreshold()
 {
     if (params.PT_SYSTEM < 0.5) return params.PT_SENSITIVITY;
-    if (params.PT_SYSTEM < 1.5) return 0.88;
+    if (params.PT_SYSTEM < 1.5) return 0.90;
     if (params.PT_SYSTEM < 2.5) return 0.85;
     if (params.PT_SYSTEM < 3.5) return 0.80;
     return 0.75;
@@ -360,10 +367,13 @@ void main()
         } else {
             tint = vec3(1.0, 1.0, 1.0);       // White
         }
-        vec3 tinted = clamp(vec3(
-            tint.r + mix(-1.0, 1.0, bg.r),
-            tint.g + mix(-1.0, 1.0, bg.g),
-            tint.b + mix(-1.0, 1.0, bg.b)
+        // Overlay blend: grain texture onto tint colour.
+        // Dark grain pulls the tint down, bright grain lifts it --
+        // matching the physical behaviour of a textured backing material.
+        vec3 tinted = clamp(mix(
+            2.0 * tint * bg,
+            1.0 - 2.0 * (1.0 - tint) * (1.0 - bg),
+            step(0.5, bg)
         ), 0.0, 1.0);
         bg = mix(bg, tinted, params.PT_PALETTE_INTENSITY);
     }
@@ -381,7 +391,7 @@ void main()
     // Drop shadow — single tap on Original (raw frame, consistent with detection).
     if (willBeTransparent > 0.5 && params.PT_SHADOW_OPACITY > 0.001) {
         vec2  shadowPos      = snappedUV + vec2(-params.PT_SHADOW_OFFSET_X, -params.PT_SHADOW_OFFSET_Y)
-                               * params.SourceSize.zw;
+                               * params.SourceSize.zw * vShadowScale;
         float shadowDark     = 1.0 - getBrightness(texture(Original, shadowPos).rgb);
         float shadowStrength = (shadowDark * shadowDark) * params.PT_SHADOW_OPACITY;
         bg = mix(bg, bg * 0.2, shadowStrength);
