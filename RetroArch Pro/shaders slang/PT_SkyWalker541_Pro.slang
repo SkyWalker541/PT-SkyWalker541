@@ -1,78 +1,51 @@
 #version 450
 /*
 ╔══════════════════════════════════════════════════════════════════╗
-║  PT SkyWalker541 Pro  v1.5.0                                     ║
+║  PT SkyWalker541  v1.5.0                                         ║
 ║  by SkyWalker541  |  Written for RetroArch (Slang / Vulkan)      ║
 ╚══════════════════════════════════════════════════════════════════╝
-
-  High-end version targeting powerful handhelds and PC. All Pro
-  features can be disabled individually for performance tuning.
 
   On original Game Boy, GBC, and GBA hardware, screen pixels that
   were fully off did not display as white. Those areas had no
   backlight driving them, so the physical backing material showed
   through instead: a grey-green translucency rather than solid white.
-  PT SkyWalker541 Pro restores this with a full suite of effects:
-  directional shadow blur, LCD halation, subpixel dithering, screen
-  curvature with edge fringing, improved grain, and more.
+  Game developers of that era designed around this, using "white"
+  areas as intentional transparent regions for backgrounds, windows,
+  and UI overlays.
 
-╔══════════════════════════════════════════════════════════════════╗
-║  SYSTEM GUIDE                                                    ║
-╚══════════════════════════════════════════════════════════════════╝
+  On modern displays and emulators, those same pixels render as
+  bright white, which was never the intended look. PT SkyWalker541
+  restores the original appearance by detecting bright/white pixels
+  and blending them toward a procedurally generated backing texture.
 
-  Set PT_SYSTEM first — it determines the detection threshold.
-  Then tune per the per-system notes in the README.
-
-  1 = Game Boy / Game Boy Pocket (DMG)
-      No backlight. Slow ghosting LCD. Distinctive green-grey
-      backing. PT_HALATION = 0. PT_PALETTE = 1 (Pocket grey).
-
-  2 = Game Boy Color
-      No backlight. Improved colour, slightly cleaner backing.
-      PT_HALATION = 0. PT_PALETTE = 1 or 2.
-
-  3 = Game Boy Advance SP (front-lit)
-      Front-lit screen, bright and vivid. PT_HALATION = 0.08
-      (warm diffuser glow from front light). PT_PALETTE = 3 (White).
-
-  4 = Game Boy Advance Original (no backlight)
-      Dim, washed-out reflective screen. Whites appear creamy.
-      PT_HALATION = 0. PT_PALETTE = 4 (Green-grey).
-
-  0 = Manual — use PT_SENSITIVITY directly.
-
-╔══════════════════════════════════════════════════════════════════╗
-║  PERFORMANCE GUIDE                                               ║
-╚══════════════════════════════════════════════════════════════════╝
-
-  Disable Pro features in this order to reduce GPU load:
-    1. PT_SHADOW_BLUR = 0    — biggest saving (15-tap blur)
-    2. PT_HALATION = 0       — 8-tap radial glow
-    3. PT_CURVATURE = 0      — per-fragment UV distortion
-    4. PT_DITHER = 0         — minor (Bayer lookup)
-    5. PT_PIXEL_BORDER = 0   — minor (per-fragment trig)
-  With all Pro features off = equivalent to PT_SkyWalker541.slang.
+  Single-pass. White detection runs on "Original" — RetroArch's
+  built-in semantic for the raw unprocessed input frame — giving
+  clean pre-correction pixel values without a passthrough pass.
 
 ╔══════════════════════════════════════════════════════════════════╗
 ║  CHANGELOG                                                       ║
 ╚══════════════════════════════════════════════════════════════════╝
 
-  v1.5.0 - Unified version number across all PT_SkyWalker541 variants
-           (Standard, Pro, NextUI). No shader logic changes.
+  v1.5.0 - Added PT_SYSTEM = 4 (GBA Original, threshold 0.75) for the
+           original GBA's dim, creamy whites.
 
-  v1.1.0 - Transparency pipeline improvements:
-           Soft detection edge — whitePixelStrength() returns 0..1
-           via smoothstep over [threshold, threshold+0.08]. Eliminates
-           detection boundary fringing. Alpha driven by raw brightness.
-           Distance-above-threshold alpha scaling. Separate blend paths:
-           white pixels use mix(), coloured pixels use
-           huePreservingBlend().
+  v1.4.0 - Rebuilt as single-pass shader. Passthrough pass removed.
+           RawFrame alias replaced with RetroArch built-in "Original"
+           semantic, which provides the raw pre-correction input frame
+           natively. Resolves "failed to load preset" on Android/
+           Retroid devices. All shader logic, parameters, and visual
+           output identical to v1.3.0.
 
-  v1.0.0 - Initial Pro release. Directional gaussian shadow blur
-           (15-tap), LCD halation, Bayer dithering (2x2/4x4/8x8),
-           screen curvature with edge fringing, improved grain,
-           PT_SYSTEM expanded to include GBA SP (3) and GBA
-           Original (4), green-grey palette option.
+  v1.3.0 - Ported to RetroArch Slang (.slang / .slangp).
+           Works on Vulkan, glcore. Merged Aspect and Integer variants.
+           White detection and transparency gating run against raw
+           frame. Thresholds retuned for raw pixel values.
+
+  v1.2.2 - Single-pass hash, reduced arithmetic cost.
+  v1.2.1 - Period-authentic defaults (shadow 1.0/1.0/0.30, vig 0.08)
+  v1.1.6 - Shadow blur removed: single texture tap.
+  v1.1.0 - Split Aspect/Integer. Shadow formula rewritten.
+  v1.0.0 - Initial release.
 */
 
 // ╔══════════════════════════════════════════════════════════════╗
@@ -83,173 +56,97 @@
 // ┌──────────────────────────────────┐
 // │  System Preset                   │
 // └──────────────────────────────────┘
-// 0=Manual  1=GB/Pocket  2=GBC  3=GBA SP  4=GBA Original
-#pragma parameter PT_SYSTEM "System (0=Manual, 1=GB, 2=GBC, 3=GBA SP, 4=GBA Orig)" 1.0 0.0 4.0 1.0
-#pragma parameter PT_SENSITIVITY "  Manual threshold (PT_SYSTEM=0 only)" 0.85 0.0 1.0 0.01
+#pragma parameter PT_SYSTEM          "System (0=Manual, 1=GB, 2=GBC, 3=GBA SP, 4=GBA Orig)" 1.0 0.0 4.0 1.0
+#pragma parameter PT_SENSITIVITY     "  Manual sensitivity threshold"          0.85 0.0 1.0 0.01
 
 // ┌──────────────────────────────────┐
 // │  Pixel Transparency              │
 // └──────────────────────────────────┘
-// 0=White only  1=Bright  2=All
-#pragma parameter PT_PIXEL_MODE "Pixel mode (0=White only, 1=Bright, 2=All)" 0.0 0.0 2.0 1.0
-// GB/GBC: 0.20  GBA SP: 0.15  GBA Orig: 0.25
-#pragma parameter PT_BASE_ALPHA "  Base transparency amount" 0.20 0.0 1.0 0.01
-#pragma parameter PT_WHITE_TRANSPARENCY "  White pixel min transparency" 0.50 0.0 1.0 0.01
+#pragma parameter PT_PIXEL_MODE      "Pixel mode (0=White, 1=Bright, 2=All)"  0.0 0.0 2.0 1.0
+#pragma parameter PT_BASE_ALPHA      "  Base transparency amount"              0.20 0.0 1.0 0.01
+#pragma parameter PT_WHITE_TRANSPARENCY "  White pixel min transparency"       0.20 0.0 1.0 0.01
 
 // ┌──────────────────────────────────┐
 // │  Brightness                      │
 // └──────────────────────────────────┘
-// 0=Simple (R+G+B avg)  1=Perceptual (BT.709)
-#pragma parameter PT_BRIGHTNESS_MODE "Brightness mode (0=Simple, 1=Perceptual)" 0.0 0.0 1.0 1.0
+#pragma parameter PT_SHADOW_BLUR     "Shadow blur (0=off)"   1.0 0.0 5.0 0.1
 
 // ┌──────────────────────────────────┐
 // │  Background                      │
 // └──────────────────────────────────┘
-// 0=Off  1=Pocket grey  2=Cool grey  3=White (GBA SP)  4=Green-grey (GBA Orig)
-#pragma parameter PT_PALETTE "Background tint (0=Off, 1=Pocket, 2=Grey, 3=White, 4=Green-grey)" 1.0 0.0 4.0 1.0
-#pragma parameter PT_PALETTE_INTENSITY "  Tint intensity" 1.0 0.0 2.0 0.05
-// GB: 0.10  GBC: 0.07  GBA SP: 0.03  GBA Orig: 0.08
-#pragma parameter PT_GRAIN_INTENSITY "  Grain intensity (0=flat)" 0.08 0.0 0.30 0.005
-// GB: 0.30  GBC: 0.25  GBA: 0.15
-#pragma parameter PT_GRAIN_SCALE "  Grain scale (lower=finer)" 0.25 0.05 1.0 0.05
+#pragma parameter PT_PALETTE         "Background tint (0=Off, 1=Pocket, 2=Grey, 3=White)" 1.0 0.0 3.0 1.0
+#pragma parameter PT_HALATION        "Halation glow (0=off)" 0.0 0.0 1.0 0.01
 
 // ┌──────────────────────────────────┐
 // │  Color Harshness Filter          │
 // └──────────────────────────────────┘
-// 0=off. 5-15 natural for GBC/GBA. Not needed for GB.
-#pragma parameter PT_DARK_FILTER_LEVEL "Dark color filter (0=off)" 0.0 0.0 100.0 1.0
+#pragma parameter PT_DARK_FILTER_LEVEL "Dark color filter (0=off)"            0.0 0.0 100.0 1.0
 
 // ┌──────────────────────────────────┐
 // │  Pixel Border                    │
 // └──────────────────────────────────┘
-// 0=Off  1=Subtle  2=Moderate  3=Strong. GB/GBC: 1. GBA: 0.
-#pragma parameter PT_PIXEL_BORDER "Pixel border (0=Off, 1=Subtle, 2=Med, 3=Strong)" 1.0 0.0 3.0 1.0
+#pragma parameter PT_PIXEL_BORDER    "Pixel border (0=Off, 1=Subtle, 2=Med, 3=Strong)" 1.0 0.0 3.0 1.0
 
 // ┌──────────────────────────────────┐
 // │  Drop Shadow                     │
 // └──────────────────────────────────┘
-#pragma parameter PT_SHADOW_OFFSET_X "Shadow X offset (texels)" 1.0 -10.0 10.0 0.5
-#pragma parameter PT_SHADOW_OFFSET_Y "Shadow Y offset (texels)" 1.0 -10.0 10.0 0.5
-#pragma parameter PT_SHADOW_OPACITY "Shadow opacity (0=off)" 0.30 0.0 1.0 0.01
-// Directional gaussian blur along shadow vector. 0=hard edge (fastest). 0.5-2.0 recommended.
-#pragma parameter PT_SHADOW_BLUR "Shadow blur (0=off)" 1.0 0.0 5.0 0.1
-// 0.5=tight  1.0=natural  2.0=wide
-#pragma parameter PT_SHADOW_BLUR_RADIUS "  Shadow blur radius (texels)" 1.0 0.1 4.0 0.1
-
-// ┌──────────────────────────────────┐
-// │  Halation                        │
-// └──────────────────────────────────┘
-// ONLY for backlit screens. Off for GB, GBC, GBA Original.
-// GBA SP: 0.05-0.15
-#pragma parameter PT_HALATION "Halation / diffuser glow (0=off)" 0.0 0.0 1.0 0.01
-// GBA SP: 1.0-2.0
-#pragma parameter PT_HALATION_RADIUS "  Halation radius (texels)" 1.5 0.1 5.0 0.1
-// 0=cool white  0.3=GBA SP warmth  1=warm amber
-#pragma parameter PT_HALATION_WARMTH "  Halation warmth (0=cool, 1=warm)" 0.3 0.0 1.0 0.05
-
-// ┌──────────────────────────────────┐
-// │  Dithering                       │
-// └──────────────────────────────────┘
-// Simulates slow LCD pixel response at blend boundaries.
-#pragma parameter PT_DITHER "Dither blend edges (0=off, 1=on)" 1.0 0.0 1.0 1.0
-// GB: 0.06  GBC: 0.04  GBA SP: 0.02  GBA Orig: 0.05
-#pragma parameter PT_DITHER_STRENGTH "  Dither strength" 0.05 0.0 0.20 0.005
-// 0=2x2  1=4x4  2=8x8. 4x4 recommended.
-#pragma parameter PT_DITHER_MATRIX "  Dither matrix (0=2x2, 1=4x4, 2=8x8)" 1.0 0.0 2.0 1.0
-
-// ┌──────────────────────────────────┐
-// │  Screen Curvature                │
-// └──────────────────────────────────┘
-// All original GB/GBC/GBA screens were flat — aesthetic option only.
-#pragma parameter PT_CURVATURE "Screen curvature (0=off)" 0.0 0.0 1.0 0.01
-// 0.1=barely visible  0.3=moderate  0.5=strong
-#pragma parameter PT_CURVATURE_STRENGTH "  Curvature strength" 0.20 0.0 1.0 0.01
-// Simulates light refraction at screen edges. 0=off  0.4=subtle  1.0=strong
-#pragma parameter PT_CURVATURE_FRINGE "  Edge chromatic fringe (0=off)" 0.4 0.0 1.0 0.05
+#pragma parameter PT_DITHER          "Dither (0=off, 1=on)"  1.0 0.0 1.0 1.0
+#pragma parameter PT_CURVATURE       "Screen curvature"      0.0 0.0 1.0 0.01
+#pragma parameter PT_SHADOW_OPACITY  "Shadow opacity (0=off)"                 0.30 0.0 1.0 0.01
 
 // ┌──────────────────────────────────┐
 // │  Post-Blend Effects              │
 // └──────────────────────────────────┘
-// Global chromatic aberration across full image (different from curvature fringe).
-#pragma parameter PT_CHROMA "Chromatic shift (0=off)" 0.0 0.0 1.0 0.01
-// GB poor light: 0.10-0.15  GBA SP: 0.05
-#pragma parameter PT_VIGNETTE "Vignette strength (0=off)" 0.08 0.0 1.0 0.01
+#pragma parameter PT_CHROMA          "Chromatic shift (0=off)"                0.0 0.0 1.0 0.01
+#pragma parameter PT_VIGNETTE        "Vignette strength (0=off)"              0.08 0.0 1.0 0.01
 
 // ╔══════════════════════════════════════════════════════════════╗
 // ║  UNIFORM BLOCKS                                              ║
-// ║  RetroArch Slang requires #pragma parameter floats to be in  ║
-// ║  push_constant. Builtins go in UBO to stay under 128 bytes.  ║
-// ║  28 params × 4 bytes = 112 bytes — fits the Vulkan minimum.  ║
+// ║  All parameters in push_constant alongside builtins.         ║
+// ║  Push constant: SourceSize+OriginalSize+OutputSize+FrameCount ║
+// ║  + 15 param floats = 112 bytes. Within 128-byte minimum.     ║
 // ╚══════════════════════════════════════════════════════════════╝
 
+// ADVANCED DEFAULTS
+#define PT_BRIGHTNESS_MODE_DEFAULT    0.0
+#define PT_PALETTE_INTENSITY_DEFAULT  1.0
+#define PT_GRAIN_INTENSITY_DEFAULT    0.065
+#define PT_GRAIN_SCALE_DEFAULT        0.25
+#define PT_SHADOW_OFFSET_X_DEFAULT    2.0
+#define PT_SHADOW_OFFSET_Y_DEFAULT    2.0
+#define PT_SHADOW_BLUR_RADIUS_DEFAULT 1.0
+#define PT_HALATION_RADIUS_DEFAULT    1.5
+#define PT_HALATION_WARMTH_DEFAULT    0.3
+#define PT_DITHER_STRENGTH_DEFAULT    0.05
+#define PT_DITHER_MATRIX_DEFAULT      1.0
+#define PT_CURVATURE_STRENGTH_DEFAULT 0.20
+#define PT_CURVATURE_FRINGE_DEFAULT   0.4
+
 layout(push_constant) uniform Push {
+    vec4  SourceSize;
+    vec4  OriginalSize;
+    vec4  OutputSize;
+    uint  FrameCount;
     float PT_SYSTEM;
     float PT_SENSITIVITY;
     float PT_PIXEL_MODE;
     float PT_BASE_ALPHA;
     float PT_WHITE_TRANSPARENCY;
-    float PT_BRIGHTNESS_MODE;
+    float PT_SHADOW_BLUR;
     float PT_PALETTE;
-    float PT_PALETTE_INTENSITY;
-    float PT_GRAIN_INTENSITY;
-    float PT_GRAIN_SCALE;
+    float PT_HALATION;
     float PT_DARK_FILTER_LEVEL;
     float PT_PIXEL_BORDER;
-    float PT_SHADOW_OFFSET_X;
-    float PT_SHADOW_OFFSET_Y;
-    float PT_SHADOW_OPACITY;
-    float PT_SHADOW_BLUR;
-    float PT_SHADOW_BLUR_RADIUS;
-    float PT_HALATION;
-    float PT_HALATION_RADIUS;
-    float PT_HALATION_WARMTH;
     float PT_DITHER;
-    float PT_DITHER_STRENGTH;
-    float PT_DITHER_MATRIX;
     float PT_CURVATURE;
-    float PT_CURVATURE_STRENGTH;
-    float PT_CURVATURE_FRINGE;
+    float PT_SHADOW_OPACITY;
     float PT_CHROMA;
     float PT_VIGNETTE;
 } params;
 
 layout(std140, set = 0, binding = 0) uniform UBO {
-    mat4  MVP;
-    vec4  SourceSize;    // xy = source texture dimensions, zw = 1/dimensions
-    vec4  OriginalSize;  // xy = original input dimensions, zw = 1/dimensions
-    vec4  OutputSize;    // xy = output viewport dimensions, zw = 1/dimensions
-    uint  FrameCount;
+    mat4 MVP;
 } global;
-
-// Convenience macros — access push_constant params without "params." prefix
-#define PT_SYSTEM             params.PT_SYSTEM
-#define PT_SENSITIVITY        params.PT_SENSITIVITY
-#define PT_PIXEL_MODE         params.PT_PIXEL_MODE
-#define PT_BASE_ALPHA         params.PT_BASE_ALPHA
-#define PT_WHITE_TRANSPARENCY params.PT_WHITE_TRANSPARENCY
-#define PT_BRIGHTNESS_MODE    params.PT_BRIGHTNESS_MODE
-#define PT_PALETTE            params.PT_PALETTE
-#define PT_PALETTE_INTENSITY  params.PT_PALETTE_INTENSITY
-#define PT_GRAIN_INTENSITY    params.PT_GRAIN_INTENSITY
-#define PT_GRAIN_SCALE        params.PT_GRAIN_SCALE
-#define PT_DARK_FILTER_LEVEL  params.PT_DARK_FILTER_LEVEL
-#define PT_PIXEL_BORDER       params.PT_PIXEL_BORDER
-#define PT_SHADOW_OFFSET_X    params.PT_SHADOW_OFFSET_X
-#define PT_SHADOW_OFFSET_Y    params.PT_SHADOW_OFFSET_Y
-#define PT_SHADOW_OPACITY     params.PT_SHADOW_OPACITY
-#define PT_SHADOW_BLUR        params.PT_SHADOW_BLUR
-#define PT_SHADOW_BLUR_RADIUS params.PT_SHADOW_BLUR_RADIUS
-#define PT_HALATION           params.PT_HALATION
-#define PT_HALATION_RADIUS    params.PT_HALATION_RADIUS
-#define PT_HALATION_WARMTH    params.PT_HALATION_WARMTH
-#define PT_DITHER             params.PT_DITHER
-#define PT_DITHER_STRENGTH    params.PT_DITHER_STRENGTH
-#define PT_DITHER_MATRIX      params.PT_DITHER_MATRIX
-#define PT_CURVATURE          params.PT_CURVATURE
-#define PT_CURVATURE_STRENGTH params.PT_CURVATURE_STRENGTH
-#define PT_CURVATURE_FRINGE   params.PT_CURVATURE_FRINGE
-#define PT_CHROMA             params.PT_CHROMA
-#define PT_VIGNETTE           params.PT_VIGNETTE
 
 // ╔══════════════════════════════════════════════════════════════╗
 // ║  VERTEX SHADER                                               ║
@@ -259,11 +156,17 @@ layout(std140, set = 0, binding = 0) uniform UBO {
 layout(location = 0) in  vec4 Position;
 layout(location = 1) in  vec2 TexCoord;
 layout(location = 0) out vec2 vTexCoord;
+layout(location = 1) out float vShadowScale;
 
 void main()
 {
-    gl_Position = global.MVP * Position;
-    vTexCoord   = TexCoord;
+    gl_Position  = global.MVP * Position;
+    vTexCoord    = TexCoord;
+    // Scale shadow offset to output resolution so it appears consistent
+    // regardless of how much the source frame is being scaled up.
+    float sx     = params.OutputSize.x / params.SourceSize.x;
+    float sy     = params.OutputSize.y / params.SourceSize.y;
+    vShadowScale = sqrt(sx * sy);
 }
 
 // ╔══════════════════════════════════════════════════════════════╗
@@ -272,6 +175,7 @@ void main()
 #pragma stage fragment
 
 layout(location = 0) in  vec2 vTexCoord;
+layout(location = 1) in  float vShadowScale;
 layout(location = 0) out vec4 FragColor;
 
 // Source:   colour-corrected processed frame (display output + shadow sampling)
@@ -287,6 +191,20 @@ layout(set = 0, binding = 3) uniform sampler2D Original;
 #define LUMA_B 0.0722
 #define PI                      3.141592654
 #define BORDER_WIDTH_FACTOR_MAX 31.0
+#define PT_BRIGHTNESS_MODE    PT_BRIGHTNESS_MODE_DEFAULT
+#define PT_PALETTE_INTENSITY  PT_PALETTE_INTENSITY_DEFAULT
+#define PT_GRAIN_INTENSITY    PT_GRAIN_INTENSITY_DEFAULT
+#define PT_GRAIN_SCALE        PT_GRAIN_SCALE_DEFAULT
+#define PT_SHADOW_OFFSET_X    PT_SHADOW_OFFSET_X_DEFAULT
+#define PT_SHADOW_OFFSET_Y    PT_SHADOW_OFFSET_Y_DEFAULT
+#define PT_SHADOW_BLUR_RADIUS PT_SHADOW_BLUR_RADIUS_DEFAULT
+#define PT_HALATION_RADIUS    PT_HALATION_RADIUS_DEFAULT
+#define PT_HALATION_WARMTH    PT_HALATION_WARMTH_DEFAULT
+#define PT_DITHER_STRENGTH    PT_DITHER_STRENGTH_DEFAULT
+#define PT_DITHER_MATRIX      PT_DITHER_MATRIX_DEFAULT
+#define PT_CURVATURE_STRENGTH PT_CURVATURE_STRENGTH_DEFAULT
+#define PT_CURVATURE_FRINGE   PT_CURVATURE_FRINGE_DEFAULT
+
 
 // ╔══════════════════════════════════════════════════════════════╗
 // ║  HELPER FUNCTIONS                                            ║
@@ -319,10 +237,10 @@ float getBrightness(vec3 c)
 //   GB/Pocket: 0.88   GBC: 0.85   GBA SP: 0.80   GBA Orig: 0.75
 float resolveThreshold()
 {
-    if (PT_SYSTEM < 0.5) return PT_SENSITIVITY;
-    if (PT_SYSTEM < 1.5) return 0.88;
-    if (PT_SYSTEM < 2.5) return 0.85;
-    if (PT_SYSTEM < 3.5) return 0.80;
+    if (params.PT_SYSTEM < 0.5) return params.PT_SENSITIVITY;
+    if (params.PT_SYSTEM < 1.5) return 0.90;
+    if (params.PT_SYSTEM < 2.5) return 0.85;
+    if (params.PT_SYSTEM < 3.5) return 0.80;
     return 0.75;
 }
 
@@ -401,16 +319,16 @@ vec3 huePreservingBlend(vec3 src, vec3 bg, float alpha)
 // Sine-wave method. Works at any scale mode: aspect, integer, custom.
 float pixelBorderFactor(vec2 coord)
 {
-    if (PT_PIXEL_BORDER < 0.5) return 1.0;
+    if (params.PT_PIXEL_BORDER < 0.5) return 1.0;
 
-    vec2 imgPixelCoord = fract(coord * global.SourceSize.xy);
+    vec2 imgPixelCoord = fract(coord * params.SourceSize.xy);
     vec2 angle         = 2.0 * PI * (imgPixelCoord - 0.25);
 
     float wfactor, strength;
-    if (PT_PIXEL_BORDER < 1.5) {
+    if (params.PT_PIXEL_BORDER < 1.5) {
         wfactor  = 1.0 + (BORDER_WIDTH_FACTOR_MAX - 0.80 * BORDER_WIDTH_FACTOR_MAX);
         strength = 0.40;
-    } else if (PT_PIXEL_BORDER < 2.5) {
+    } else if (params.PT_PIXEL_BORDER < 2.5) {
         wfactor  = 1.0 + (BORDER_WIDTH_FACTOR_MAX - 0.90 * BORDER_WIDTH_FACTOR_MAX);
         strength = 0.65;
     } else {
@@ -476,9 +394,9 @@ float directionalShadowBlur(vec2 basePos, vec2 shadowDir, float stepSize, float 
 // Off for GB, GBC, GBA Original — those had no backlight.
 vec3 applyHalation(vec3 color, vec2 coord, float isTransparent)
 {
-    if (PT_HALATION < 0.001 || isTransparent < 0.5) return color;
+    if (params.PT_HALATION < 0.001 || isTransparent < 0.5) return color;
 
-    float step = PT_HALATION_RADIUS * global.SourceSize.z;
+    float step = PT_HALATION_RADIUS * params.SourceSize.z;
 
     float glow = 0.0;
     glow += getBrightness(texture(Source, coord + vec2( step,  0.0)).rgb);
@@ -493,7 +411,7 @@ vec3 applyHalation(vec3 color, vec2 coord, float isTransparent)
 
     // Warm amber = GBA SP front-light colour temperature
     vec3 glowColor = mix(vec3(1.0, 1.0, 1.0), vec3(1.0, 0.92, 0.75), PT_HALATION_WARMTH);
-    return clamp(color + glowColor * glow * PT_HALATION, 0.0, 1.0);
+    return clamp(color + glowColor * glow * params.PT_HALATION, 0.0, 1.0);
 }
 
 // ┌──────────────────────────────────┐
@@ -506,70 +424,70 @@ vec3 applyHalation(vec3 color, vec2 coord, float isTransparent)
 // Required for mobile Vulkan drivers (Adreno, Mali).
 float getBayerDither(vec2 coord)
 {
-    ivec2 px = ivec2(mod(coord * global.SourceSize.xy, 8.0));
-    int x = px.x;
-    int y = px.y;
+    // Pure float — no ivec2/int types, compatible with mobile Vulkan drivers.
+    float fx = mod(floor(coord.x * params.SourceSize.x), 8.0);
+    float fy = mod(floor(coord.y * params.SourceSize.y), 8.0);
 
     if (PT_DITHER_MATRIX < 0.5) {
         // 2x2 Bayer
-        int idx = (y % 2) * 2 + (x % 2);
+        float idx = mod(fy, 2.0) * 2.0 + mod(fx, 2.0);
         float v;
-        if      (idx == 0) v = 0.0;
-        else if (idx == 1) v = 2.0;
-        else if (idx == 2) v = 3.0;
-        else               v = 1.0;
+        if      (idx < 0.5) v = 0.0;
+        else if (idx < 1.5) v = 2.0;
+        else if (idx < 2.5) v = 3.0;
+        else                v = 1.0;
         return v / 4.0 - 0.5;
 
     } else if (PT_DITHER_MATRIX < 1.5) {
         // 4x4 Bayer
-        int idx = (y % 4) * 4 + (x % 4);
+        float idx = mod(fy, 4.0) * 4.0 + mod(fx, 4.0);
         float v;
-        if      (idx ==  0) v =  0.0; else if (idx ==  1) v =  8.0;
-        else if (idx ==  2) v =  2.0; else if (idx ==  3) v = 10.0;
-        else if (idx ==  4) v = 12.0; else if (idx ==  5) v =  4.0;
-        else if (idx ==  6) v = 14.0; else if (idx ==  7) v =  6.0;
-        else if (idx ==  8) v =  3.0; else if (idx ==  9) v = 11.0;
-        else if (idx == 10) v =  1.0; else if (idx == 11) v =  9.0;
-        else if (idx == 12) v = 15.0; else if (idx == 13) v =  7.0;
-        else if (idx == 14) v = 13.0; else                v =  5.0;
+        if      (idx <  0.5) v =  0.0; else if (idx <  1.5) v =  8.0;
+        else if (idx <  2.5) v =  2.0; else if (idx <  3.5) v = 10.0;
+        else if (idx <  4.5) v = 12.0; else if (idx <  5.5) v =  4.0;
+        else if (idx <  6.5) v = 14.0; else if (idx <  7.5) v =  6.0;
+        else if (idx <  8.5) v =  3.0; else if (idx <  9.5) v = 11.0;
+        else if (idx < 10.5) v =  1.0; else if (idx < 11.5) v =  9.0;
+        else if (idx < 12.5) v = 15.0; else if (idx < 13.5) v =  7.0;
+        else if (idx < 14.5) v = 13.0; else                 v =  5.0;
         return v / 16.0 - 0.5;
 
     } else {
         // 8x8 Bayer
-        int idx = (y % 8) * 8 + (x % 8);
+        float idx = mod(fy, 8.0) * 8.0 + mod(fx, 8.0);
         float v;
-        if      (idx ==  0) v =  0.0; else if (idx ==  1) v = 32.0;
-        else if (idx ==  2) v =  8.0; else if (idx ==  3) v = 40.0;
-        else if (idx ==  4) v =  2.0; else if (idx ==  5) v = 34.0;
-        else if (idx ==  6) v = 10.0; else if (idx ==  7) v = 42.0;
-        else if (idx ==  8) v = 48.0; else if (idx ==  9) v = 16.0;
-        else if (idx == 10) v = 56.0; else if (idx == 11) v = 24.0;
-        else if (idx == 12) v = 50.0; else if (idx == 13) v = 18.0;
-        else if (idx == 14) v = 58.0; else if (idx == 15) v = 26.0;
-        else if (idx == 16) v = 12.0; else if (idx == 17) v = 44.0;
-        else if (idx == 18) v =  4.0; else if (idx == 19) v = 36.0;
-        else if (idx == 20) v = 14.0; else if (idx == 21) v = 46.0;
-        else if (idx == 22) v =  6.0; else if (idx == 23) v = 38.0;
-        else if (idx == 24) v = 60.0; else if (idx == 25) v = 28.0;
-        else if (idx == 26) v = 52.0; else if (idx == 27) v = 20.0;
-        else if (idx == 28) v = 62.0; else if (idx == 29) v = 30.0;
-        else if (idx == 30) v = 54.0; else if (idx == 31) v = 22.0;
-        else if (idx == 32) v =  3.0; else if (idx == 33) v = 35.0;
-        else if (idx == 34) v = 11.0; else if (idx == 35) v = 43.0;
-        else if (idx == 36) v =  1.0; else if (idx == 37) v = 33.0;
-        else if (idx == 38) v =  9.0; else if (idx == 39) v = 41.0;
-        else if (idx == 40) v = 51.0; else if (idx == 41) v = 19.0;
-        else if (idx == 42) v = 59.0; else if (idx == 43) v = 27.0;
-        else if (idx == 44) v = 49.0; else if (idx == 45) v = 17.0;
-        else if (idx == 46) v = 57.0; else if (idx == 47) v = 25.0;
-        else if (idx == 48) v = 15.0; else if (idx == 49) v = 47.0;
-        else if (idx == 50) v =  7.0; else if (idx == 51) v = 39.0;
-        else if (idx == 52) v = 13.0; else if (idx == 53) v = 45.0;
-        else if (idx == 54) v =  5.0; else if (idx == 55) v = 37.0;
-        else if (idx == 56) v = 63.0; else if (idx == 57) v = 31.0;
-        else if (idx == 58) v = 55.0; else if (idx == 59) v = 23.0;
-        else if (idx == 60) v = 61.0; else if (idx == 61) v = 29.0;
-        else if (idx == 62) v = 53.0; else                v = 21.0;
+        if      (idx <  0.5) v =  0.0; else if (idx <  1.5) v = 32.0;
+        else if (idx < 2.5) v =  8.0; else if (idx < 3.5) v = 40.0;
+        else if (idx < 4.5) v =  2.0; else if (idx < 5.5) v = 34.0;
+        else if (idx < 6.5) v = 10.0; else if (idx < 7.5) v = 42.0;
+        else if (idx < 8.5) v = 48.0; else if (idx < 9.5) v = 16.0;
+        else if (idx < 10.5) v = 56.0; else if (idx < 11.5) v = 24.0;
+        else if (idx < 12.5) v = 50.0; else if (idx < 13.5) v = 18.0;
+        else if (idx < 14.5) v = 58.0; else if (idx < 15.5) v = 26.0;
+        else if (idx < 16.5) v = 12.0; else if (idx < 17.5) v = 44.0;
+        else if (idx < 18.5) v =  4.0; else if (idx < 19.5) v = 36.0;
+        else if (idx < 20.5) v = 14.0; else if (idx < 21.5) v = 46.0;
+        else if (idx < 22.5) v =  6.0; else if (idx < 23.5) v = 38.0;
+        else if (idx < 24.5) v = 60.0; else if (idx < 25.5) v = 28.0;
+        else if (idx < 26.5) v = 52.0; else if (idx < 27.5) v = 20.0;
+        else if (idx < 28.5) v = 62.0; else if (idx < 29.5) v = 30.0;
+        else if (idx < 30.5) v = 54.0; else if (idx < 31.5) v = 22.0;
+        else if (idx < 32.5) v =  3.0; else if (idx < 33.5) v = 35.0;
+        else if (idx < 34.5) v = 11.0; else if (idx < 35.5) v = 43.0;
+        else if (idx < 36.5) v =  1.0; else if (idx < 37.5) v = 33.0;
+        else if (idx < 38.5) v =  9.0; else if (idx < 39.5) v = 41.0;
+        else if (idx < 40.5) v = 51.0; else if (idx < 41.5) v = 19.0;
+        else if (idx < 42.5) v = 59.0; else if (idx < 43.5) v = 27.0;
+        else if (idx < 44.5) v = 49.0; else if (idx < 45.5) v = 17.0;
+        else if (idx < 46.5) v = 57.0; else if (idx < 47.5) v = 25.0;
+        else if (idx < 48.5) v = 15.0; else if (idx < 49.5) v = 47.0;
+        else if (idx < 50.5) v =  7.0; else if (idx < 51.5) v = 39.0;
+        else if (idx < 52.5) v = 13.0; else if (idx < 53.5) v = 45.0;
+        else if (idx < 54.5) v =  5.0; else if (idx < 55.5) v = 37.0;
+        else if (idx < 56.5) v = 63.0; else if (idx < 57.5) v = 31.0;
+        else if (idx < 58.5) v = 55.0; else if (idx < 59.5) v = 23.0;
+        else if (idx < 60.5) v = 61.0; else if (idx < 61.5) v = 29.0;
+        else if (idx < 62.5) v = 53.0; else                v = 21.0;
         return v / 64.0 - 0.5;
     }
 }
@@ -581,7 +499,7 @@ float getBayerDither(vec2 coord)
 // Barrel distortion. Returns vec2(-1) sentinel for out-of-bounds pixels.
 vec2 applyCurvature(vec2 coord)
 {
-    if (PT_CURVATURE < 0.5) return coord;
+    if (params.PT_CURVATURE < 0.5) return coord;
     vec2  uv       = coord * 2.0 - 1.0;
     float strength = PT_CURVATURE_STRENGTH * 0.3;
     uv += uv * dot(uv, uv) * strength;
@@ -614,8 +532,8 @@ vec3 sampleWithFringe(sampler2D tex, vec2 coord)
 // Global chromatic aberration — pure UV math, zero extra taps.
 vec3 applyChromaShift(vec3 color, vec2 coord)
 {
-    if (PT_CHROMA < 0.001) return color;
-    vec2  offset = (coord - 0.5) * PT_CHROMA * 0.02;
+    if (params.PT_CHROMA < 0.001) return color;
+    vec2  offset = (coord - 0.5) * params.PT_CHROMA * 0.02;
     float r      = mix(color.r, color.r * (1.0 + offset.x), 0.5);
     float b      = mix(color.b, color.b * (1.0 - offset.x), 0.5);
     return clamp(vec3(r, color.g, b), 0.0, 1.0);
@@ -624,10 +542,10 @@ vec3 applyChromaShift(vec3 color, vec2 coord)
 // Vignette — pure math, zero extra taps.
 vec3 applyVignette(vec3 color, vec2 coord)
 {
-    if (PT_VIGNETTE < 0.001) return color;
+    if (params.PT_VIGNETTE < 0.001) return color;
     vec2  uv       = coord * 2.0 - 1.0;
     float dist     = dot(uv, uv);
-    float vignette = 1.0 - dist * PT_VIGNETTE;
+    float vignette = 1.0 - dist * params.PT_VIGNETTE;
     return color * clamp(vignette, 0.0, 1.0);
 }
 
@@ -644,14 +562,14 @@ void main()
     }
 
     // Snap to texel centre to eliminate bilinear filtering artifacts.
-    vec2 imgPixelCoord = curvedUV * global.SourceSize.xy;
-    vec2 snappedUV     = (floor(imgPixelCoord) + vec2(0.5)) * global.SourceSize.zw;
+    vec2 imgPixelCoord = curvedUV * params.SourceSize.xy;
+    vec2 snappedUV     = (floor(imgPixelCoord) + vec2(0.5)) * params.SourceSize.zw;
 
     // Sample source textures.
     // lcd      — colour-corrected frame (Source). Used for display and shadows.
     // rawPixel — raw pre-correction frame (Original). Used for white detection.
     vec4 lcd;
-    if (PT_CURVATURE > 0.5 && PT_CURVATURE_FRINGE > 0.001) {
+    if (params.PT_CURVATURE > 0.5 && PT_CURVATURE_FRINGE > 0.001) {
         lcd = vec4(sampleWithFringe(Source, snappedUV), 1.0);
     } else {
         lcd = texture(Source, snappedUV);
@@ -660,8 +578,8 @@ void main()
     vec3 rawPixel = texture(Original, snappedUV).rgb;
 
     // Color harshness filter — applied to Source before any blending.
-    if (PT_DARK_FILTER_LEVEL > 0.5) {
-        pixel   = applyDarkFilter(pixel, PT_DARK_FILTER_LEVEL);
+    if (params.PT_DARK_FILTER_LEVEL > 0.5) {
+        pixel   = applyDarkFilter(pixel, params.PT_DARK_FILTER_LEVEL);
         lcd.rgb = pixel;
     }
 
@@ -673,62 +591,65 @@ void main()
 
     // Build procedural backing texture.
     vec3 bg = proceduralBackground(curvedUV);
-    if (PT_PALETTE > 0.5) {
+    if (params.PT_PALETTE > 0.5) {
         vec3 tint;
-        if      (PT_PALETTE < 1.5) tint = vec3(0.651, 0.675, 0.518); // Pocket grey
-        else if (PT_PALETTE < 2.5) tint = vec3(0.737, 0.737, 0.737); // Cool grey
-        else if (PT_PALETTE < 3.5) tint = vec3(1.0,   1.0,   1.0  ); // White (GBA SP)
+        if      (params.PT_PALETTE < 1.5) tint = vec3(0.651, 0.675, 0.518); // Pocket grey
+        else if (params.PT_PALETTE < 2.5) tint = vec3(0.737, 0.737, 0.737); // Cool grey
+        else if (params.PT_PALETTE < 3.5) tint = vec3(1.0,   1.0,   1.0  ); // White (GBA SP)
         else                       tint = vec3(0.60,  0.64,  0.46  ); // Green-grey (GBA Orig)
-        vec3 tinted = clamp(vec3(
-            tint.r + mix(-1.0, 1.0, bg.r),
-            tint.g + mix(-1.0, 1.0, bg.g),
-            tint.b + mix(-1.0, 1.0, bg.b)
+        // Overlay blend: grain texture onto tint colour.
+        // Dark grain pulls the tint down, bright grain lifts it --
+        // matching the physical behaviour of a textured backing material.
+        vec3 tinted = clamp(mix(
+            2.0 * tint * bg,
+            1.0 - 2.0 * (1.0 - tint) * (1.0 - bg),
+            step(0.5, bg)
         ), 0.0, 1.0);
         bg = mix(bg, tinted, PT_PALETTE_INTENSITY);
     }
 
     // Transparency gate — 0/1 for shadow and halation gating.
     float willBeTransparent;
-    if      (PT_PIXEL_MODE < 0.5) willBeTransparent = step(0.001, whiteness);
-    else if (PT_PIXEL_MODE < 1.5) willBeTransparent = step(threshold * 0.9, rawBrightness);
+    if      (params.PT_PIXEL_MODE < 0.5) willBeTransparent = step(0.001, whiteness);
+    else if (params.PT_PIXEL_MODE < 1.5) willBeTransparent = step(threshold * 0.9, rawBrightness);
     else                          willBeTransparent = 1.0;
 
     // Drop shadow with optional directional gaussian blur.
-    if (willBeTransparent > 0.5 && PT_SHADOW_OPACITY > 0.001) {
-        vec2 shadowOffset = vec2(-PT_SHADOW_OFFSET_X, -PT_SHADOW_OFFSET_Y) * global.SourceSize.zw;
+    if (willBeTransparent > 0.5 && params.PT_SHADOW_OPACITY > 0.001) {
+        vec2 shadowOffset = vec2(-PT_SHADOW_OFFSET_X, -PT_SHADOW_OFFSET_Y) * params.SourceSize.zw * vShadowScale;
         vec2 shadowPos    = snappedUV + shadowOffset;
         float shadowDark;
-        if (PT_SHADOW_BLUR > 0.001) {
+        if (params.PT_SHADOW_BLUR > 0.001) {
             vec2  shadowDir = normalize(shadowOffset);
-            float stepSize  = PT_SHADOW_BLUR_RADIUS * global.SourceSize.z;
-            shadowDark = directionalShadowBlur(shadowPos, shadowDir, stepSize, PT_SHADOW_BLUR / 5.0);
+            float stepSize  = PT_SHADOW_BLUR_RADIUS * params.SourceSize.z;
+            shadowDark = directionalShadowBlur(shadowPos, shadowDir, stepSize, params.PT_SHADOW_BLUR / 5.0);
         } else {
             shadowDark = 1.0 - getBrightness(texture(Original, shadowPos).rgb);
         }
-        float shadowStrength = (shadowDark * shadowDark) * PT_SHADOW_OPACITY;
+        float shadowStrength = (shadowDark * shadowDark) * params.PT_SHADOW_OPACITY;
         bg = mix(bg, bg * 0.2, shadowStrength);
     }
 
     // Transparency blend with optional Bayer dithering.
     // Alpha driven by raw brightness. White pixels: mix(). Coloured: hue-preserving.
-    float dither = (PT_DITHER > 0.5) ? getBayerDither(curvedUV) * PT_DITHER_STRENGTH : 0.0;
+    float dither = (params.PT_DITHER > 0.5) ? getBayerDither(curvedUV) * PT_DITHER_STRENGTH : 0.0;
     vec3 result = pixel;
 
-    if (PT_PIXEL_MODE < 0.5) {
+    if (params.PT_PIXEL_MODE < 0.5) {
         if (whiteness > 0.001) {
             float distAbove = clamp((rawBrightness - threshold) / (1.0 - threshold + 0.001), 0.0, 1.0);
-            float alpha     = clamp(PT_BASE_ALPHA + distAbove * (1.0 - PT_BASE_ALPHA) * whiteness + dither, 0.0, 1.0);
-            alpha           = max(alpha, PT_WHITE_TRANSPARENCY * whiteness);
+            float alpha     = clamp(params.PT_BASE_ALPHA + distAbove * (1.0 - params.PT_BASE_ALPHA) * whiteness + dither, 0.0, 1.0);
+            alpha           = max(alpha, params.PT_WHITE_TRANSPARENCY * whiteness);
             result          = whiteBlend(pixel, bg, alpha);
         }
-    } else if (PT_PIXEL_MODE < 1.5) {
-        float alpha = clamp(PT_BASE_ALPHA * rawBrightness * 2.4 + dither, 0.0, 1.0);
-        if (whiteness > 0.001) alpha = max(alpha, PT_WHITE_TRANSPARENCY * whiteness);
+    } else if (params.PT_PIXEL_MODE < 1.5) {
+        float alpha = clamp(params.PT_BASE_ALPHA * rawBrightness * 2.4 + dither, 0.0, 1.0);
+        if (whiteness > 0.001) alpha = max(alpha, params.PT_WHITE_TRANSPARENCY * whiteness);
         result = huePreservingBlend(pixel, bg, alpha);
     } else {
         float distAbove = clamp((rawBrightness - threshold) / (1.0 - threshold + 0.001), 0.0, 1.0);
-        float alpha     = clamp(PT_BASE_ALPHA + distAbove * (1.0 - PT_BASE_ALPHA) * 0.5 + dither, 0.0, 1.0);
-        if (whiteness > 0.001) alpha = max(alpha, PT_WHITE_TRANSPARENCY * whiteness);
+        float alpha     = clamp(params.PT_BASE_ALPHA + distAbove * (1.0 - params.PT_BASE_ALPHA) * 0.5 + dither, 0.0, 1.0);
+        if (whiteness > 0.001) alpha = max(alpha, params.PT_WHITE_TRANSPARENCY * whiteness);
         result = huePreservingBlend(pixel, bg, alpha);
     }
 
