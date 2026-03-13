@@ -8,7 +8,7 @@
 
 ![Version](https://img.shields.io/badge/version-1.5.0-brightgreen?style=flat-square)
 ![RetroArch](https://img.shields.io/badge/RetroArch-GLSL%20%7C%20Slang-blue?style=flat-square)
-![NextUI](https://img.shields.io/badge/NextUI-TrimUI%20Brick-orange?style=flat-square)
+![NextUI](https://img.shields.io/badge/NextUI-minarch-orange?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey?style=flat-square)
 
 </div>
@@ -39,16 +39,15 @@ This shader detects bright and near-white pixels and blends them toward a proced
 
 <div align="center">
 
-| Variant | Platform | Best For |
-|---|---|---|
-| **PT_SkyWalker541** | RetroArch | Mid-range to modest hardware |
-| **PT_SkyWalker541_Pro** | RetroArch | Powerful hardware, maximum effects |
-| **PT_SkyWalker541_Aspect** | NextUI / TrimUI Brick | Aspect ratio or any non-integer scale |
-| **PT_SkyWalker541_Integer** | NextUI / TrimUI Brick | Native / integer scale only |
+| Variant | Platform | Files | Best For |
+|---|---|---|---|
+| **Standard** | RetroArch | `.glsl` + `.glslp` &nbsp;/&nbsp; `.slang` + `.slangp` | Mid-range to modest hardware |
+| **Pro** | RetroArch | `.glsl` + `.glslp` &nbsp;/&nbsp; `.slang` + `.slangp` | Powerful hardware, maximum effects |
+| **NextUI** | NextUI / minarch | Aspect &nbsp;/&nbsp; Integer | Any device running NextUI |
 
 </div>
 
-All four share the same core transparency engine and the same 15 parameters. The Pro version adds an extended effect suite. The NextUI versions have detection thresholds pre-compensated for NextUI's post-processing pipeline.
+All three share the same core transparency engine and the same 15 parameters. The GLSL and Slang builds of Standard and Pro are functionally identical — choose based on your RetroArch video driver. The NextUI variant comes in two builds: **Aspect** for any scale mode, **Integer** for native/integer scaling only. The Pro variant adds an extended effect suite. The NextUI variant has detection thresholds pre-compensated for NextUI's post-processing pipeline.
 
 ---
 
@@ -96,7 +95,7 @@ PT_SkyWalker541_Aspect.glsl   +   PT_SkyWalker541_Aspect.cfg
 PT_SkyWalker541_Integer.glsl  +   PT_SkyWalker541_Integer.cfg
 ```
 
-Purpose-built for NextUI on the TrimUI Brick. Single-pass, single-texture. Both shaders are fully standalone — no additional passes or files required beyond the `.glsl` and `.cfg` pair.
+Purpose-built for NextUI / minarch. Single-pass, single-texture. Both shaders are fully standalone — no additional passes or files required beyond the `.glsl` and `.cfg` pair.
 
 **Aspect** uses a sine-wave pixel border method that works correctly at any scale mode. **Integer** uses a distance-from-center method that produces a sharper, cleaner grid at exact integer scale multiples. If you are unsure which to use, choose Aspect — it works at any scale including native.
 
