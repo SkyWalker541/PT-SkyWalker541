@@ -1,7 +1,7 @@
 /*
 ╔══════════════════════════════════════════════════════════════════╗
 ║  PT SkyWalker541 Aspect  v1.5.0                                  ║
-║  by SkyWalker541  |  Written for NextUI / minarch (TrimUI Brick) ║
+║  by SkyWalker541  |  Written for NextUI / minarch               ║
 ╚══════════════════════════════════════════════════════════════════╝
 
   On original Game Boy, GBC, and GBA hardware, screen pixels that
@@ -72,9 +72,6 @@
            for the original GBA's dim, creamy whites on NextUI.
            PT_BRIGHTNESS_MODE default changed from Perceptual to Simple
            — cheaper on PowerVR, correct for GB/GBC out of the box.
-           Fixed pixel border alignment: pixelBorderFactor now receives
-           the snapped texel-centre coordinate instead of the raw UV,
-           removing half-texel border misalignment at all scale modes.
 
   v1.2.2 - Replaced noiseHash with reference shader's cheaper
            single-pass hash (fract/dot/fract). Reduces backing
@@ -315,14 +312,14 @@ uniform COMPAT_PRECISION float PT_VIGNETTE;
 #define PT_SENSITIVITY        0.85
 #define PT_PIXEL_MODE         0.0
 #define PT_BASE_ALPHA         0.20
-#define PT_WHITE_TRANSPARENCY 0.50
+#define PT_WHITE_TRANSPARENCY 0.20
 #define PT_BRIGHTNESS_MODE    0.0
 #define PT_PALETTE            1.0
 #define PT_PALETTE_INTENSITY  1.0
 #define PT_DARK_FILTER_LEVEL  10.0
 #define PT_PIXEL_BORDER       1.0
-#define PT_SHADOW_OFFSET_X    1.0
-#define PT_SHADOW_OFFSET_Y    1.0
+#define PT_SHADOW_OFFSET_X    2.0
+#define PT_SHADOW_OFFSET_Y    2.0
 #define PT_SHADOW_OPACITY     0.30
 #define PT_CHROMA             0.20
 #define PT_VIGNETTE           0.08
@@ -508,8 +505,7 @@ void main()
     // Sample current pixel — snap to texel center to avoid filtering artifacts
     vec2 imgPixelCoord  = TEX0.xy * TextureSize;
     vec2 imgCenterCoord = floor(imgPixelCoord) + vec2(0.5);
-    vec2 snappedUV      = imgCenterCoord * InvTextureSize;
-    vec4 lcd   = COMPAT_TEXTURE(Source, snappedUV);
+    vec4 lcd   = COMPAT_TEXTURE(Source, imgCenterCoord * InvTextureSize);
     vec3 pixel = lcd.rgb;
 
     // Color harshness filter
@@ -539,10 +535,13 @@ void main()
         } else {
             tint = vec3(1.0,   1.0,   1.0  ); // White
         }
-        vec3 tinted = clamp(vec3(
-            tint.r + mix(-1.0, 1.0, bg.r),
-            tint.g + mix(-1.0, 1.0, bg.g),
-            tint.b + mix(-1.0, 1.0, bg.b)
+        // Overlay blend: grain texture onto tint colour.
+        // Dark grain pulls the tint down, bright grain lifts it --
+        // matching the physical behaviour of a textured backing material.
+        vec3 tinted = clamp(mix(
+            2.0 * tint * bg,
+            1.0 - 2.0 * (1.0 - tint) * (1.0 - bg),
+            step(0.5, bg)
         ), 0.0, 1.0);
         bg = mix(bg, tinted, PT_PALETTE_INTENSITY);
     }
@@ -567,7 +566,12 @@ void main()
         // 1024x768. Single tap matches the cost floor of the reference shaders.
         // No white gate — if behind-pixel is white, shadowStrength ~ 0 and
         // bg is unchanged. The math self-regulates.
-        vec2 shadowPos       = TEX0.xy + vec2(-PT_SHADOW_OFFSET_X, -PT_SHADOW_OFFSET_Y) * InvTextureSize;
+        // Scale shadow offset proportionally to output scale so it appears
+        // consistent regardless of how much the source frame is scaled up.
+        float shadow_sx  = OutputSize.x / InputSize.x;
+        float shadow_sy  = OutputSize.y / InputSize.y;
+        float shadow_scale = sqrt(shadow_sx * shadow_sy);
+        vec2 shadowPos   = TEX0.xy + vec2(-PT_SHADOW_OFFSET_X, -PT_SHADOW_OFFSET_Y) * InvTextureSize * shadow_scale;
         float shadowDark     = 1.0 - getBrightness(COMPAT_TEXTURE(Source, shadowPos).rgb);
         float shadowStrength = (shadowDark * shadowDark) * PT_SHADOW_OPACITY;
 
@@ -598,7 +602,7 @@ void main()
         result = huePreservingBlend(pixel, bg, alpha);
     }
 
-    result  = result * pixelBorderFactor(snappedUV);
+    result  = result * pixelBorderFactor(TEX0.xy);
     result  = applyChromaShift(result, TEX0.xy);
     result  = applyVignette(result, TEX0.xy);
 
