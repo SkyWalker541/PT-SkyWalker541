@@ -12,7 +12,7 @@ This version runs on standard RetroArch using a single-pass `.glslp` preset. Whi
 
 > **Looking for more effects?** **PT_SkyWalker541_Pro** adds adjustable grain, LCD halation glow, Bayer dithering, screen curvature, and chromatic fringe — designed for more powerful hardware. Both versions are in the PT_SkyWalker541 repository.
 
-> **On NextUI / minarch?** **PT_SkyWalker541_Aspect** and **PT_SkyWalker541_Integer** are purpose-built versions for NextUI on the TrimUI Brick, with thresholds pre-compensated for NextUI's post-processing pipeline. Both are in the PT_SkyWalker541 repository.
+> **On NextUI / minarch?** **PT_SkyWalker541_Aspect** and **PT_SkyWalker541_Integer** are purpose-built versions for NextUI / minarch, with thresholds pre-compensated for NextUI's post-processing pipeline. Both are in the PT_SkyWalker541 repository.
 
 ---
 
@@ -76,14 +76,14 @@ The original DMG and Pocket both used a slow, ghosting LCD with no backlight —
 | PT_SENSITIVITY |   Manual sensitivity threshold | 0.85 *(default — only active when PT_SYSTEM = 0)* |
 | PT_PIXEL_MODE | Pixel mode (0=White, 1=Bright, 2=All) | 0 (White only) |
 | PT_BASE_ALPHA |   Base transparency amount | 0.20 |
-| PT_WHITE_TRANSPARENCY |   White pixel min transparency | 0.50 |
+| PT_WHITE_TRANSPARENCY |   White pixel min transparency | 0.20 |
 | PT_BRIGHTNESS_MODE | Brightness mode (0=Simple, 1=Percept.) | 0 (Simple) |
 | PT_PALETTE | Background tint (0=Off, 1=Pocket, 2=Grey, 3=White) | 1 (Pocket grey) |
 | PT_PALETTE_INTENSITY |   Tint intensity | 1.00 |
 | PT_DARK_FILTER_LEVEL | Dark color filter (0=off) | 0 *(off — leave at default for this system)* |
 | PT_PIXEL_BORDER | Pixel border (0=Off, 1=Subtle, 2=Med, 3=Strong) | 1 (Subtle) |
-| PT_SHADOW_OFFSET_X | Shadow X offset | 1.0 |
-| PT_SHADOW_OFFSET_Y | Shadow Y offset | 1.0 |
+| PT_SHADOW_OFFSET_X | Shadow X offset | 2.0 |
+| PT_SHADOW_OFFSET_Y | Shadow Y offset | 2.0 |
 | PT_SHADOW_OPACITY | Shadow opacity (0=off) | 0.30 |
 | PT_CHROMA | Chromatic shift (0=off) | 0.0 |
 | PT_VIGNETTE | Vignette strength (0=off) | 0.10 |
@@ -113,14 +113,14 @@ Similar LCD construction to the original GB but with improved colour response an
 | PT_SENSITIVITY |   Manual sensitivity threshold | 0.85 *(default — only active when PT_SYSTEM = 0)* |
 | PT_PIXEL_MODE | Pixel mode (0=White, 1=Bright, 2=All) | 0 (White only) |
 | PT_BASE_ALPHA |   Base transparency amount | 0.20 |
-| PT_WHITE_TRANSPARENCY |   White pixel min transparency | 0.50 |
+| PT_WHITE_TRANSPARENCY |   White pixel min transparency | 0.20 |
 | PT_BRIGHTNESS_MODE | Brightness mode (0=Simple, 1=Percept.) | 0 (Simple) |
 | PT_PALETTE | Background tint (0=Off, 1=Pocket, 2=Grey, 3=White) | 1 (Pocket grey) |
 | PT_PALETTE_INTENSITY |   Tint intensity | 1.00 |
 | PT_DARK_FILTER_LEVEL | Dark color filter (0=off) | 10 *(optional — softens aggressive GBC colour palettes)* |
 | PT_PIXEL_BORDER | Pixel border (0=Off, 1=Subtle, 2=Med, 3=Strong) | 1 (Subtle) |
-| PT_SHADOW_OFFSET_X | Shadow X offset | 1.0 |
-| PT_SHADOW_OFFSET_Y | Shadow Y offset | 1.0 |
+| PT_SHADOW_OFFSET_X | Shadow X offset | 2.0 |
+| PT_SHADOW_OFFSET_Y | Shadow Y offset | 2.0 |
 | PT_SHADOW_OPACITY | Shadow opacity (0=off) | 0.25 |
 | PT_CHROMA | Chromatic shift (0=off) | 0.0 |
 | PT_VIGNETTE | Vignette strength (0=off) | 0.08 |
@@ -156,8 +156,8 @@ The GBA SP used a front-lit screen — dramatically brighter and more vivid than
 | PT_PALETTE_INTENSITY |   Tint intensity | 1.00 |
 | PT_DARK_FILTER_LEVEL | Dark color filter (0=off) | 0 *(off — leave at default for this system)* |
 | PT_PIXEL_BORDER | Pixel border (0=Off, 1=Subtle, 2=Med, 3=Strong) | 0 (Off) |
-| PT_SHADOW_OFFSET_X | Shadow X offset | 1.0 |
-| PT_SHADOW_OFFSET_Y | Shadow Y offset | 1.0 |
+| PT_SHADOW_OFFSET_X | Shadow X offset | 2.0 |
+| PT_SHADOW_OFFSET_Y | Shadow Y offset | 2.0 |
 | PT_SHADOW_OPACITY | Shadow opacity (0=off) | 0.20 |
 | PT_CHROMA | Chromatic shift (0=off) | 0.0 |
 | PT_VIGNETTE | Vignette strength (0=off) | 0.05 |
@@ -193,8 +193,8 @@ The original GBA had a dim, washed-out reflective screen with no backlight — n
 | PT_PALETTE_INTENSITY |   Tint intensity | 1.00 |
 | PT_DARK_FILTER_LEVEL | Dark color filter (0=off) | 0 *(off — leave at default for this system)* |
 | PT_PIXEL_BORDER | Pixel border (0=Off, 1=Subtle, 2=Med, 3=Strong) | 0 (Off) |
-| PT_SHADOW_OFFSET_X | Shadow X offset | 1.0 |
-| PT_SHADOW_OFFSET_Y | Shadow Y offset | 1.0 |
+| PT_SHADOW_OFFSET_X | Shadow X offset | 2.0 |
+| PT_SHADOW_OFFSET_Y | Shadow Y offset | 2.0 |
 | PT_SHADOW_OPACITY | Shadow opacity (0=off) | 0.20 |
 | PT_CHROMA | Chromatic shift (0=off) | 0.0 |
 | PT_VIGNETTE | Vignette strength (0=off) | 0.12 |
@@ -236,7 +236,7 @@ The most important setting. Set this first. Configures the white detection thres
 | Value | System | Threshold |
 |---|---|---|
 | 0 | Manual | Use PT_SENSITIVITY to set your own threshold |
-| 1 | GB / Pocket | 0.88 — no backlight, aggressive detection |
+| 1 | GB / Pocket | 0.90 — no backlight, aggressive detection |
 | 2 | GBC | 0.85 — no backlight, moderate |
 | 3 | GBA SP (front-lit) | 0.80 — front-lit, conservative |
 | 4 | GBA Original | 0.75 — no backlight, catches creamy/yellowish whites |
@@ -380,14 +380,14 @@ To change a default value, open `PT_SkyWalker541.glsl` in any text editor and fi
 #define PT_SENSITIVITY        0.85
 #define PT_PIXEL_MODE         0.0
 #define PT_BASE_ALPHA         0.20
-#define PT_WHITE_TRANSPARENCY 0.50
+#define PT_WHITE_TRANSPARENCY 0.20
 #define PT_BRIGHTNESS_MODE    0.0
 #define PT_PALETTE            1.0
 #define PT_PALETTE_INTENSITY  1.0
 #define PT_DARK_FILTER_LEVEL  0.0
 #define PT_PIXEL_BORDER       1.0
-#define PT_SHADOW_OFFSET_X    1.0
-#define PT_SHADOW_OFFSET_Y    1.0
+#define PT_SHADOW_OFFSET_X    2.0
+#define PT_SHADOW_OFFSET_Y    2.0
 #define PT_SHADOW_OPACITY     0.30
 #define PT_CHROMA             0.0
 #define PT_VIGNETTE           0.08
