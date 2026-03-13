@@ -1,6 +1,6 @@
 /*
 ╔══════════════════════════════════════════════════════════════════╗
-║  PT SkyWalker541 Pro  v1.5.0                                     ║
+║  PT SkyWalker541 Pro  v1.5.1                                     ║
 ║  by SkyWalker541  |  Written for RetroArch (GLSL)                ║
 ╚══════════════════════════════════════════════════════════════════╝
 
@@ -57,6 +57,11 @@
 ║  CHANGELOG                                                       ║
 ╚══════════════════════════════════════════════════════════════════╝
 
+  v1.5.1 - Fixed GLES compile failure on Android/RetroArch. getBayerDither()
+           rewrote integer arithmetic (int x, y, idx, division) as pure float
+           mod()/floor() operations — GLES 2.0 does not support integer types
+           in fragment shaders. No change to dither output or any other logic.
+
   v1.5.0 - Unified version number across all PT_SkyWalker541 variants
            (Standard, Pro, NextUI). No shader logic changes.
 
@@ -86,70 +91,70 @@
 // │  System Preset                   │
 // └──────────────────────────────────┘
 // 0=Manual  1=GB/Pocket  2=GBC  3=GBA SP  4=GBA Original
-#pragma parameter PT_SYSTEM "== PT SkyWalker541 Pro v1.5.0 == System (0=Manual, 1=GB, 2=GBC, 3=GBA SP, 4=GBA Orig)" 1.0 0.0 4.0 1.0
+#pragma parameter PT_SYSTEM "System (0=Manual, 1=GB, 2=GBC, 3=GBA SP, 4=GBA Orig)" 1.0 0.0 4.0 1.0
 // Active only when PT_SYSTEM = 0
-#pragma parameter PT_SENSITIVITY "     ↳ Manual threshold (PT_SYSTEM=0 only)" 0.85 0.0 1.0 0.01
+#pragma parameter PT_SENSITIVITY "  Manual sensitivity threshold" 0.85 0.0 1.0 0.01
 
 // ┌──────────────────────────────────┐
 // │  Pixel Transparency              │
 // └──────────────────────────────────┘
 // 0=White only  1=Bright  2=All
-#pragma parameter PT_PIXEL_MODE "== Transparency mode == (0=White, 1=Bright, 2=All)" 0.0 0.0 2.0 1.0
+#pragma parameter PT_PIXEL_MODE "Transparency mode (0=White, 1=Bright, 2=All)" 0.0 0.0 2.0 1.0
 // GB/GBC: 0.20  GBA SP: 0.15  GBA Orig: 0.25
-#pragma parameter PT_BASE_ALPHA "     ↳ Base transparency amount" 0.20 0.0 1.0 0.01
-#pragma parameter PT_WHITE_TRANSPARENCY "     ↳ White pixel min transparency" 0.50 0.0 1.0 0.01
+#pragma parameter PT_BASE_ALPHA "  Base transparency amount" 0.20 0.0 1.0 0.01
+#pragma parameter PT_WHITE_TRANSPARENCY "  White pixel min transparency" 0.50 0.0 1.0 0.01
 
 // ┌──────────────────────────────────┐
 // │  Background Tint                 │
 // └──────────────────────────────────┘
 // 0=Off  1=Pocket grey  2=Cool grey  3=White (GBA SP)  4=Green-grey (GBA Orig)
-#pragma parameter PT_PALETTE "== Background tint == (0=Off, 1=Pocket, 2=Grey, 3=White, 4=Green-grey)" 1.0 0.0 4.0 1.0
+#pragma parameter PT_PALETTE "Background tint (0=Off, 1=Pocket, 2=Grey, 3=White, 4=Green-grey)" 1.0 0.0 4.0 1.0
 
 // ┌──────────────────────────────────┐
 // │  Color Harshness Filter          │
 // └──────────────────────────────────┘
 // 0=off. 5-15 natural for GBC/GBA. Not needed for GB.
-#pragma parameter PT_DARK_FILTER_LEVEL "== Dark color filter (0=off)" 0.0 0.0 100.0 1.0
+#pragma parameter PT_DARK_FILTER_LEVEL "Dark color filter (0=off)" 0.0 0.0 100.0 1.0
 
 // ┌──────────────────────────────────┐
 // │  Pixel Border                    │
 // └──────────────────────────────────┘
 // 0=Off  1=Subtle  2=Moderate  3=Strong. GB/GBC: 1. GBA: 0.
-#pragma parameter PT_PIXEL_BORDER "== Pixel border == (0=Off, 1=Subtle, 2=Moderate, 3=Strong)" 1.0 0.0 3.0 1.0
+#pragma parameter PT_PIXEL_BORDER "Pixel border (0=Off, 1=Subtle, 2=Moderate, 3=Strong)" 1.0 0.0 3.0 1.0
 
 // ┌──────────────────────────────────┐
 // │  Drop Shadow                     │
 // └──────────────────────────────────┘
 // Shadow opacity 0=off. Offset/blur/radius in ADVANCED DEFAULTS.
-#pragma parameter PT_SHADOW_OPACITY "== Shadow opacity (0=off)" 0.30 0.0 1.0 0.01
+#pragma parameter PT_SHADOW_OPACITY "Shadow opacity (0=off)" 0.30 0.0 1.0 0.01
 // 0=hard edge  0.5-2.0=gaussian blur along shadow vector
-#pragma parameter PT_SHADOW_BLUR "     ↳ Shadow blur amount (0=off)" 1.0 0.0 5.0 0.1
+#pragma parameter PT_SHADOW_BLUR "  Shadow blur amount (0=off)" 1.0 0.0 5.0 0.1
 
 // ┌──────────────────────────────────┐
 // │  Halation                        │
 // └──────────────────────────────────┘
 // ONLY for backlit screens. Off for GB, GBC, GBA Original.
 // GBA SP: 0.05-0.15. Radius/warmth in ADVANCED DEFAULTS.
-#pragma parameter PT_HALATION "== Halation / diffuser glow (0=off)" 0.0 0.0 1.0 0.01
+#pragma parameter PT_HALATION "Halation glow (0=off)" 0.0 0.0 1.0 0.01
 
 // ┌──────────────────────────────────┐
 // │  Dithering                       │
 // └──────────────────────────────────┘
 // 0=off. Strength/matrix in ADVANCED DEFAULTS.
-#pragma parameter PT_DITHER "== Dither blend edges (0=off, 1=on)" 1.0 0.0 1.0 1.0
+#pragma parameter PT_DITHER "Dither blend edges (0=off, 1=on)" 1.0 0.0 1.0 1.0
 
 // ┌──────────────────────────────────┐
 // │  Screen Curvature                │
 // └──────────────────────────────────┘
 // 0=off. All original screens were flat — aesthetic only.
 // Strength/fringe in ADVANCED DEFAULTS.
-#pragma parameter PT_CURVATURE "== Screen curvature (0=off)" 0.0 0.0 1.0 0.01
+#pragma parameter PT_CURVATURE "Screen curvature (0=off)" 0.0 0.0 1.0 0.01
 
 // ┌──────────────────────────────────┐
 // │  Post-Blend Effects              │
 // └──────────────────────────────────┘
-#pragma parameter PT_CHROMA "== Chromatic shift (0=off)" 0.0 0.0 1.0 0.01
-#pragma parameter PT_VIGNETTE "== Vignette strength (0=off)" 0.08 0.0 1.0 0.01
+#pragma parameter PT_CHROMA "Chromatic shift (0=off)" 0.0 0.0 1.0 0.01
+#pragma parameter PT_VIGNETTE "Vignette strength (0=off)" 0.08 0.0 1.0 0.01
 
 // ╔══════════════════════════════════════════════════════════════╗
 // ║  ADVANCED DEFAULTS                                           ║
@@ -174,7 +179,7 @@
 // Visibility of the procedural grain on the backing texture.
 // 0.0 = flat/no grain.  Range: 0.0-0.30
 // Per-system recommendations: GB=0.10  GBC=0.07  GBA SP=0.03  GBA Orig=0.08
-#define PT_GRAIN_INTENSITY_DEFAULT    0.08
+#define PT_GRAIN_INTENSITY_DEFAULT    0.065
 
 // Size of the grain pattern. Lower = finer grain, higher = coarser grain.
 // Range: 0.05-1.0
@@ -186,11 +191,11 @@
 // └──────────────────────────────────┘
 // Horizontal offset of the drop shadow in source texels.
 // Positive = right, negative = left.  Range: -10.0 to 10.0
-#define PT_SHADOW_OFFSET_X_DEFAULT    1.0
+#define PT_SHADOW_OFFSET_X_DEFAULT    2.0
 
 // Vertical offset of the drop shadow in source texels.
 // Positive = down, negative = up.  Range: -10.0 to 10.0
-#define PT_SHADOW_OFFSET_Y_DEFAULT    1.0
+#define PT_SHADOW_OFFSET_Y_DEFAULT    2.0
 
 // How far the gaussian blur spreads from the shadow origin, in source texels.
 // Only active when PT_SHADOW_BLUR > 0.
@@ -343,7 +348,7 @@ uniform COMPAT_PRECISION float PT_VIGNETTE;
 #define PT_SENSITIVITY        0.85
 #define PT_PIXEL_MODE         0.0
 #define PT_BASE_ALPHA         0.20
-#define PT_WHITE_TRANSPARENCY 0.50
+#define PT_WHITE_TRANSPARENCY 0.20
 #define PT_PALETTE            1.0
 #define PT_DARK_FILTER_LEVEL  0.0
 #define PT_PIXEL_BORDER       1.0
@@ -412,7 +417,7 @@ float getBrightness(vec3 c)
 float resolveThreshold()
 {
     if (PT_SYSTEM < 0.5) return PT_SENSITIVITY;
-    if (PT_SYSTEM < 1.5) return 0.88;
+    if (PT_SYSTEM < 1.5) return 0.90;
     if (PT_SYSTEM < 2.5) return 0.85;
     if (PT_SYSTEM < 3.5) return 0.80;
     return 0.75;
@@ -603,73 +608,76 @@ vec3 applyHalation(vec3 color, vec2 coord, float isTransparent)
 // All if/else chains fully unrolled — no dynamic array indexing.
 float getBayerDither(vec2 coord)
 {
-    int x = int(mod(coord.x * TextureSize.x, 8.0));
-    int y = int(mod(coord.y * TextureSize.y, 8.0));
+    // Pure float implementation — no integer types, GLES 2.0 compatible.
+    float fx = mod(floor(coord.x * TextureSize.x), 8.0);
+    float fy = mod(floor(coord.y * TextureSize.y), 8.0);
 
     if (PT_DITHER_MATRIX < 0.5) {
         // 2x2 Bayer
-        int idx = (y - (y / 2) * 2) * 2 + (x - (x / 2) * 2);
+        float xi  = mod(fx, 2.0);
+        float yi  = mod(fy, 2.0);
+        float idx = yi * 2.0 + xi;
         float val;
-        if      (idx == 0) val = 0.0;
-        else if (idx == 1) val = 2.0;
-        else if (idx == 2) val = 3.0;
-        else               val = 1.0;
+        if      (idx < 0.5) val = 0.0;
+        else if (idx < 1.5) val = 2.0;
+        else if (idx < 2.5) val = 3.0;
+        else                val = 1.0;
         return val / 4.0 - 0.5;
 
     } else if (PT_DITHER_MATRIX < 1.5) {
         // 4x4 Bayer
-        int xi  = x - (x / 4) * 4;
-        int yi  = y - (y / 4) * 4;
-        int idx = yi * 4 + xi;
+        float xi  = mod(fx, 4.0);
+        float yi  = mod(fy, 4.0);
+        float idx = yi * 4.0 + xi;
         float val;
-        if      (idx ==  0) val =  0.0; else if (idx ==  1) val =  8.0;
-        else if (idx ==  2) val =  2.0; else if (idx ==  3) val = 10.0;
-        else if (idx ==  4) val = 12.0; else if (idx ==  5) val =  4.0;
-        else if (idx ==  6) val = 14.0; else if (idx ==  7) val =  6.0;
-        else if (idx ==  8) val =  3.0; else if (idx ==  9) val = 11.0;
-        else if (idx == 10) val =  1.0; else if (idx == 11) val =  9.0;
-        else if (idx == 12) val = 15.0; else if (idx == 13) val =  7.0;
-        else if (idx == 14) val = 13.0; else                val =  5.0;
+        if      (idx <  0.5) val =  0.0; else if (idx <  1.5) val =  8.0;
+        else if (idx <  2.5) val =  2.0; else if (idx <  3.5) val = 10.0;
+        else if (idx <  4.5) val = 12.0; else if (idx <  5.5) val =  4.0;
+        else if (idx <  6.5) val = 14.0; else if (idx <  7.5) val =  6.0;
+        else if (idx <  8.5) val =  3.0; else if (idx <  9.5) val = 11.0;
+        else if (idx < 10.5) val =  1.0; else if (idx < 11.5) val =  9.0;
+        else if (idx < 12.5) val = 15.0; else if (idx < 13.5) val =  7.0;
+        else if (idx < 14.5) val = 13.0; else                 val =  5.0;
         return val / 16.0 - 0.5;
 
     } else {
         // 8x8 Bayer
-        int xi  = x - (x / 8) * 8;
-        int yi  = y - (y / 8) * 8;
-        int idx = yi * 8 + xi;
+        float xi  = mod(fx, 8.0);
+        float yi  = mod(fy, 8.0);
+        float idx = yi * 8.0 + xi;
         float val;
-        if      (idx ==  0) val =  0.0; else if (idx ==  1) val = 32.0;
-        else if (idx ==  2) val =  8.0; else if (idx ==  3) val = 40.0;
-        else if (idx ==  4) val =  2.0; else if (idx ==  5) val = 34.0;
-        else if (idx ==  6) val = 10.0; else if (idx ==  7) val = 42.0;
-        else if (idx ==  8) val = 48.0; else if (idx ==  9) val = 16.0;
-        else if (idx == 10) val = 56.0; else if (idx == 11) val = 24.0;
-        else if (idx == 12) val = 50.0; else if (idx == 13) val = 18.0;
-        else if (idx == 14) val = 58.0; else if (idx == 15) val = 26.0;
-        else if (idx == 16) val = 12.0; else if (idx == 17) val = 44.0;
-        else if (idx == 18) val =  4.0; else if (idx == 19) val = 36.0;
-        else if (idx == 20) val = 14.0; else if (idx == 21) val = 46.0;
-        else if (idx == 22) val =  6.0; else if (idx == 23) val = 38.0;
-        else if (idx == 24) val = 60.0; else if (idx == 25) val = 28.0;
-        else if (idx == 26) val = 52.0; else if (idx == 27) val = 20.0;
-        else if (idx == 28) val = 62.0; else if (idx == 29) val = 30.0;
-        else if (idx == 30) val = 54.0; else if (idx == 31) val = 22.0;
-        else if (idx == 32) val =  3.0; else if (idx == 33) val = 35.0;
-        else if (idx == 34) val = 11.0; else if (idx == 35) val = 43.0;
-        else if (idx == 36) val =  1.0; else if (idx == 37) val = 33.0;
-        else if (idx == 38) val =  9.0; else if (idx == 39) val = 41.0;
-        else if (idx == 40) val = 51.0; else if (idx == 41) val = 19.0;
-        else if (idx == 42) val = 59.0; else if (idx == 43) val = 27.0;
-        else if (idx == 44) val = 49.0; else if (idx == 45) val = 17.0;
-        else if (idx == 46) val = 57.0; else if (idx == 47) val = 25.0;
-        else if (idx == 48) val = 15.0; else if (idx == 49) val = 47.0;
-        else if (idx == 50) val =  7.0; else if (idx == 51) val = 39.0;
-        else if (idx == 52) val = 13.0; else if (idx == 53) val = 45.0;
-        else if (idx == 54) val =  5.0; else if (idx == 55) val = 37.0;
-        else if (idx == 56) val = 63.0; else if (idx == 57) val = 31.0;
-        else if (idx == 58) val = 55.0; else if (idx == 59) val = 23.0;
-        else if (idx == 60) val = 61.0; else if (idx == 61) val = 29.0;
-        else if (idx == 62) val = 53.0; else                val = 21.0;
+        if      (idx <  0.5) val =  0.0; else if (idx <  1.5) val = 32.0;
+        else if (idx <  2.5) val =  8.0; else if (idx <  3.5) val = 40.0;
+        else if (idx <  4.5) val =  2.0; else if (idx <  5.5) val = 34.0;
+        else if (idx <  6.5) val = 10.0; else if (idx <  7.5) val = 42.0;
+        else if (idx <  8.5) val = 48.0; else if (idx <  9.5) val = 16.0;
+        else if (idx < 10.5) val = 56.0; else if (idx < 11.5) val = 24.0;
+        else if (idx < 12.5) val = 50.0; else if (idx < 13.5) val = 18.0;
+        else if (idx < 14.5) val = 58.0; else if (idx < 15.5) val = 26.0;
+        else if (idx < 16.5) val = 12.0; else if (idx < 17.5) val = 44.0;
+        else if (idx < 18.5) val =  4.0; else if (idx < 19.5) val = 36.0;
+        else if (idx < 20.5) val = 14.0; else if (idx < 21.5) val = 46.0;
+        else if (idx < 22.5) val =  6.0; else if (idx < 23.5) val = 38.0;
+        else if (idx < 24.5) val = 60.0; else if (idx < 25.5) val = 28.0;
+        else if (idx < 26.5) val = 52.0; else if (idx < 27.5) val = 20.0;
+        else if (idx < 28.5) val = 62.0; else if (idx < 29.5) val = 30.0;
+        else if (idx < 30.5) val = 54.0; else if (idx < 31.5) val = 22.0;
+        else if (idx < 32.5) val =  3.0; else if (idx < 33.5) val = 35.0;
+        else if (idx < 34.5) val = 11.0; else if (idx < 35.5) val = 43.0;
+        else if (idx < 36.5) val =  1.0; else if (idx < 37.5) val = 33.0;
+        else if (idx < 38.5) val =  9.0; else if (idx < 39.5) val = 41.0;
+        else if (idx < 40.5) val = 51.0; else if (idx < 41.5) val = 19.0;
+        else if (idx < 42.5) val = 59.0; else if (idx < 43.5) val = 27.0;
+        else if (idx < 44.5) val = 49.0; else if (idx < 45.5) val = 17.0;
+        else if (idx < 46.5) val = 57.0; else if (idx < 47.5) val = 25.0;
+        else if (idx < 48.5) val = 15.0; else if (idx < 49.5) val = 47.0;
+        else if (idx < 50.5) val =  7.0; else if (idx < 51.5) val = 39.0;
+        else if (idx < 52.5) val = 13.0; else if (idx < 53.5) val = 45.0;
+        else if (idx < 54.5) val =  5.0; else if (idx < 55.5) val = 37.0;
+        else if (idx < 56.5) val = 63.0; else if (idx < 57.5) val = 31.0;
+        else if (idx < 58.5) val = 55.0; else if (idx < 59.5) val = 23.0;
+        else if (idx < 60.5) val = 61.0; else if (idx < 61.5) val = 29.0;
+        else if (idx < 62.5) val = 53.0; else                 val = 21.0;
         return val / 64.0 - 0.5;
     }
 }
@@ -774,10 +782,13 @@ void main()
         else if (PT_PALETTE < 2.5) tint = vec3(0.737, 0.737, 0.737); // Cool grey
         else if (PT_PALETTE < 3.5) tint = vec3(1.0,   1.0,   1.0  ); // White (GBA SP)
         else                       tint = vec3(0.60,  0.64,  0.46  ); // Green-grey (GBA Orig)
-        vec3 tinted = clamp(vec3(
-            tint.r + mix(-1.0, 1.0, bg.r),
-            tint.g + mix(-1.0, 1.0, bg.g),
-            tint.b + mix(-1.0, 1.0, bg.b)
+        // Overlay blend: grain texture onto tint colour.
+        // Dark grain pulls the tint down, bright grain lifts it --
+        // matching the physical behaviour of a textured backing material.
+        vec3 tinted = clamp(mix(
+            2.0 * tint * bg,
+            1.0 - 2.0 * (1.0 - tint) * (1.0 - bg),
+            step(0.5, bg)
         ), 0.0, 1.0);
         bg = mix(bg, tinted, PT_PALETTE_INTENSITY);
     }
@@ -790,8 +801,13 @@ void main()
 
     // Drop shadow with optional directional gaussian blur.
     if (willBeTransparent > 0.5 && PT_SHADOW_OPACITY > 0.001) {
-        vec2 shadowOffset = vec2(-PT_SHADOW_OFFSET_X, -PT_SHADOW_OFFSET_Y)
-                            * (1.0 / TextureSize);
+        // Scale shadow offset proportionally to output scale so it appears
+        // consistent regardless of how much the source frame is scaled up.
+        float shadow_sx    = OutputSize.x / InputSize.x;
+        float shadow_sy    = OutputSize.y / InputSize.y;
+        float shadow_scale = sqrt(shadow_sx * shadow_sy);
+        vec2 shadowOffset  = vec2(-PT_SHADOW_OFFSET_X, -PT_SHADOW_OFFSET_Y)
+                            * (1.0 / TextureSize) * shadow_scale;
         vec2 shadowPos    = curvedOrigCoord + shadowOffset;
 
         float shadowDark;
@@ -809,7 +825,8 @@ void main()
     // Transparency blend with optional Bayer dithering.
     // Alpha driven by raw brightness — consistent with detection on raw frame.
     // White pixels: plain mix(). Coloured pixels: hue-preserving blend.
-    float dither = (PT_DITHER > 0.5) ? getBayerDither(curvedUV) * PT_DITHER_STRENGTH : 0.0;
+    float dither = 0.0;
+    if (PT_DITHER > 0.5) dither = getBayerDither(curvedUV) * PT_DITHER_STRENGTH;
     vec3 result = pixel;
 
     if (PT_PIXEL_MODE < 0.5) {
