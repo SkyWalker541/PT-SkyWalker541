@@ -1,6 +1,6 @@
 # PT SkyWalker541 Pro
 ### Pixel Transparency Shader for RetroArch — GLSL Pro Version
-**by SkyWalker541 | v1.5.0 | GLSL (.glslp) — works on gl / glcore drivers**
+**by SkyWalker541 | v1.5.1 | GLSL (.glslp) — works on gl / glcore drivers**
 
 ---
 
@@ -10,7 +10,7 @@ On modern displays and emulators, those same pixels render as bright white, whic
 
 > **Looking for the lighter version?** `PT_SkyWalker541.glslp` is a simpler shader without shadow blur, halation, dithering, or curvature — better suited to modest hardware. Both versions are in the PT_SkyWalker541 repository.
 
-> **On NextUI / minarch?** **PT_SkyWalker541_Aspect** and **PT_SkyWalker541_Integer** are purpose-built versions for NextUI on the TrimUI Brick. Both are in the PT_SkyWalker541 repository.
+> **On NextUI / minarch?** **PT_SkyWalker541_Aspect** and **PT_SkyWalker541_Integer** are purpose-built versions for NextUI / minarch. Both are in the PT_SkyWalker541 repository.
 
 > **Looking for the Slang version?** Use `PT_SkyWalker541_Pro.slangp` if your RetroArch video driver is set to Vulkan, glcore, D3D11, D3D12, or Metal. Both versions produce identical output.
 
@@ -74,11 +74,11 @@ The original DMG and Pocket both used a very slow, ghosting LCD with no backligh
 
 | Parameter | Menu label | Value |
 |---|---|---|
-| PT_SYSTEM | == PT SkyWalker541 Pro v1.5.0 == System (...) | 1 (GB) |
+| PT_SYSTEM | == PT SkyWalker541 Pro v1.5.1 == System (...) | 1 (GB) |
 | PT_SENSITIVITY |      ↳ Manual threshold (PT_SYSTEM=0 only) | 0.85 *(default — only active when PT_SYSTEM = 0)* |
 | PT_PIXEL_MODE | == Transparency mode == (0=White, 1=Bright, 2=All) | 0 (White only) |
 | PT_BASE_ALPHA |      ↳ Base transparency amount | 0.20 |
-| PT_WHITE_TRANSPARENCY |      ↳ White pixel min transparency | 0.50 |
+| PT_WHITE_TRANSPARENCY |      ↳ White pixel min transparency | 0.20 |
 | PT_BRIGHTNESS_MODE | `PT_BRIGHTNESS_MODE_DEFAULT` | 0 (Simple) *(edit in shader)* |
 | PT_PALETTE | == Background tint == (0=Off, 1=Pocket, ...) | 1 (Pocket grey) |
 | PT_PALETTE_INTENSITY | `PT_PALETTE_INTENSITY_DEFAULT` | 1.00 *(edit in shader)* |
@@ -86,8 +86,8 @@ The original DMG and Pocket both used a very slow, ghosting LCD with no backligh
 | PT_GRAIN_INTENSITY | `PT_GRAIN_INTENSITY_DEFAULT` | 0.10 *(edit in shader)* |
 | PT_GRAIN_SCALE | `PT_GRAIN_SCALE_DEFAULT` | 0.30 *(edit in shader)* |
 | PT_PIXEL_BORDER | == Pixel border == (0=Off, 1=Subtle, 2=Moderate, 3=Strong) | 1 (Subtle) |
-| PT_SHADOW_OFFSET_X | `PT_SHADOW_OFFSET_X_DEFAULT` | 1.0 *(edit in shader)* |
-| PT_SHADOW_OFFSET_Y | `PT_SHADOW_OFFSET_Y_DEFAULT` | 1.0 *(edit in shader)* |
+| PT_SHADOW_OFFSET_X | `PT_SHADOW_OFFSET_X_DEFAULT` | 2.0 *(edit in shader)* |
+| PT_SHADOW_OFFSET_Y | `PT_SHADOW_OFFSET_Y_DEFAULT` | 2.0 *(edit in shader)* |
 | PT_SHADOW_OPACITY | == Shadow opacity (0=off) | 0.30 |
 | PT_SHADOW_BLUR |      ↳ Shadow blur amount (0=off) | 1.0 |
 | PT_SHADOW_BLUR_RADIUS | `PT_SHADOW_BLUR_RADIUS_DEFAULT` | 1.0 *(edit in shader)* |
@@ -122,11 +122,11 @@ Similar LCD construction to the original GB but with improved colour response an
 
 | Parameter | Menu label | Value |
 |---|---|---|
-| PT_SYSTEM | == PT SkyWalker541 Pro v1.5.0 == System (...) | 2 (GBC) |
+| PT_SYSTEM | == PT SkyWalker541 Pro v1.5.1 == System (...) | 2 (GBC) |
 | PT_SENSITIVITY |      ↳ Manual threshold (PT_SYSTEM=0 only) | 0.85 *(default — only active when PT_SYSTEM = 0)* |
 | PT_PIXEL_MODE | == Transparency mode == (0=White, 1=Bright, 2=All) | 0 (White only) |
 | PT_BASE_ALPHA |      ↳ Base transparency amount | 0.20 |
-| PT_WHITE_TRANSPARENCY |      ↳ White pixel min transparency | 0.50 |
+| PT_WHITE_TRANSPARENCY |      ↳ White pixel min transparency | 0.20 |
 | PT_BRIGHTNESS_MODE | `PT_BRIGHTNESS_MODE_DEFAULT` | 0 (Simple) *(edit in shader)* |
 | PT_PALETTE | == Background tint == (0=Off, 1=Pocket, ...) | 1 (Pocket grey) |
 | PT_PALETTE_INTENSITY | `PT_PALETTE_INTENSITY_DEFAULT` | 1.00 *(edit in shader)* |
@@ -134,8 +134,8 @@ Similar LCD construction to the original GB but with improved colour response an
 | PT_GRAIN_SCALE | `PT_GRAIN_SCALE_DEFAULT` | 0.25 *(edit in shader)* |
 | PT_DARK_FILTER_LEVEL | == Dark color filter (0=off) | 10 *(optional — softens aggressive GBC colour palettes)* |
 | PT_PIXEL_BORDER | == Pixel border == (0=Off, 1=Subtle, 2=Moderate, 3=Strong) | 1 (Subtle) |
-| PT_SHADOW_OFFSET_X | `PT_SHADOW_OFFSET_X_DEFAULT` | 1.0 *(edit in shader)* |
-| PT_SHADOW_OFFSET_Y | `PT_SHADOW_OFFSET_Y_DEFAULT` | 1.0 *(edit in shader)* |
+| PT_SHADOW_OFFSET_X | `PT_SHADOW_OFFSET_X_DEFAULT` | 2.0 *(edit in shader)* |
+| PT_SHADOW_OFFSET_Y | `PT_SHADOW_OFFSET_Y_DEFAULT` | 2.0 *(edit in shader)* |
 | PT_SHADOW_OPACITY | == Shadow opacity (0=off) | 0.25 |
 | PT_SHADOW_BLUR |      ↳ Shadow blur amount (0=off) | 1.0 |
 | PT_SHADOW_BLUR_RADIUS | `PT_SHADOW_BLUR_RADIUS_DEFAULT` | 1.0 *(edit in shader)* |
@@ -170,11 +170,11 @@ The GBA SP used a front-lit screen — dramatically brighter and more vivid than
 
 | Parameter | Menu label | Value |
 |---|---|---|
-| PT_SYSTEM | == PT SkyWalker541 Pro v1.5.0 == System (...) | 3 (GBA SP) |
+| PT_SYSTEM | == PT SkyWalker541 Pro v1.5.1 == System (...) | 3 (GBA SP) |
 | PT_SENSITIVITY |      ↳ Manual threshold (PT_SYSTEM=0 only) | 0.85 *(default — only active when PT_SYSTEM = 0)* |
 | PT_PIXEL_MODE | == Transparency mode == (0=White, 1=Bright, 2=All) | 0 (White only) |
 | PT_BASE_ALPHA |      ↳ Base transparency amount | 0.15 |
-| PT_WHITE_TRANSPARENCY |      ↳ White pixel min transparency | 0.45 |
+| PT_WHITE_TRANSPARENCY |      ↳ White pixel min transparency | 0.20 |
 | PT_BRIGHTNESS_MODE | `PT_BRIGHTNESS_MODE_DEFAULT` | 1 (Perceptual) *(edit in shader)* |
 | PT_PALETTE | == Background tint == (0=Off, 1=Pocket, ...) | 3 (White) |
 | PT_PALETTE_INTENSITY | `PT_PALETTE_INTENSITY_DEFAULT` | 1.00 *(edit in shader)* |
@@ -182,8 +182,8 @@ The GBA SP used a front-lit screen — dramatically brighter and more vivid than
 | PT_GRAIN_INTENSITY | `PT_GRAIN_INTENSITY_DEFAULT` | 0.03 *(edit in shader)* |
 | PT_GRAIN_SCALE | `PT_GRAIN_SCALE_DEFAULT` | 0.15 *(edit in shader)* |
 | PT_PIXEL_BORDER | == Pixel border == (0=Off, 1=Subtle, 2=Moderate, 3=Strong) | 0 (Off) |
-| PT_SHADOW_OFFSET_X | `PT_SHADOW_OFFSET_X_DEFAULT` | 1.0 *(edit in shader)* |
-| PT_SHADOW_OFFSET_Y | `PT_SHADOW_OFFSET_Y_DEFAULT` | 1.0 *(edit in shader)* |
+| PT_SHADOW_OFFSET_X | `PT_SHADOW_OFFSET_X_DEFAULT` | 2.0 *(edit in shader)* |
+| PT_SHADOW_OFFSET_Y | `PT_SHADOW_OFFSET_Y_DEFAULT` | 2.0 *(edit in shader)* |
 | PT_SHADOW_OPACITY | == Shadow opacity (0=off) | 0.20 |
 | PT_SHADOW_BLUR |      ↳ Shadow blur amount (0=off) | 1.5 |
 | PT_SHADOW_BLUR_RADIUS | `PT_SHADOW_BLUR_RADIUS_DEFAULT` | 1.0 *(edit in shader)* |
@@ -222,11 +222,11 @@ The original GBA had a dim, washed-out reflective screen with no backlight — n
 
 | Parameter | Menu label | Value |
 |---|---|---|
-| PT_SYSTEM | == PT SkyWalker541 Pro v1.5.0 == System (...) | 4 (GBA Orig) |
+| PT_SYSTEM | == PT SkyWalker541 Pro v1.5.1 == System (...) | 4 (GBA Orig) |
 | PT_SENSITIVITY |      ↳ Manual threshold (PT_SYSTEM=0 only) | 0.85 *(default — only active when PT_SYSTEM = 0)* |
 | PT_PIXEL_MODE | == Transparency mode == (0=White, 1=Bright, 2=All) | 0 (White only) |
 | PT_BASE_ALPHA |      ↳ Base transparency amount | 0.25 |
-| PT_WHITE_TRANSPARENCY |      ↳ White pixel min transparency | 0.55 |
+| PT_WHITE_TRANSPARENCY |      ↳ White pixel min transparency | 0.20 |
 | PT_BRIGHTNESS_MODE | `PT_BRIGHTNESS_MODE_DEFAULT` | 1 (Perceptual) *(edit in shader)* |
 | PT_PALETTE | == Background tint == (0=Off, 1=Pocket, ...) | 4 (Green-grey) |
 | PT_PALETTE_INTENSITY | `PT_PALETTE_INTENSITY_DEFAULT` | 1.00 *(edit in shader)* |
@@ -234,8 +234,8 @@ The original GBA had a dim, washed-out reflective screen with no backlight — n
 | PT_GRAIN_INTENSITY | `PT_GRAIN_INTENSITY_DEFAULT` | 0.08 *(edit in shader)* |
 | PT_GRAIN_SCALE | `PT_GRAIN_SCALE_DEFAULT` | 0.20 *(edit in shader)* |
 | PT_PIXEL_BORDER | == Pixel border == (0=Off, 1=Subtle, 2=Moderate, 3=Strong) | 0 (Off) |
-| PT_SHADOW_OFFSET_X | `PT_SHADOW_OFFSET_X_DEFAULT` | 1.0 *(edit in shader)* |
-| PT_SHADOW_OFFSET_Y | `PT_SHADOW_OFFSET_Y_DEFAULT` | 1.0 *(edit in shader)* |
+| PT_SHADOW_OFFSET_X | `PT_SHADOW_OFFSET_X_DEFAULT` | 2.0 *(edit in shader)* |
+| PT_SHADOW_OFFSET_Y | `PT_SHADOW_OFFSET_Y_DEFAULT` | 2.0 *(edit in shader)* |
 | PT_SHADOW_OPACITY | == Shadow opacity (0=off) | 0.20 |
 | PT_SHADOW_BLUR |      ↳ Shadow blur amount (0=off) | 1.0 |
 | PT_SHADOW_BLUR_RADIUS | `PT_SHADOW_BLUR_RADIUS_DEFAULT` | 1.0 *(edit in shader)* |
@@ -284,7 +284,7 @@ The most important setting. Set this first. Determines the white detection thres
 | Value | System | Threshold |
 |---|---|---|
 | 0 | Manual | Use PT_SENSITIVITY to set your own threshold |
-| 1 | GB / Pocket | 0.88 — no backlight, aggressive detection |
+| 1 | GB / Pocket | 0.90 — no backlight, aggressive detection |
 | 2 | GBC | 0.85 — no backlight, moderate |
 | 3 | GBA SP | 0.80 — front-lit, conservative |
 | 4 | GBA Original | 0.75 — no backlight, dim whites, most aggressive |
@@ -320,7 +320,7 @@ Controls how transparent detected pixels become. Lower = more opaque, higher = m
 ---
 
 ### White Pixel Transparency Boost — `PT_WHITE_TRANSPARENCY`
-**Default: 0.50 | Range: 0.00 – 1.00**
+**Default: 0.20 | Range: 0.00 – 1.00**
 
 Sets a minimum transparency level specifically for confirmed white pixels. Ensures clearly white pixels are always at least this transparent, regardless of PT_BASE_ALPHA.
 
@@ -398,7 +398,7 @@ Simulates the physical gap between individual LCD dots on original hardware. Use
 ---
 
 ### Shadow X Offset — `PT_SHADOW_OFFSET_X`
-**Default: 1.0 | Range: -10.0 – 10.0**
+**Default: 2.0 | Range: -10.0 – 10.0**
 > **GLSL — hidden parameter:** Not available in the RetroArch shader menu. Edit `PT_SHADOW_OFFSET_X_DEFAULT` in the **Advanced Defaults** block near the top of `PT_SkyWalker541_Pro.glsl`.
 
 Horizontal position of the drop shadow in source texels. The shadow is cast by opaque pixels onto the backing behind them and is visible through transparent areas. Positive = right, negative = left. Set PT_SHADOW_OPACITY to 0 to disable shadows entirely and skip all shadow texture taps.
@@ -406,7 +406,7 @@ Horizontal position of the drop shadow in source texels. The shadow is cast by o
 ---
 
 ### Shadow Y Offset — `PT_SHADOW_OFFSET_Y`
-**Default: 1.0 | Range: -10.0 – 10.0**
+**Default: 2.0 | Range: -10.0 – 10.0**
 > **GLSL — hidden parameter:** Not available in the RetroArch shader menu. Edit `PT_SHADOW_OFFSET_Y_DEFAULT` in the **Advanced Defaults** block near the top of `PT_SkyWalker541_Pro.glsl`.
 
 Vertical position of the drop shadow in source texels. Positive = down, negative = up.
@@ -553,7 +553,7 @@ To change a default value, open `PT_SkyWalker541_Pro.glsl` in any text editor an
 #define PT_SENSITIVITY        0.85
 #define PT_PIXEL_MODE         0.0
 #define PT_BASE_ALPHA         0.20
-#define PT_WHITE_TRANSPARENCY 0.50
+#define PT_WHITE_TRANSPARENCY 0.20
 #define PT_BRIGHTNESS_MODE_DEFAULT     0.0
 #define PT_PALETTE            1.0
 #define PT_PALETTE_INTENSITY_DEFAULT   1.0
@@ -561,8 +561,8 @@ To change a default value, open `PT_SkyWalker541_Pro.glsl` in any text editor an
 #define PT_GRAIN_SCALE_DEFAULT         0.25
 #define PT_DARK_FILTER_LEVEL  0.0
 #define PT_PIXEL_BORDER       1.0
-#define PT_SHADOW_OFFSET_X_DEFAULT     1.0
-#define PT_SHADOW_OFFSET_Y_DEFAULT     1.0
+#define PT_SHADOW_OFFSET_X_DEFAULT     2.0
+#define PT_SHADOW_OFFSET_Y_DEFAULT     2.0
 #define PT_SHADOW_OPACITY     0.30
 #define PT_SHADOW_BLUR        1.0
 #define PT_SHADOW_BLUR_RADIUS_DEFAULT  1.0
@@ -601,11 +601,11 @@ Requires a RetroArch video driver that supports GLSL shaders: **gl** or **glcore
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
-> **Version note:** All PT_SkyWalker541 variants — Standard, Pro, and NextUI — share a unified version number. v1.5.0 represents the same release generation across all three.
+> **Version note:** All PT_SkyWalker541 variants — Standard, Pro, and NextUI — share a unified version number. v1.5.1 represents the same release generation across all three.
 
 | Version | Notes |
 |---|---|
-| v1.5.0 | Unified version number across all PT_SkyWalker541 variants (Standard, Pro, NextUI). Added cross-references between variant READMEs |
+| v1.5.1 | Fixed GLES compile failure on Android: `getBayerDither()` rewrote `int`/`ivec2` types as pure `float`/`mod()`/`floor()` — GLSL ES 2.0 does not support integer types in fragment shaders. No change to dither output or any other logic. Also: unified version number across all variants, added cross-references between variant READMEs |
 | v1.1.0 | Transparency pipeline improvements: soft detection edge (smoothstep over [threshold, threshold+0.08] replaces hard step — eliminates fringing at detection boundary); alpha now driven by raw pre-correction brightness for consistency with detection; alpha scales with distance above threshold rather than flat base + intensity/3; white pixels now use plain mix() blend path, coloured pixels (Bright/All modes) use hue-preserving blend — correct path for each case |
 | v1.0.0 | Initial Pro release. Directional gaussian shadow blur (15-tap, spread along shadow direction vector with gaussian weights), LCD halation with adjustable radius and warmth, Bayer subpixel dithering at blend boundary (2×2 / 4×4 / 8×8 matrix), screen curvature with edge chromatic fringing, improved background grain with adjustable intensity and scale, PT_SYSTEM expanded to include GBA SP (3) and GBA Original (4), green-grey palette option added (PT_PALETTE = 4) |
 

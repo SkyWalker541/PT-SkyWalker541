@@ -1,6 +1,6 @@
 # PT SkyWalker541 Pro
 ### Pixel Transparency Shader for RetroArch — Slang Pro Version
-**by SkyWalker541 | v1.5.0 | Slang (.slangp) — works on Vulkan / glcore / D3D11 / Metal**
+**by SkyWalker541 | v1.5.1 | Slang (.slangp) — works on Vulkan / glcore / D3D11 / Metal**
 
 ---
 
@@ -10,7 +10,7 @@ On modern displays and emulators, those same pixels render as bright white, whic
 
 > **Looking for the lighter version?** `PT_SkyWalker541.slangp` is a simpler shader without shadow blur, halation, dithering, or curvature — better suited to modest hardware. Both versions are in the PT_SkyWalker541 repository.
 
-> **On NextUI / minarch?** **PT_SkyWalker541_Aspect** and **PT_SkyWalker541_Integer** are purpose-built versions for NextUI on the TrimUI Brick. Both are in the PT_SkyWalker541 repository.
+> **On NextUI / minarch?** **PT_SkyWalker541_Aspect** and **PT_SkyWalker541_Integer** are purpose-built versions for NextUI / minarch. Both are in the PT_SkyWalker541 repository.
 
 > **Looking for the GLSL version?** Use `PT_SkyWalker541_Pro.glslp` if your RetroArch video driver is set to gl. Both versions produce identical output.
 
@@ -284,7 +284,7 @@ The most important setting. Set this first. Determines the white detection thres
 | Value | System | Threshold |
 |---|---|---|
 | 0 | Manual | Use PT_SENSITIVITY to set your own threshold |
-| 1 | GB / Pocket | 0.88 — no backlight, aggressive detection |
+| 1 | GB / Pocket | 0.90 — no backlight, aggressive detection |
 | 2 | GBC | 0.85 — no backlight, moderate |
 | 3 | GBA SP | 0.80 — front-lit, conservative |
 | 4 | GBA Original | 0.75 — no backlight, dim whites, most aggressive |
@@ -320,7 +320,7 @@ Controls how transparent detected pixels become. Lower = more opaque, higher = m
 ---
 
 ### White Pixel Transparency Boost — `PT_WHITE_TRANSPARENCY`
-**Default: 0.50 | Range: 0.00 – 1.00**
+**Default: 0.20 | Range: 0.00 – 1.00**
 
 Sets a minimum transparency level specifically for confirmed white pixels. Ensures clearly white pixels are always at least this transparent, regardless of PT_BASE_ALPHA.
 
@@ -394,14 +394,14 @@ Simulates the physical gap between individual LCD dots on original hardware. Use
 ---
 
 ### Shadow X Offset — `PT_SHADOW_OFFSET_X`
-**Default: 1.0 | Range: -10.0 – 10.0**
+**Default: 2.0 | Range: -10.0 – 10.0**
 
 Horizontal position of the drop shadow in source texels. The shadow is cast by opaque pixels onto the backing behind them and is visible through transparent areas. Positive = right, negative = left. Set PT_SHADOW_OPACITY to 0 to disable shadows entirely and skip all shadow texture taps.
 
 ---
 
 ### Shadow Y Offset — `PT_SHADOW_OFFSET_Y`
-**Default: 1.0 | Range: -10.0 – 10.0**
+**Default: 2.0 | Range: -10.0 – 10.0**
 
 Vertical position of the drop shadow in source texels. Positive = down, negative = up.
 
@@ -567,11 +567,12 @@ Works on any RetroArch video driver that supports Slang shaders: **Vulkan**, **g
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
-> **Version note:** All PT_SkyWalker541 variants — Standard, Pro, and NextUI — share a unified version number. v1.5.0 represents the same release generation across all three.
+> **Version note:** All PT_SkyWalker541 variants — Standard, Pro, and NextUI — share a unified version number. v1.5.1 represents the same release generation across all three.
 
 | Version | Notes |
 |---|---|
-| v1.5.0 | Unified version number across all PT_SkyWalker541 variants (Standard, Pro, NextUI). Added cross-references between variant READMEs |
+| v1.5.2 | Tuned defaults for accuracy on modern displays: PT_PIXEL_MODE reverted to 0 (White only), PT_WHITE_TRANSPARENCY lowered to 0.20, PT_BRIGHTNESS_MODE reverted to 0 (Simple), PT_SHADOW_OPACITY lowered to 0.30, PT_SHADOW_OFFSET default set to 2.0, GB detection threshold raised from 0.88 to 0.90. Shadow offset now scales with output resolution for consistent appearance across all display sizes. Tint formula rewritten as overlay blend |
+| v1.5.1 | Fixed Slang shader failing to load on Android/Vulkan. `push_constant` restructured: builtins moved in alongside 15 menu params — 112 bytes, within the 128-byte Vulkan minimum. The 13 advanced sub-params moved to `#define` constants (ADVANCED DEFAULTS block, same as GLSL version). `getBayerDither()` rewritten from `ivec2`/`int` to pure `float` for mobile Vulkan driver compatibility. Also: unified version number across all variants, added cross-references between variant READMEs |
 | v1.1.0 | Transparency pipeline improvements: soft detection edge (smoothstep over [threshold, threshold+0.08] replaces hard step — eliminates fringing at detection boundary); alpha now driven by raw pre-correction brightness for consistency with detection; alpha scales with distance above threshold rather than flat base + intensity/3; white pixels now use plain mix() blend path, coloured pixels (Bright/All modes) use hue-preserving blend — correct path for each case |
 | v1.0.0 | Initial Pro release. Directional gaussian shadow blur (15-tap, spread along shadow direction vector with gaussian weights), LCD halation with adjustable radius and warmth, Bayer subpixel dithering at blend boundary (2×2 / 4×4 / 8×8 matrix), screen curvature with edge chromatic fringing, improved background grain with adjustable intensity and scale, PT_SYSTEM expanded to include GBA SP (3) and GBA Original (4), green-grey palette option added (PT_PALETTE = 4) |
 
