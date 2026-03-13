@@ -69,7 +69,7 @@
 // └──────────────────────────────────┘
 #pragma parameter PT_PIXEL_MODE      "Pixel mode (0=White, 1=Bright, 2=All)"  0.0 0.0 2.0 1.0
 #pragma parameter PT_BASE_ALPHA      "  Base transparency amount"              0.20 0.0 1.0 0.01
-#pragma parameter PT_WHITE_TRANSPARENCY "  White pixel min transparency"       0.50 0.0 1.0 0.01
+#pragma parameter PT_WHITE_TRANSPARENCY "  White pixel min transparency"       0.20 0.0 1.0 0.01
 
 // ┌──────────────────────────────────┐
 // │  Brightness                      │
@@ -95,8 +95,8 @@
 // ┌──────────────────────────────────┐
 // │  Drop Shadow                     │
 // └──────────────────────────────────┘
-#pragma parameter PT_SHADOW_OFFSET_X "Shadow X offset"                        1.0 -10.0 10.0 0.5
-#pragma parameter PT_SHADOW_OFFSET_Y "Shadow Y offset"                        1.0 -10.0 10.0 0.5
+#pragma parameter PT_SHADOW_OFFSET_X "Shadow X offset"                        2.0 -10.0 10.0 0.5
+#pragma parameter PT_SHADOW_OFFSET_Y "Shadow Y offset"                        2.0 -10.0 10.0 0.5
 #pragma parameter PT_SHADOW_OPACITY  "Shadow opacity (0=off)"                 0.30 0.0 1.0 0.01
 
 // ┌──────────────────────────────────┐
@@ -211,14 +211,14 @@ uniform COMPAT_PRECISION float PT_VIGNETTE;
 #define PT_SENSITIVITY        0.85
 #define PT_PIXEL_MODE         0.0
 #define PT_BASE_ALPHA         0.20
-#define PT_WHITE_TRANSPARENCY 0.50
+#define PT_WHITE_TRANSPARENCY 0.20
 #define PT_BRIGHTNESS_MODE    0.0
 #define PT_PALETTE            1.0
 #define PT_PALETTE_INTENSITY  1.0
 #define PT_DARK_FILTER_LEVEL  0.0
 #define PT_PIXEL_BORDER       1.0
-#define PT_SHADOW_OFFSET_X    1.0
-#define PT_SHADOW_OFFSET_Y    1.0
+#define PT_SHADOW_OFFSET_X    2.0
+#define PT_SHADOW_OFFSET_Y    2.0
 #define PT_SHADOW_OPACITY     0.30
 #define PT_CHROMA             0.0
 #define PT_VIGNETTE           0.08
@@ -266,7 +266,7 @@ float getBrightness(vec3 c)
 float resolveThreshold()
 {
     if (PT_SYSTEM < 0.5) return PT_SENSITIVITY;
-    if (PT_SYSTEM < 1.5) return 0.88;
+    if (PT_SYSTEM < 1.5) return 0.90;
     if (PT_SYSTEM < 2.5) return 0.85;
     if (PT_SYSTEM < 3.5) return 0.80;
     return 0.75;
@@ -418,10 +418,13 @@ void main()
         } else {
             tint = vec3(1.0, 1.0, 1.0);       // White
         }
-        vec3 tinted = clamp(vec3(
-            tint.r + mix(-1.0, 1.0, bg.r),
-            tint.g + mix(-1.0, 1.0, bg.g),
-            tint.b + mix(-1.0, 1.0, bg.b)
+        // Overlay blend: grain texture onto tint colour.
+        // Dark grain pulls the tint down, bright grain lifts it --
+        // matching the physical behaviour of a textured backing material.
+        vec3 tinted = clamp(mix(
+            2.0 * tint * bg,
+            1.0 - 2.0 * (1.0 - tint) * (1.0 - bg),
+            step(0.5, bg)
         ), 0.0, 1.0);
         bg = mix(bg, tinted, PT_PALETTE_INTENSITY);
     }
@@ -438,8 +441,13 @@ void main()
 
     // Drop shadow — single tap on OrigTexture.
     if (willBeTransparent > 0.5 && PT_SHADOW_OPACITY > 0.001) {
+        // Scale shadow offset proportionally to output scale so it appears
+        // consistent regardless of how much the source frame is scaled up.
+        float shadow_sx      = OutputSize.x / InputSize.x;
+        float shadow_sy      = OutputSize.y / InputSize.y;
+        float shadow_scale   = sqrt(shadow_sx * shadow_sy);
         vec2  shadow_offset  = vec2(-PT_SHADOW_OFFSET_X, -PT_SHADOW_OFFSET_Y)
-                               * (1.0 / TextureSize);
+                               * (1.0 / TextureSize) * shadow_scale;
         float shadowDark     = 1.0 - getBrightness(COMPAT_TEXTURE(OrigTexture, orig_coord + shadow_offset).rgb);
         float shadowStrength = (shadowDark * shadowDark) * PT_SHADOW_OPACITY;
         bg = mix(bg, bg * 0.2, shadowStrength);
