@@ -1,7 +1,7 @@
 #version 450
 /*
 ╔══════════════════════════════════════════════════════════════════╗
-║  PT SkyWalker541  v1.5.0                                         ║
+║  PT SkyWalker541  v1.5.2                                         ║
 ║  by SkyWalker541  |  Written for RetroArch (Slang / Vulkan)      ║
 ╚══════════════════════════════════════════════════════════════════╝
 
@@ -90,14 +90,13 @@
 // ┌──────────────────────────────────┐
 // │  Drop Shadow                     │
 // └──────────────────────────────────┘
-#pragma parameter PT_SHADOW_OFFSET_X "Shadow X offset"                        2.0 -10.0 10.0 0.5
-#pragma parameter PT_SHADOW_OFFSET_Y "Shadow Y offset"                        2.0 -10.0 10.0 0.5
+#pragma parameter PT_SHADOW_OFFSET_X "Shadow X offset"                        1.0 -10.0 10.0 0.5
+#pragma parameter PT_SHADOW_OFFSET_Y "Shadow Y offset"                        1.0 -10.0 10.0 0.5
 #pragma parameter PT_SHADOW_OPACITY  "Shadow opacity (0=off)"                 0.30 0.0 1.0 0.01
 
 // ┌──────────────────────────────────┐
 // │  Post-Blend Effects              │
 // └──────────────────────────────────┘
-#pragma parameter PT_CHROMA          "Chromatic shift (0=off)"                0.0 0.0 1.0 0.01
 #pragma parameter PT_VIGNETTE        "Vignette strength (0=off)"              0.08 0.0 1.0 0.01
 
 // ╔══════════════════════════════════════════════════════════════╗
@@ -125,7 +124,6 @@ layout(push_constant) uniform Push {
     float PT_SHADOW_OFFSET_X;
     float PT_SHADOW_OFFSET_Y;
     float PT_SHADOW_OPACITY;
-    float PT_CHROMA;
     float PT_VIGNETTE;
 } params;
 
@@ -141,17 +139,11 @@ layout(std140, set = 0, binding = 0) uniform UBO {
 layout(location = 0) in  vec4 Position;
 layout(location = 1) in  vec2 TexCoord;
 layout(location = 0) out vec2 vTexCoord;
-layout(location = 1) out float vShadowScale;
 
 void main()
 {
-    gl_Position  = global.MVP * Position;
-    vTexCoord    = TexCoord;
-    // Scale shadow offset to output resolution so it appears consistent
-    // regardless of how much the source frame is being scaled up.
-    float sx     = params.OutputSize.x / params.SourceSize.x;
-    float sy     = params.OutputSize.y / params.SourceSize.y;
-    vShadowScale = sqrt(sx * sy);
+    gl_Position = global.MVP * Position;
+    vTexCoord   = TexCoord;
 }
 
 // ╔══════════════════════════════════════════════════════════════╗
@@ -160,7 +152,6 @@ void main()
 #pragma stage fragment
 
 layout(location = 0) in  vec2 vTexCoord;
-layout(location = 1) in  float vShadowScale;
 layout(location = 0) out vec4 FragColor;
 
 // Source:   colour-corrected processed frame (display output + shadow sampling)
@@ -177,6 +168,15 @@ layout(set = 0, binding = 3) uniform sampler2D Original;
 
 #define PI                      3.141592654
 #define BORDER_WIDTH_FACTOR_MAX 31.0
+
+// ┌──────────────────────────────────┐
+// │  Chromatic Shift (hidden)        │
+// │  Radial RGB channel separation.  │
+// │  Not exposed in the shader menu. │
+// │  Edit this value to adjust.      │
+// │  0.0 = off. Suggested: 0.3–0.8   │
+// └──────────────────────────────────┘
+#define PT_CHROMA_STRENGTH 0.0
 
 // ╔══════════════════════════════════════════════════════════════╗
 // ║  HELPER FUNCTIONS                                            ║
@@ -311,15 +311,6 @@ float pixelBorderFactor(vec2 coord)
 // │  Post-Blend Effects              │
 // └──────────────────────────────────┘
 
-// Chromatic shift — pure UV math, zero extra taps.
-vec3 applyChromaShift(vec3 color, vec2 coord)
-{
-    if (params.PT_CHROMA < 0.001) return color;
-    vec2  offset = (coord - 0.5) * params.PT_CHROMA * 0.02;
-    float r      = mix(color.r, color.r * (1.0 + offset.x), 0.5);
-    float b      = mix(color.b, color.b * (1.0 - offset.x), 0.5);
-    return clamp(vec3(r, color.g, b), 0.0, 1.0);
-}
 
 // Vignette — pure math, zero extra taps.
 vec3 applyVignette(vec3 color, vec2 coord)
@@ -329,6 +320,24 @@ vec3 applyVignette(vec3 color, vec2 coord)
     float dist     = dot(uv, uv);
     float vignette = 1.0 - dist * params.PT_VIGNETTE;
     return color * clamp(vignette, 0.0, 1.0);
+}
+
+// ┌──────────────────────────────────┐
+// │  Chromatic Shift                 │
+// └──────────────────────────────────┘
+
+// Radial RGB channel separation from screen centre.
+// R shifts outward, B shifts inward by the same amount.
+// Strength is in source texels. Only samples two extra taps.
+// Skipped entirely when PT_CHROMA_STRENGTH is 0.
+vec3 applyChroma(vec3 color, vec2 coord, sampler2D src, vec4 srcSize)
+{
+    if (PT_CHROMA_STRENGTH < 0.001) return color;
+    vec2 toCenter = coord - vec2(0.5);
+    vec2 offset   = toCenter * PT_CHROMA_STRENGTH * srcSize.zw;
+    float r = texture(src, coord + offset).r;
+    float b = texture(src, coord - offset).b;
+    return vec3(r, color.g, b);
 }
 
 // ╔══════════════════════════════════════════════════════════════╗
@@ -388,13 +397,23 @@ void main()
         willBeTransparent = 1.0;
     }
 
-    // Drop shadow — single tap on Original (raw frame, consistent with detection).
-    if (willBeTransparent > 0.5 && params.PT_SHADOW_OPACITY > 0.001) {
-        vec2  shadowPos      = snappedUV + vec2(-params.PT_SHADOW_OFFSET_X, -params.PT_SHADOW_OFFSET_Y)
-                               * params.SourceSize.zw * vShadowScale;
-        float shadowDark     = 1.0 - getBrightness(texture(Original, shadowPos).rgb);
-        float shadowStrength = (shadowDark * shadowDark) * params.PT_SHADOW_OPACITY;
-        bg = mix(bg, bg * 0.2, shadowStrength);
+    // Drop shadow — cast by every solid (non-white) pixel onto the backing behind it.
+    // Gated on shadow source being non-white rather than current pixel being transparent,
+    // so shadows appear at all sprite and tile edges regardless of local transparency.
+    if (params.PT_SHADOW_OPACITY > 0.001) {
+        vec2  shadowPos    = snappedUV + vec2(-params.PT_SHADOW_OFFSET_X, -params.PT_SHADOW_OFFSET_Y)
+                             * params.SourceSize.zw;
+        // Skip shadow if sample position is outside valid texture bounds —
+        // out-of-range UVs clamp to edge and produce false dark bars.
+        if (all(greaterThanEqual(shadowPos, vec2(0.0))) && all(lessThanEqual(shadowPos, vec2(1.0)))) {
+            vec3  shadowSrc      = texture(Original, shadowPos).rgb;
+            float shadowSrcWhite = isWhitePixel(shadowSrc, threshold);
+            if (shadowSrcWhite < 0.5) {
+                float shadowDark     = 1.0 - getBrightness(shadowSrc);
+                float shadowStrength = (shadowDark * shadowDark) * params.PT_SHADOW_OPACITY;
+                bg = mix(bg, bg * 0.2, shadowStrength);
+            }
+        }
     }
 
     // Transparency blend.
@@ -424,8 +443,8 @@ void main()
 
     // Post-blend effects.
     result = result * pixelBorderFactor(vTexCoord);
-    result = applyChromaShift(result, vTexCoord);
     result = applyVignette(result, vTexCoord);
+    result = applyChroma(result, vTexCoord, Source, params.SourceSize);
 
     FragColor = vec4(result, lcd.a);
 }
