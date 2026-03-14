@@ -166,10 +166,11 @@ NextUI thresholds differ because detection runs on the post-processed frame rath
 4. Apply the recommended settings from the relevant README
 
 **NextUI**
-1. Place the `.glsl` and `.cfg` files in your NextUI shaders folder
-2. Load the `.cfg` from the in-game shader menu
-3. Set `PT_SYSTEM` to match your target system
-4. Apply the recommended settings from `README_NextUI.md`
+1. Place the `.cfg` files in your NextUI shaders folder
+2. Place the `.glsl` files in the glsl subfolder inside your NextUI shaders folder
+3. Load the `.cfg` from the in-game shader menu
+4. Set `PT_SYSTEM` to match your target system
+5. Apply the recommended settings from `README_NextUI.md`
 
 ---
 
