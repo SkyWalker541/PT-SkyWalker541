@@ -1,6 +1,6 @@
 /*
 ╔══════════════════════════════════════════════════════════════════╗
-║  PT SkyWalker541 Aspect  v1.5.0                                  ║
+║  PT SkyWalker541 Aspect  v1.5.2                                  ║
 ║  by SkyWalker541  |  Written for NextUI / minarch               ║
 ╚══════════════════════════════════════════════════════════════════╝
 
@@ -121,7 +121,7 @@
            tint, eliminates slowdown.
 
   v1.0.6 - Replaced subpixel fringing with chromatic shift.
-           PT_FRINGE renamed to PT_CHROMA.
+           PT_CHROMA (chromatic shift) removed — does not apply to original hardware.
 
   v1.0.5 - Added PT_FRINGE (subpixel fringing) and PT_VIGNETTE.
 
@@ -145,7 +145,7 @@
 // └──────────────────────────────────┘
 // 0=Manual  1=GB  2=GBC  3=GBA
 // Thresholds pre-compensated for post-processing on NextUI.
-#pragma parameter PT_SYSTEM "== PT SkyWalker541 Aspect v1.5.0 == System (0=Manual, 1=GB, 2=GBC, 3=GBA SP, 4=GBA Orig)" 1.0 0.0 4.0 1.0
+#pragma parameter PT_SYSTEM "== PT SkyWalker541 Aspect v1.5.2 == System (0=Manual, 1=GB, 2=GBC, 3=GBA SP, 4=GBA Orig)" 1.0 0.0 4.0 1.0
 
 // ┌──────────────────────────────────┐
 // │  Sensitivity (Manual mode only)  │
@@ -202,10 +202,6 @@
 // ┌──────────────────────────────────┐
 // │  Post-Blend Effects              │
 // └──────────────────────────────────┘
-// Chromatic shift — simulates R/B channel misalignment of original LCD panels.
-// Pure UV math — zero extra texture samples. Set to 0 to disable.
-#pragma parameter PT_CHROMA "== Chromatic shift amount (0=OFF)" 0.20 0.0 1.0 0.01
-// Vignette — darkens edges/corners. Pure math — no extra texture samples.
 #pragma parameter PT_VIGNETTE "== Vignette strength (0=OFF)" 0.08 0.0 1.0 0.01
 
 // ╔══════════════════════════════════════════════════════════════╗
@@ -216,11 +212,9 @@
 #if __VERSION__ >= 130
 #define COMPAT_VARYING    out
 #define COMPAT_ATTRIBUTE  in
-#define COMPAT_TEXTURE    texture
 #else
 #define COMPAT_VARYING    varying
 #define COMPAT_ATTRIBUTE  attribute
-#define COMPAT_TEXTURE    texture2D
 #endif
 
 #ifdef GL_ES
@@ -305,7 +299,6 @@ uniform COMPAT_PRECISION float PT_PIXEL_BORDER;
 uniform COMPAT_PRECISION float PT_SHADOW_OFFSET_X;
 uniform COMPAT_PRECISION float PT_SHADOW_OFFSET_Y;
 uniform COMPAT_PRECISION float PT_SHADOW_OPACITY;
-uniform COMPAT_PRECISION float PT_CHROMA;
 uniform COMPAT_PRECISION float PT_VIGNETTE;
 #else
 #define PT_SYSTEM             1.0
@@ -318,10 +311,9 @@ uniform COMPAT_PRECISION float PT_VIGNETTE;
 #define PT_PALETTE_INTENSITY  1.0
 #define PT_DARK_FILTER_LEVEL  10.0
 #define PT_PIXEL_BORDER       1.0
-#define PT_SHADOW_OFFSET_X    2.0
-#define PT_SHADOW_OFFSET_Y    2.0
+#define PT_SHADOW_OFFSET_X    1.0
+#define PT_SHADOW_OFFSET_Y    1.0
 #define PT_SHADOW_OPACITY     0.30
-#define PT_CHROMA             0.20
 #define PT_VIGNETTE           0.08
 #endif
 
@@ -477,15 +469,6 @@ float pixelBorderFactor(vec2 coord)
 // │  Post-Blend Effects              │
 // └──────────────────────────────────┘
 
-// Chromatic shift — pure UV math, zero extra taps.
-vec3 applyChromaShift(vec3 color, vec2 coord)
-{
-    if (PT_CHROMA < 0.001) return color;
-    vec2 offset = (coord - 0.5) * PT_CHROMA * 0.02;
-    float r = mix(color.r, color.r * (1.0 + offset.x), 0.5);
-    float b = mix(color.b, color.b * (1.0 - offset.x), 0.5);
-    return clamp(vec3(r, color.g, b), 0.0, 1.0);
-}
 
 // Vignette — pure math, zero extra taps.
 vec3 applyVignette(vec3 color, vec2 coord)
@@ -559,23 +542,22 @@ void main()
         willBeTransparent = 1.0;
     }
 
-    if (willBeTransparent > 0.5 && PT_SHADOW_OPACITY > 0.001) {
-        // Single tap shadow — one sample at the offset position.
-        // No blur: at GB/GBC/GBA pixel scales, shadow edge softening is
-        // imperceptible at any typical display resolution — verified on
-        // 1024x768. Single tap matches the cost floor of the reference shaders.
-        // No white gate — if behind-pixel is white, shadowStrength ~ 0 and
-        // bg is unchanged. The math self-regulates.
-        // Scale shadow offset proportionally to output scale so it appears
-        // consistent regardless of how much the source frame is scaled up.
-        float shadow_sx  = OutputSize.x / InputSize.x;
-        float shadow_sy  = OutputSize.y / InputSize.y;
-        float shadow_scale = sqrt(shadow_sx * shadow_sy);
-        vec2 shadowPos   = TEX0.xy + vec2(-PT_SHADOW_OFFSET_X, -PT_SHADOW_OFFSET_Y) * InvTextureSize * shadow_scale;
-        float shadowDark     = 1.0 - getBrightness(COMPAT_TEXTURE(Source, shadowPos).rgb);
-        float shadowStrength = (shadowDark * shadowDark) * PT_SHADOW_OPACITY;
-
-        bg = mix(bg, bg * 0.2, shadowStrength);
+    // Drop shadow — cast by every solid (non-white) pixel onto the backing behind it.
+    // Gated on shadow source being non-white rather than current pixel being transparent,
+    // so shadows appear at all sprite and tile edges regardless of local transparency.
+    if (PT_SHADOW_OPACITY > 0.001) {
+        vec2  shadowPos    = TEX0.xy + vec2(-PT_SHADOW_OFFSET_X, -PT_SHADOW_OFFSET_Y) * InvTextureSize;
+        // Skip shadow if sample position is outside valid texture bounds —
+        // out-of-range UVs clamp to edge and produce false dark bars.
+        if (shadowPos.x >= 0.0 && shadowPos.x <= 1.0 && shadowPos.y >= 0.0 && shadowPos.y <= 1.0) {
+            vec3  shadowSrc      = COMPAT_TEXTURE(Source, shadowPos).rgb;
+            float shadowSrcWhite = isWhitePixel(shadowSrc, threshold);
+            if (shadowSrcWhite < 0.5) {
+                float shadowDark     = 1.0 - getBrightness(shadowSrc);
+                float shadowStrength = (shadowDark * shadowDark) * PT_SHADOW_OPACITY;
+                bg = mix(bg, bg * 0.2, shadowStrength);
+            }
+        }
     }
 
     // ------------------------------------------------------------------
@@ -603,7 +585,6 @@ void main()
     }
 
     result  = result * pixelBorderFactor(TEX0.xy);
-    result  = applyChromaShift(result, TEX0.xy);
     result  = applyVignette(result, TEX0.xy);
 
     FragColor = vec4(result, lcd.a);
