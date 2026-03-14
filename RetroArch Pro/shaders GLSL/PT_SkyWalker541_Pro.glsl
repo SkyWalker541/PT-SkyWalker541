@@ -1,8 +1,8 @@
 /*
-╔══════════════════════════════════════════════════════════════════╗
-║  PT SkyWalker541 Pro  v1.5.2                                     ║
-║  by SkyWalker541  |  Written for RetroArch (GLSL)                ║
-╚══════════════════════════════════════════════════════════════════╝
+
+  PT SkyWalker541 Pro  v1.5.2
+  by SkyWalker541  |  Written for RetroArch (GLSL)
+
 
   High-end version targeting powerful handhelds and PC. All Pro
   features can be disabled individually for performance tuning.
@@ -15,11 +15,11 @@
   directional shadow blur, LCD halation, subpixel dithering, screen
   curvature with edge fringing, improved grain, and more.
 
-╔══════════════════════════════════════════════════════════════════╗
-║  SYSTEM GUIDE                                                    ║
-╚══════════════════════════════════════════════════════════════════╝
 
-  Set PT_SYSTEM first — it determines the detection threshold.
+  SYSTEM GUIDE
+
+
+  Set PT_SYSTEM first  it determines the detection threshold.
   Then tune per the per-system notes in the README.
 
   1 = Game Boy / Game Boy Pocket (DMG)
@@ -39,33 +39,33 @@
       Dim, washed-out reflective screen. Whites appear creamy.
       PT_HALATION = 0. PT_PALETTE = 4 (Green-grey).
 
-  0 = Manual — use PT_SENSITIVITY directly.
+  0 = Manual  use PT_SENSITIVITY directly.
 
-╔══════════════════════════════════════════════════════════════════╗
-║  PERFORMANCE GUIDE                                               ║
-╚══════════════════════════════════════════════════════════════════╝
+
+  PERFORMANCE GUIDE
+
 
   Disable Pro features in this order to reduce GPU load:
-    1. PT_SHADOW_BLUR = 0    — biggest saving (15-tap blur)
-    2. PT_HALATION = 0       — 8-tap radial glow
-    4. PT_DITHER = 0         — minor (Bayer lookup)
-    5. PT_PIXEL_BORDER = 0   — minor (per-fragment trig)
+    1. PT_SHADOW_BLUR = 0     biggest saving (15-tap blur)
+    2. PT_HALATION = 0        8-tap radial glow
+    4. PT_DITHER = 0          minor (Bayer lookup)
+    5. PT_PIXEL_BORDER = 0    minor (per-fragment trig)
   With all Pro features off = equivalent to PT_SkyWalker541.glsl.
 
-╔══════════════════════════════════════════════════════════════════╗
-║  CHANGELOG                                                       ║
-╚══════════════════════════════════════════════════════════════════╝
+
+  CHANGELOG
+
 
   v1.5.1 - Fixed GLES compile failure on Android/RetroArch. getBayerDither()
            rewrote integer arithmetic (int x, y, idx, division) as pure float
-           mod()/floor() operations — GLES 2.0 does not support integer types
+           mod()/floor() operations  GLES 2.0 does not support integer types
            in fragment shaders. No change to dither output or any other logic.
 
   v1.5.0 - Unified version number across all PT_SkyWalker541 variants
            (Standard, Pro, NextUI). No shader logic changes.
 
   v1.1.0 - Transparency pipeline improvements:
-           Soft detection edge — isWhitePixel() replaced with
+           Soft detection edge  isWhitePixel() replaced with
            whitePixelStrength() returning 0..1 via smoothstep over
            [threshold, threshold+0.08]. Eliminates fringing at
            detection boundary. Alpha driven by raw pre-correction
@@ -80,92 +80,73 @@
            Original (4), green-grey palette option added.
 */
 
-// ╔══════════════════════════════════════════════════════════════╗
-// ║  PARAMETERS  (15 — RetroArch GLSL limit)                     ║
-// ╚══════════════════════════════════════════════════════════════╝
+
+//   PARAMETERS  (15  RetroArch GLSL limit)
+
 // Advanced sub-parameters are hardcoded below in ADVANCED DEFAULTS.
 // To change them, edit the #define values in that section.
 
-// ┌──────────────────────────────────┐
-// │  System Preset                   │
-// └──────────────────────────────────┘
+// -- System Preset --
 // 0=Manual  1=GB/Pocket  2=GBC  3=GBA SP  4=GBA Original
 #pragma parameter PT_SYSTEM "System (0=Manual, 1=GB, 2=GBC, 3=GBA SP, 4=GBA Orig)" 1.0 0.0 4.0 1.0
 // Active only when PT_SYSTEM = 0
 #pragma parameter PT_SENSITIVITY "  Manual sensitivity threshold" 0.85 0.0 1.0 0.01
 
-// ┌──────────────────────────────────┐
-// │  Pixel Transparency              │
-// └──────────────────────────────────┘
+// -- Pixel Transparency --
 // 0=White only  1=Bright  2=All
 #pragma parameter PT_PIXEL_MODE "Transparency mode (0=White, 1=Bright, 2=All)" 0.0 0.0 2.0 1.0
 // GB/GBC: 0.20  GBA SP: 0.15  GBA Orig: 0.25
 #pragma parameter PT_BASE_ALPHA "  Base transparency amount" 0.20 0.0 1.0 0.01
-#pragma parameter PT_WHITE_TRANSPARENCY "  White pixel min transparency" 0.50 0.0 1.0 0.01
+#pragma parameter PT_WHITE_TRANSPARENCY "  White pixel min transparency" 0.20 0.0 1.0 0.01
 
-// ┌──────────────────────────────────┐
-// │  Background Tint                 │
-// └──────────────────────────────────┘
+// -- Background Tint --
 // 0=Off  1=Pocket grey  2=Cool grey  3=White (GBA SP)  4=Green-grey (GBA Orig)
 #pragma parameter PT_PALETTE "Background tint (0=Off, 1=Pocket, 2=Grey, 3=White, 4=Green-grey)" 1.0 0.0 4.0 1.0
 
-// ┌──────────────────────────────────┐
-// │  Color Harshness Filter          │
-// └──────────────────────────────────┘
+// -- Color Harshness Filter --
 // 0=off. 5-15 natural for GBC/GBA. Not needed for GB.
 #pragma parameter PT_DARK_FILTER_LEVEL "Dark color filter (0=off)" 0.0 0.0 100.0 1.0
 
-// ┌──────────────────────────────────┐
-// │  Pixel Border                    │
-// └──────────────────────────────────┘
+// -- Pixel Border --
 // 0=Off  1=Subtle  2=Moderate  3=Strong. GB/GBC: 1. GBA: 0.
 #pragma parameter PT_PIXEL_BORDER "Pixel border (0=Off, 1=Subtle, 2=Moderate, 3=Strong)" 1.0 0.0 3.0 1.0
 
-// ┌──────────────────────────────────┐
-// │  Drop Shadow                     │
-// └──────────────────────────────────┘
+// -- Drop Shadow --
 // Shadow opacity 0=off. Offset/blur/radius in ADVANCED DEFAULTS.
 #pragma parameter PT_SHADOW_OPACITY "Shadow opacity (0=off)" 0.30 0.0 1.0 0.01
 // 0=hard edge  0.5-2.0=gaussian blur along shadow vector
 #pragma parameter PT_SHADOW_BLUR "  Shadow blur amount (0=off)" 1.0 0.0 5.0 0.1
 
-// ┌──────────────────────────────────┐
-// │  Halation                        │
-// └──────────────────────────────────┘
+// -- Halation --
 // ONLY for backlit screens. Off for GB, GBC, GBA Original.
 // GBA SP: 0.05-0.15. Radius/warmth in ADVANCED DEFAULTS.
 #pragma parameter PT_HALATION "Halation glow (0=off)" 0.0 0.0 1.0 0.01
 
-// ┌──────────────────────────────────┐
-// │  Dithering                       │
-// └──────────────────────────────────┘
+// -- Dithering --
 // 0=off. Strength/matrix in ADVANCED DEFAULTS.
 #pragma parameter PT_DITHER "Dither blend edges (0=off, 1=on)" 1.0 0.0 1.0 1.0
 
-
-// ┌──────────────────────────────────┐
-// │  Post-Blend Effects              │
-// └──────────────────────────────────┘
+// -- Post-Blend Effects --
 #pragma parameter PT_SHADOW_OFFSET_X "Shadow X offset" 1.0 -10.0 10.0 0.5
 #pragma parameter PT_SHADOW_OFFSET_Y "Shadow Y offset" 1.0 -10.0 10.0 0.5
 #pragma parameter PT_VIGNETTE "Vignette strength (0=off)" 0.08 0.0 1.0 0.01
 
-// ╔══════════════════════════════════════════════════════════════╗
-// ║  ADVANCED DEFAULTS                                           ║
-// ║  Sub-parameters not exposed in the menu — edit here.         ║
-// ╚══════════════════════════════════════════════════════════════╝
 
-// ┌──────────────────────────────────┐
-// │  Brightness Mode                 │
-// └──────────────────────────────────┘
+//   ADVANCED DEFAULTS
+//   Sub-parameters not exposed in the menu  edit here.
+
+
+
+//   Brightness Mode
+
 // How brightness is measured for white detection and blending.
-// 0 = Simple average (R+G+B)/3    — recommended for GB / GBC
-// 1 = Perceptual ITU-R BT.709     — recommended for GBA SP / GBA Original
+// 0 = Simple average (R+G+B)/3     recommended for GB / GBC
+// 1 = Perceptual ITU-R BT.709      recommended for GBA SP / GBA Original
 #define PT_BRIGHTNESS_MODE_DEFAULT  0.0
 
-// ┌──────────────────────────────────┐
-// │  Background                      │
-// └──────────────────────────────────┘
+
+//   Background
+
 // How strongly the palette tint colour is applied to the backing texture.
 // 0.0 = no tint (PT_PALETTE has no effect).  1.0 = full tint.  Range: 0.0-2.0
 #define PT_PALETTE_INTENSITY_DEFAULT  1.0
@@ -180,9 +161,9 @@
 // Per-system recommendations: GB=0.30  GBC=0.25  GBA SP=0.15  GBA Orig=0.20
 #define PT_GRAIN_SCALE_DEFAULT        0.25
 
-// ┌──────────────────────────────────┐
-// │  Shadow                          │
-// └──────────────────────────────────┘
+
+//   Shadow
+
 // Horizontal offset of the drop shadow in source texels.
 // Positive = right, negative = left.  Range: -10.0 to 10.0
 
@@ -194,9 +175,9 @@
 // 0.5=tight  1.0=natural  2.0=wide/very soft.  Range: 0.1-4.0
 #define PT_SHADOW_BLUR_RADIUS_DEFAULT 1.0
 
-// ┌──────────────────────────────────┐
-// │  Halation                        │
-// └──────────────────────────────────┘
+
+//   Halation
+
 // Radius of the halation glow in source texels.
 // Only active when PT_HALATION > 0.  GBA SP recommendation: 1.0-2.0
 // Range: 0.1-5.0
@@ -207,9 +188,9 @@
 // Only active when PT_HALATION > 0.  Range: 0.0-1.0
 #define PT_HALATION_WARMTH_DEFAULT    0.3
 
-// ┌──────────────────────────────────┐
-// │  Dithering                       │
-// └──────────────────────────────────┘
+
+//   Dithering
+
 // How much the Bayer dither pattern offsets the blend alpha. Keep small.
 // Range: 0.0-0.20
 // Per-system recommendations: GB=0.06  GBC=0.04  GBA SP=0.02  GBA Orig=0.05
@@ -221,17 +202,17 @@
 
 // 0.0=off  0.4=subtle  1.0=strong.  Range: 0.0-1.0
 
-// ┌──────────────────────────────────┐
-// │  Subpixel Layout                 │
-// └──────────────────────────────────┘
+
+//   Subpixel Layout
+
 // Simulates the RGB stripe subpixel structure of the original LCD panels.
 // 0.0 = off. Suggested: 0.2-0.5
 // Per-system: GB=0.0 (monochrome), GBC=0.25, GBA SP=0.30, GBA Orig=0.20
 #define PT_SUBPIXEL_STRENGTH_DEFAULT  0.0
 
-// ┌──────────────────────────────────┐
-// │  Tight Bloom                     │
-// └──────────────────────────────────┘
+
+//   Tight Bloom
+
 // Close-range pixel bleed between adjacent bright pixels.
 // Separate from the wide halation. Only for backlit screens (GBA SP).
 // 0.0 = off. Suggested GBA SP: 0.10-0.20
@@ -239,25 +220,25 @@
 #define PT_TIGHT_BLOOM_DEFAULT        0.0
 #define PT_TIGHT_BLOOM_RADIUS_DEFAULT 0.6
 
-// ┌──────────────────────────────────┐
-// │  Screen Warp                     │
-// └──────────────────────────────────┘
+
+//   Screen Warp
+
 // Subtle barrel distortion simulating the slight curvature of the screen
 // glass under the bezel. Applies to all systems.
 // 0.0 = off. Suggested: 0.02-0.06
 #define PT_WARP_STRENGTH_DEFAULT      0.0
 
-// ┌──────────────────────────────────┐
-// │  Reflective Sheen                │
-// └──────────────────────────────────┘
+
+//   Reflective Sheen
+
 // Subtle edge brightening simulating ambient light on the reflective LCD.
 // Most authentic for GB, GBC, GBA Original. Off for GBA SP (front-lit).
 // 0.0 = off. Suggested: 0.03-0.08
 #define PT_SHEEN_STRENGTH_DEFAULT     0.0
 
-// ╔══════════════════════════════════════════════════════════════╗
-// ║  VERTEX SHADER                                               ║
-// ╚══════════════════════════════════════════════════════════════╝
+
+//   VERTEX SHADER
+
 #if defined(VERTEX)
 
 #if __VERSION__ >= 130
