@@ -1,20 +1,79 @@
 # PT SkyWalker541
 ### Pixel Transparency Shader for RetroArch — Slang Version
-**by SkyWalker541 | v1.5.0 | Slang (.slangp) — works on Vulkan / glcore / D3D11 / Metal**
+**by SkyWalker541 | v1.5.2 | Slang (.slangp) — works on Vulkan / glcore / D3D11 / Metal**
 
 ---
 
-On original Game Boy, Game Boy Color, and Game Boy Advance hardware, pixels that were fully off didn't show as white. Because those screens had no backlight driving those areas, the physical backing material showed through instead — a subtle grey-green translucency rather than solid white. Game developers of that era designed around this, using "white" areas as intentional transparent zones for backgrounds, windows, and UI overlays.
+On original Game Boy, Game Boy Color, and Game Boy Advance hardware, pixels that were fully off
+didn't show as white. Because those screens had no backlight driving those areas, the physical
+backing material showed through instead — a subtle grey-green translucency rather than solid white.
+Game developers of that era designed around this, using "white" areas as intentional transparent
+zones for backgrounds, windows, and UI overlays.
 
-On modern displays and emulators, those same pixels render as bright white, which was never the intended look. **PT SkyWalker541** restores the original appearance by detecting bright and white pixels and blending them toward a procedurally generated backing texture — putting the transparency back where it belongs.
+On modern displays and emulators, those same pixels render as bright white, which was never the
+intended look. PT SkyWalker541 restores the original appearance by detecting bright and white
+pixels and blending them toward a procedurally generated backing texture — putting the transparency
+back where it belongs.
 
-This version uses a `.slangp` preset and runs on any RetroArch video driver that supports Slang shaders, including **Vulkan**, **glcore**, **D3D11**, **D3D12**, and **Metal**. White detection runs against the raw unprocessed game frame via RetroArch's built-in `Original` texture semantic, giving cleaner and more accurate results than would otherwise be possible.
+This version uses a .slangp preset and runs on any RetroArch video driver that supports Slang
+shaders, including Vulkan, glcore, D3D11, D3D12, and Metal. White detection runs against the raw
+unprocessed game frame via RetroArch's built-in Original texture semantic, giving cleaner and more
+accurate results than would otherwise be possible.
 
-> **Looking for the GLSL version?** If you're on a driver that doesn't support Slang (older `gl` driver on some platforms), use `PT_SkyWalker541.glslp` instead. Both versions produce identical output.
+  Looking for the GLSL version? If you're on a driver that doesn't support Slang (older gl driver
+  on some platforms), use PT_SkyWalker541.glslp instead. Both versions produce identical output.
 
-> **Looking for more effects?** **PT_SkyWalker541_Pro** adds adjustable grain, LCD halation glow, Bayer dithering, screen curvature, and chromatic fringe — designed for more powerful hardware. Both versions are in the PT_SkyWalker541 repository.
+  Looking for more effects? PT_SkyWalker541_Pro adds adjustable grain, LCD halation glow, Bayer
+  dithering, shadow blur, screen warp, subpixel layout, reflective sheen, and tight bloom —
+  designed for more powerful hardware. Both versions are in the PT_SkyWalker541 repository.
 
-> **On NextUI / minarch?** **PT_SkyWalker541_Aspect** and **PT_SkyWalker541_Integer** are purpose-built versions for NextUI / minarch, with thresholds pre-compensated for NextUI's post-processing pipeline. Both are in the PT_SkyWalker541 repository.
+  On NextUI / minarch? PT_SkyWalker541_Aspect and PT_SkyWalker541_Integer are purpose-built
+  versions for NextUI / minarch, with thresholds pre-compensated for NextUI's post-processing
+  pipeline. Both are in the PT_SkyWalker541 repository.
+
+---
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  FEATURES                                                        ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+  Pixel transparency restoration
+    Detects white and near-white pixels and blends them toward a procedurally generated backing
+    texture. White detection runs on the raw pre-correction frame (Original semantic) for clean,
+    accurate thresholds that don't require compensation for the emulator's colour correction.
+    Supports three modes: white-only (most authentic), brightness-proportional, and all-pixels.
+
+  Procedural backing texture with palette tint
+    The backing visible through transparent pixels is a generated noise grain tinted to match
+    the original hardware's backing material. Four palette options: neutral grain (off), Pocket
+    grey (warm green-grey, DMG/Pocket), grey (neutral, GBC/GBA Original), and white (clean,
+    GBA SP). Tint intensity is adjustable.
+
+  Drop shadow
+    A configurable drop shadow cast by all solid (non-white) pixels onto the backing behind
+    them. Visible wherever the backing shows through — adds depth at sprite edges, text, and
+    UI elements. Shadow is gated on the source pixel being non-white, not on the current pixel
+    being transparent, so it correctly appears at all sprite and tile edges.
+
+  Pixel border
+    Simulates the thin physical gap between individual LCD dots on original hardware. Uses a
+    sine-wave method that works correctly at any scale mode — aspect ratio, integer, or custom.
+    Four strength levels from off to strong.
+
+  Colour harshness filter
+    Softens overly vivid or harsh dark colours, simulating the natural compression of dark tones
+    on original LCD panels. Most useful for GBC games with aggressive colour palettes. Runs on
+    the colour-corrected frame — bright and transparent pixels are largely unaffected.
+
+  Vignette
+    Darkens the screen toward the edges and corners, simulating the uneven light distribution
+    of original handheld screens. Pure math — no extra texture samples.
+
+  Chromatic shift  (hidden, default off)
+    Radial RGB channel separation from the screen centre — R shifts outward, B shifts inward.
+    Adds a subtle optical fringing effect. Zero GPU cost when disabled.
 
 ---
 
@@ -26,17 +85,15 @@ This version uses a `.slangp` preset and runs on any RetroArch video driver that
 
 The shader uses two files. Place them in your RetroArch shaders folder:
 
-```
-PT_SkyWalker541.slangp
-PT_SkyWalker541.slang
-```
+    PT_SkyWalker541.slangp
+    PT_SkyWalker541.slang
 
-1. Launch a game
-2. Open the RetroArch menu and go to **Quick Menu → Shaders → Load Shader Preset**
-3. Select `PT_SkyWalker541.slangp` — **not** the `.slang` file directly
-4. Open **Shader Parameters** and set **PT_SYSTEM** to match your target system
-5. Apply the recommended settings for that system from the tables below
-6. Optionally save via **Save Shader Preset As** for automatic loading on future sessions
+  1. Launch a game
+  2. Open the RetroArch menu and go to Quick Menu > Shaders > Load Shader Preset
+  3. Select PT_SkyWalker541.slangp — not the .slang file directly
+  4. Open Shader Parameters and set PT_SYSTEM to match your target system
+  5. Apply the recommended settings for that system from the section below
+  6. Optionally save via Save Shader Preset As for automatic loading on future sessions
 
 ---
 
@@ -46,7 +103,9 @@ PT_SkyWalker541.slang
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
-Set **PT_SYSTEM** first, then apply the core and shader settings for your system below. Each system had meaningfully different display hardware and the right settings make a real difference.
+Set PT_SYSTEM first — it configures the white detection threshold for your system. Then apply
+the settings below. Each system had meaningfully different display hardware and the right
+settings make a real difference.
 
 ---
 
@@ -56,39 +115,44 @@ Set **PT_SYSTEM** first, then apply the core and shader settings for your system
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-The original DMG and Pocket both used a slow, ghosting LCD with no backlight — ambient light only. The physical backing was a distinctive matte green-grey, visible as a translucent tint through unlit pixels. Pixel response was slow enough that moving sprites produced visible trails, and the boundary between transparent and opaque areas was naturally soft.
+The original DMG and Pocket both used a slow, ghosting LCD with no backlight — ambient light
+only. The physical backing was a distinctive matte green-grey, visible as a translucent tint
+through unlit pixels. Pixel response was slow enough that moving sprites produced visible
+trails, and the boundary between transparent and opaque areas was naturally soft.
 
-> **DMG vs Pocket:** Shader settings are identical for both. The Pocket is slightly cleaner and less green in person, but the difference is minor enough that PT_SYSTEM = 1 covers both accurately. If you prefer a more neutral backing for the Pocket, try PT_PALETTE = 2 (Grey).
+  DMG vs Pocket: Shader settings are identical for both. The Pocket is slightly cleaner and
+  less green in person, but the difference is minor enough that PT_SYSTEM = 1 covers both
+  accurately. If you prefer a more neutral backing for the Pocket, try PT_PALETTE = 2 (Grey).
 
-**Core settings (Gambatte / SameBoy):**
+  GB Colorization: Any colorization palette (Auto, GBC, SGB, Internal, or Custom) shifts
+  pixel values including whites. If you want to use colorization, set PT_SYSTEM = 0 (Manual)
+  and lower PT_SENSITIVITY until backgrounds go transparent as expected.
 
-| Setting | Value |
-|---|---|
-| Color correction | Disabled |
-| Interframe blending | Disabled |
-| GB Colorization | Disabled *(see note)* |
+  CORE SETTINGS  (Gambatte / SameBoy)
+  ─────────────────────────────────────────────────────────────────
+  Color correction           Disabled
+  Interframe blending        Disabled
+  GB Colorization            Disabled  (see note above)
 
-> **GB Colorization:** Any colorization palette — Auto, GBC, SGB, Internal, or Custom — shifts pixel values including whites. If you want to use colorization, set **PT_SYSTEM = 0 (Manual)** and lower **PT_SENSITIVITY** until backgrounds go transparent as expected.
+  SHADER PARAMETERS
+  ─────────────────────────────────────────────────────────────────
+  PT_SYSTEM                  1          (GB)
+  PT_PIXEL_MODE              0          (White only)
+  PT_BASE_ALPHA              0.20
+  PT_WHITE_TRANSPARENCY      0.20
+  PT_BRIGHTNESS_MODE         0          (Simple)
+  PT_PALETTE                 1          (Pocket grey)
+  PT_PALETTE_INTENSITY       1.00
+  PT_DARK_FILTER_LEVEL       0          (off)
+  PT_PIXEL_BORDER            1          (Subtle)
+  PT_SHADOW_OFFSET_X         1.0
+  PT_SHADOW_OFFSET_Y         1.0
+  PT_SHADOW_OPACITY          0.30
+  PT_VIGNETTE                0.10
 
-**Shader settings:**
-
-| Parameter | Menu label | Value |
-|---|---|---|
-| PT_SYSTEM | System (0=Manual, 1=GB, 2=GBC, 3=GBA) | 1 (GB) |
-| PT_SENSITIVITY |   Manual sensitivity threshold | 0.85 *(default — only active when PT_SYSTEM = 0)* |
-| PT_PIXEL_MODE | Pixel mode (0=White, 1=Bright, 2=All) | 0 (White only) |
-| PT_BASE_ALPHA |   Base transparency amount | 0.20 |
-| PT_WHITE_TRANSPARENCY |   White pixel min transparency | 0.20 |
-| PT_BRIGHTNESS_MODE | Brightness mode (0=Simple, 1=Percept.) | 0 (Simple) |
-| PT_PALETTE | Background tint (0=Off, 1=Pocket, 2=Grey, 3=White) | 1 (Pocket grey) |
-| PT_PALETTE_INTENSITY |   Tint intensity | 1.00 |
-| PT_DARK_FILTER_LEVEL | Dark color filter (0=off) | 0 *(off — leave at default for this system)* |
-| PT_PIXEL_BORDER | Pixel border (0=Off, 1=Subtle, 2=Med, 3=Strong) | 1 (Subtle) |
-| PT_SHADOW_OFFSET_X | Shadow X offset | 2.0 |
-| PT_SHADOW_OFFSET_Y | Shadow Y offset | 2.0 |
-| PT_SHADOW_OPACITY | Shadow opacity (0=off) | 0.30 |
-| PT_CHROMA | Chromatic shift (0=off) | 0.0 |
-| PT_VIGNETTE | Vignette strength (0=off) | 0.10 |
+  HIDDEN PARAMETERS  (edit in PT_SkyWalker541.slang)
+  ─────────────────────────────────────────────────────────────────
+  PT_CHROMA_STRENGTH         0.0        (off — not applicable)
 
 ---
 
@@ -98,34 +162,35 @@ The original DMG and Pocket both used a slow, ghosting LCD with no backlight —
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-Similar LCD construction to the original GB but with improved colour response and slightly faster pixel transitions. Still fully reflective with no backlight. The backing material was cleaner and more neutral than the original DMG — Pocket grey still works well but the effect is subtler.
+Similar LCD construction to the original GB but with improved colour response and slightly
+faster pixel transitions. Still fully reflective with no backlight. The backing material was
+cleaner and more neutral than the original DMG — Pocket grey still works well but the effect
+is subtler.
 
-**Core settings (Gambatte / SameBoy):**
+  CORE SETTINGS  (Gambatte / SameBoy)
+  ─────────────────────────────────────────────────────────────────
+  Color correction           GBC Only
+  Interframe blending        Disabled
 
-| Setting | Value |
-|---|---|
-| Color correction | GBC Only |
-| Interframe blending | Disabled |
+  SHADER PARAMETERS
+  ─────────────────────────────────────────────────────────────────
+  PT_SYSTEM                  2          (GBC)
+  PT_PIXEL_MODE              0          (White only)
+  PT_BASE_ALPHA              0.20
+  PT_WHITE_TRANSPARENCY      0.20
+  PT_BRIGHTNESS_MODE         0          (Simple)
+  PT_PALETTE                 1          (Pocket grey)
+  PT_PALETTE_INTENSITY       1.00
+  PT_DARK_FILTER_LEVEL       10         (softens aggressive GBC palettes)
+  PT_PIXEL_BORDER            1          (Subtle)
+  PT_SHADOW_OFFSET_X         1.0
+  PT_SHADOW_OFFSET_Y         1.0
+  PT_SHADOW_OPACITY          0.25
+  PT_VIGNETTE                0.08
 
-**Shader settings:**
-
-| Parameter | Menu label | Value |
-|---|---|---|
-| PT_SYSTEM | System (0=Manual, 1=GB, 2=GBC, 3=GBA) | 2 (GBC) |
-| PT_SENSITIVITY |   Manual sensitivity threshold | 0.85 *(default — only active when PT_SYSTEM = 0)* |
-| PT_PIXEL_MODE | Pixel mode (0=White, 1=Bright, 2=All) | 0 (White only) |
-| PT_BASE_ALPHA |   Base transparency amount | 0.20 |
-| PT_WHITE_TRANSPARENCY |   White pixel min transparency | 0.20 |
-| PT_BRIGHTNESS_MODE | Brightness mode (0=Simple, 1=Percept.) | 0 (Simple) |
-| PT_PALETTE | Background tint (0=Off, 1=Pocket, 2=Grey, 3=White) | 1 (Pocket grey) |
-| PT_PALETTE_INTENSITY |   Tint intensity | 1.00 |
-| PT_DARK_FILTER_LEVEL | Dark color filter (0=off) | 10 *(optional — softens aggressive GBC colour palettes)* |
-| PT_PIXEL_BORDER | Pixel border (0=Off, 1=Subtle, 2=Med, 3=Strong) | 1 (Subtle) |
-| PT_SHADOW_OFFSET_X | Shadow X offset | 2.0 |
-| PT_SHADOW_OFFSET_Y | Shadow Y offset | 2.0 |
-| PT_SHADOW_OPACITY | Shadow opacity (0=off) | 0.25 |
-| PT_CHROMA | Chromatic shift (0=off) | 0.0 |
-| PT_VIGNETTE | Vignette strength (0=off) | 0.08 |
+  HIDDEN PARAMETERS  (edit in PT_SkyWalker541.slang)
+  ─────────────────────────────────────────────────────────────────
+  PT_CHROMA_STRENGTH         0.0        (off — not applicable)
 
 ---
 
@@ -135,34 +200,34 @@ Similar LCD construction to the original GB but with improved colour response an
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-The GBA SP used a front-lit screen — dramatically brighter and more vivid than any earlier Game Boy. Whites are genuinely bright. The transparency effect is subtler here, and the clean white backing makes see-through areas look more like polished glass than the DMG's matte grey.
+The GBA SP used a front-lit screen — dramatically brighter and more vivid than any earlier
+Game Boy. Whites are genuinely bright. The transparency effect is subtler here, and the clean
+white backing makes see-through areas look more like polished glass than the DMG's matte grey.
 
-**Core settings (mGBA):**
+  CORE SETTINGS  (mGBA)
+  ─────────────────────────────────────────────────────────────────
+  Color correction           Enabled
+  Interframe blending        Enabled
 
-| Setting | Value |
-|---|---|
-| Color correction | Enabled |
-| Interframe blending | Enabled |
+  SHADER PARAMETERS
+  ─────────────────────────────────────────────────────────────────
+  PT_SYSTEM                  3          (GBA SP)
+  PT_PIXEL_MODE              0          (White only)
+  PT_BASE_ALPHA              0.15
+  PT_WHITE_TRANSPARENCY      0.45
+  PT_BRIGHTNESS_MODE         1          (Perceptual)
+  PT_PALETTE                 3          (White)
+  PT_PALETTE_INTENSITY       1.00
+  PT_DARK_FILTER_LEVEL       0          (off)
+  PT_PIXEL_BORDER            0          (Off)
+  PT_SHADOW_OFFSET_X         1.0
+  PT_SHADOW_OFFSET_Y         1.0
+  PT_SHADOW_OPACITY          0.20
+  PT_VIGNETTE                0.05
 
-**Shader settings:**
-
-| Parameter | Menu label | Value |
-|---|---|---|
-| PT_SYSTEM | System (0=Manual, 1=GB, 2=GBC, 3=GBA SP, 4=GBA Orig) | 3 (GBA SP) |
-| PT_SENSITIVITY |   Manual sensitivity threshold | 0.85 *(default — only active when PT_SYSTEM = 0)* |
-| PT_PIXEL_MODE | Pixel mode (0=White, 1=Bright, 2=All) | 0 (White only) |
-| PT_BASE_ALPHA |   Base transparency amount | 0.15 |
-| PT_WHITE_TRANSPARENCY |   White pixel min transparency | 0.45 |
-| PT_BRIGHTNESS_MODE | Brightness mode (0=Simple, 1=Percept.) | 1 (Perceptual) |
-| PT_PALETTE | Background tint (0=Off, 1=Pocket, 2=Grey, 3=White) | 3 (White) |
-| PT_PALETTE_INTENSITY |   Tint intensity | 1.00 |
-| PT_DARK_FILTER_LEVEL | Dark color filter (0=off) | 0 *(off — leave at default for this system)* |
-| PT_PIXEL_BORDER | Pixel border (0=Off, 1=Subtle, 2=Med, 3=Strong) | 0 (Off) |
-| PT_SHADOW_OFFSET_X | Shadow X offset | 2.0 |
-| PT_SHADOW_OFFSET_Y | Shadow Y offset | 2.0 |
-| PT_SHADOW_OPACITY | Shadow opacity (0=off) | 0.20 |
-| PT_CHROMA | Chromatic shift (0=off) | 0.0 |
-| PT_VIGNETTE | Vignette strength (0=off) | 0.05 |
+  HIDDEN PARAMETERS  (edit in PT_SkyWalker541.slang)
+  ─────────────────────────────────────────────────────────────────
+  PT_CHROMA_STRENGTH         0.0        (off — not applicable)
 
 ---
 
@@ -172,34 +237,35 @@ The GBA SP used a front-lit screen — dramatically brighter and more vivid than
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-The original GBA had a dim, washed-out reflective screen with no backlight — notoriously difficult to read in poor lighting. Colours were desaturated and whites appeared creamy or yellowish due to the LCD polariser and backing material. The transparency effect is more pronounced here than on any other system.
+The original GBA had a dim, washed-out reflective screen with no backlight — notoriously
+difficult to read in poor lighting. Colours were desaturated and whites appeared creamy or
+yellowish due to the LCD polariser and backing material. The transparency effect is more
+pronounced here than on any other system.
 
-**Core settings (mGBA):**
+  CORE SETTINGS  (mGBA)
+  ─────────────────────────────────────────────────────────────────
+  Color correction           Enabled
+  Interframe blending        Enabled
 
-| Setting | Value |
-|---|---|
-| Color correction | Enabled |
-| Interframe blending | Enabled |
+  SHADER PARAMETERS
+  ─────────────────────────────────────────────────────────────────
+  PT_SYSTEM                  4          (GBA Orig)
+  PT_PIXEL_MODE              0          (White only)
+  PT_BASE_ALPHA              0.25
+  PT_WHITE_TRANSPARENCY      0.55
+  PT_BRIGHTNESS_MODE         1          (Perceptual)
+  PT_PALETTE                 2          (Grey — GBA backing was neutral, not green-grey)
+  PT_PALETTE_INTENSITY       1.00
+  PT_DARK_FILTER_LEVEL       0          (off)
+  PT_PIXEL_BORDER            0          (Off)
+  PT_SHADOW_OFFSET_X         1.0
+  PT_SHADOW_OFFSET_Y         1.0
+  PT_SHADOW_OPACITY          0.20
+  PT_VIGNETTE                0.12
 
-**Shader settings:**
-
-| Parameter | Menu label | Value |
-|---|---|---|
-| PT_SYSTEM | System (0=Manual, 1=GB, 2=GBC, 3=GBA SP, 4=GBA Orig) | 4 (GBA Orig) |
-| PT_SENSITIVITY |   Manual sensitivity threshold | 0.85 *(default — only active when PT_SYSTEM = 0)* |
-| PT_PIXEL_MODE | Pixel mode (0=White, 1=Bright, 2=All) | 0 (White only) |
-| PT_BASE_ALPHA |   Base transparency amount | 0.25 |
-| PT_WHITE_TRANSPARENCY |   White pixel min transparency | 0.55 |
-| PT_BRIGHTNESS_MODE | Brightness mode (0=Simple, 1=Percept.) | 1 (Perceptual) |
-| PT_PALETTE | Background tint (0=Off, 1=Pocket, 2=Grey, 3=White) | 2 (Grey) *(original GBA backing was more neutral than the DMG green-grey)* |
-| PT_PALETTE_INTENSITY |   Tint intensity | 1.00 |
-| PT_DARK_FILTER_LEVEL | Dark color filter (0=off) | 0 *(off — leave at default for this system)* |
-| PT_PIXEL_BORDER | Pixel border (0=Off, 1=Subtle, 2=Med, 3=Strong) | 0 (Off) |
-| PT_SHADOW_OFFSET_X | Shadow X offset | 2.0 |
-| PT_SHADOW_OFFSET_Y | Shadow Y offset | 2.0 |
-| PT_SHADOW_OPACITY | Shadow opacity (0=off) | 0.20 |
-| PT_CHROMA | Chromatic shift (0=off) | 0.0 |
-| PT_VIGNETTE | Vignette strength (0=off) | 0.12 |
+  HIDDEN PARAMETERS  (edit in PT_SkyWalker541.slang)
+  ─────────────────────────────────────────────────────────────────
+  PT_CHROMA_STRENGTH         0.0        (off — not applicable)
 
 ---
 
@@ -209,14 +275,18 @@ The original GBA had a dim, washed-out reflective screen with no backlight — n
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
-This is a single-pass shader. It uses RetroArch's built-in `Original` texture semantic, which provides the raw unprocessed input frame directly — no passthrough pass required.
+This is a single-pass shader. It uses RetroArch's built-in Original texture semantic, which
+provides the raw unprocessed input frame directly — no passthrough pass required.
 
 The shader has access to two textures at all times:
 
-- `Source` — the colour-corrected processed frame, used for display output and shadow sampling
-- `Original` — the raw pre-correction input frame, used exclusively for white pixel detection and transparency gating
+  Source   — the colour-corrected processed frame, used for display output and shadow sampling
+  Original — the raw pre-correction input frame, used exclusively for white pixel detection
+             and transparency gating
 
-Running detection on pre-correction pixels means thresholds can be accurate values rather than compensated guesses. A white pixel on original hardware is very close to 1.0 before any processing — the shader detects that directly.
+Running detection on pre-correction pixels means thresholds can be accurate values rather than
+compensated guesses. A white pixel on original hardware is very close to 1.0 before any
+processing — the shader detects that directly.
 
 ---
 
@@ -226,146 +296,171 @@ Running detection on pre-correction pixels means thresholds can be accurate valu
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
-All parameters are accessible from **Quick Menu → Shaders → Shader Parameters** after loading the preset. Changes preview live.
+All parameters are accessible from Quick Menu > Shaders > Shader Parameters after loading the
+preset. Changes preview live.
 
 ---
 
-### System Preset — `PT_SYSTEM`
-**Default: 1 (GB)**
+System Preset — PT_SYSTEM
+  Default: 1 (GB)
 
-The most important setting. Set this first. Configures the white detection threshold tuned for each system's display characteristics.
+  The most important setting. Set this first. Configures the white detection threshold tuned
+  for each system's display characteristics.
 
-| Value | System | Threshold |
-|---|---|---|
-| 0 | Manual | Use PT_SENSITIVITY to set your own threshold |
-| 1 | GB / Pocket | 0.90 — no backlight, aggressive detection |
-| 2 | GBC | 0.85 — no backlight, moderate |
-| 3 | GBA SP (front-lit) | 0.80 — front-lit, conservative |
-| 4 | GBA Original | 0.75 — no backlight, catches creamy/yellowish whites |
-
----
-
-### Detection Sensitivity — `PT_SENSITIVITY`
-**Default: 0.85 | Range: 0.10 – 1.00 | Manual mode only**
-
-Only active when PT_SYSTEM = 0. Has no effect when using a system preset.
-
-- **Higher values** — only very obvious, clearly white pixels go transparent
-- **Lower values** — more pixels are treated as white and go transparent
+  Value  System              Threshold
+  -----  ------------------  ----------------------------------------
+  0      Manual              Use PT_SENSITIVITY to set your own
+  1      GB / Pocket         0.90  no backlight, aggressive detection
+  2      GBC                 0.85  no backlight, moderate
+  3      GBA SP (front-lit)  0.80  front-lit, conservative
+  4      GBA Original        0.75  no backlight, catches creamy whites
 
 ---
 
-### Transparency Mode — `PT_PIXEL_MODE`
-**Default: 0 (White only)**
+Detection Sensitivity — PT_SENSITIVITY
+  Default: 0.85  |  Range: 0.10 – 1.00  |  Manual mode only
 
-| Value | Mode | Description |
-|---|---|---|
-| 0 | White only | Only white and near-white pixels go transparent — most authentic |
-| 1 | Bright | Brighter pixels become proportionally more transparent |
-| 2 | All | Every pixel blends toward the backing texture |
-
-Mode 0 is recommended for the most accurate look.
+  Only active when PT_SYSTEM = 0. Has no effect when using a system preset.
+  Higher values = only very obvious whites go transparent.
+  Lower values  = more pixels treated as white.
 
 ---
 
-### Base Transparency — `PT_BASE_ALPHA`
-**Default: 0.20 | Range: 0.00 – 1.00**
+Transparency Mode — PT_PIXEL_MODE
+  Default: 0 (White only)
 
-Controls how transparent detected pixels become. Lower = more opaque, higher = more see-through.
+  Value  Mode        Description
+  -----  ----------  -------------------------------------------------------
+  0      White only  Only white and near-white pixels go transparent
+  1      Bright      Brighter pixels become proportionally more transparent
+  2      All         Every pixel blends toward the backing texture
 
----
-
-### White Pixel Transparency Boost — `PT_WHITE_TRANSPARENCY`
-**Default: 0.20 | Range: 0.00 – 1.00**
-
-Sets a minimum transparency level specifically for confirmed white pixels. Ensures clearly white pixels are always at least this transparent, regardless of PT_BASE_ALPHA.
-
----
-
-### Brightness Mode — `PT_BRIGHTNESS_MODE`
-**Default: 0 (Simple)**
-
-| Value | Mode | Best for |
-|---|---|---|
-| 0 | Simple | Equal average of R, G, B — good for GB/GBC |
-| 1 | Perceptual | Human vision weighted (ITU-R BT.709) — good for GBA and colour content |
+  Mode 0 is recommended for the most accurate look.
 
 ---
 
-### Background Tint — `PT_PALETTE`
-**Default: 1 (Pocket)**
+Base Transparency — PT_BASE_ALPHA
+  Default: 0.20  |  Range: 0.00 – 1.00
 
-Tints the procedural backing texture visible through transparent pixels.
-
-| Value | Tint | Description |
-|---|---|---|
-| 0 | Off | Neutral grey grain |
-| 1 | Pocket grey | Warm green-grey — approximates the original DMG/Pocket screen backing |
-| 2 | Grey | Neutral grey — good for GBC or original GBA |
-| 3 | White | Clean white — recommended for GBA SP |
+  Controls how transparent detected pixels become.
+  Lower = more opaque, higher = more see-through.
 
 ---
 
-### Background Tint Intensity — `PT_PALETTE_INTENSITY`
-**Default: 1.00 | Range: 0.00 – 2.00**
+White Pixel Transparency Boost — PT_WHITE_TRANSPARENCY
+  Default: 0.20  |  Range: 0.00 – 1.00
 
-Controls how strongly the tint colour is applied. 0 = no tint regardless of PT_PALETTE setting.
-
----
-
-### Color Harshness Filter — `PT_DARK_FILTER_LEVEL`
-**Default: 0 | Range: 0 – 100**
-
-Softens overly vivid or harsh dark colours. Most useful for GBC games with aggressive colour palettes. Runs on the colour-corrected frame — bright pixels are largely unaffected. Set to 0 to disable.
+  Sets a minimum transparency level specifically for confirmed white pixels. Ensures clearly
+  white pixels are always at least this transparent, regardless of PT_BASE_ALPHA.
 
 ---
 
-### Pixel Border — `PT_PIXEL_BORDER`
-**Default: 1 (Subtle)**
+Brightness Mode — PT_BRIGHTNESS_MODE
+  Default: 0 (Simple)
 
-Simulates the thin physical gap between individual LCD dots on original hardware. Uses a sine-wave method that works correctly at any scale mode — aspect ratio, integer, or custom.
-
-| Value | Style | Description |
-|---|---|---|
-| 0 | Off | No pixel border |
-| 1 | Subtle | ~17% border darkening — closest to original hardware appearance |
-| 2 | Moderate | ~41% border darkening |
-| 3 | Strong | ~76% border darkening — clearly defined pixel grid |
+  Value  Mode        Best for
+  -----  ----------  -------------------------------------------------------
+  0      Simple      Equal average of R, G, B — good for GB/GBC
+  1      Perceptual  Human vision weighted (ITU-R BT.709) — good for GBA
 
 ---
 
-### Shadow X Offset — `PT_SHADOW_OFFSET_X`
-**Default: 2.0 | Range: -10.0 – 10.0**
+Background Tint — PT_PALETTE
+  Default: 1 (Pocket grey)
 
-Horizontal position of the drop shadow. Shadows appear behind solid pixels and are visible through transparent areas, adding subtle depth at sprite and text edges. Default of 1.0 is the smallest visible diagonal shift.
+  Tints the procedural backing texture visible through transparent pixels.
 
----
-
-### Shadow Y Offset — `PT_SHADOW_OFFSET_Y`
-**Default: 2.0 | Range: -10.0 – 10.0**
-
-Vertical position of the drop shadow. Positive = down, negative = up.
-
----
-
-### Shadow Opacity — `PT_SHADOW_OPACITY`
-**Default: 0.30 | Range: 0.00 – 1.00**
-
-How dark the drop shadow is. Set to 0 to disable shadows entirely.
+  Value  Tint         Description
+  -----  -----------  -------------------------------------------------------
+  0      Off          Neutral grey grain
+  1      Pocket grey  Warm green-grey — approximates the DMG/Pocket backing
+  2      Grey         Neutral grey — good for GBC or GBA Original
+  3      White        Clean white — recommended for GBA SP
 
 ---
 
-### Chromatic Shift — `PT_CHROMA`
-**Default: 0.0 | Range: 0.00 – 1.00**
+Background Tint Intensity — PT_PALETTE_INTENSITY
+  Default: 1.00  |  Range: 0.00 – 2.00
 
-Simulates the slight colour channel misalignment characteristic of original GB/GBC/GBA LCD panels. Pure UV math — zero extra texture samples. Set to 0 to disable.
+  Controls how strongly the tint colour is applied. 0 = no tint regardless of PT_PALETTE.
 
 ---
 
-### Vignette — `PT_VIGNETTE`
-**Default: 0.08 | Range: 0.00 – 1.00**
+Colour Harshness Filter — PT_DARK_FILTER_LEVEL
+  Default: 0  |  Range: 0 – 100
 
-Darkens the screen toward the edges and corners, simulating the uneven light distribution of original handheld screens. Pure math — no extra texture samples. Default of 0.08 sits below the threshold of conscious perception. Set to 0 to disable.
+  Softens overly vivid or harsh dark colours. Most useful for GBC games with aggressive colour
+  palettes. Runs on the colour-corrected frame — bright pixels are largely unaffected. 0 = off.
+
+---
+
+Pixel Border — PT_PIXEL_BORDER
+  Default: 1 (Subtle)
+
+  Simulates the thin physical gap between individual LCD dots on original hardware. Uses a
+  sine-wave method that works correctly at any scale mode.
+
+  Value  Style     Description
+  -----  --------  -------------------------------------------------------
+  0      Off       No pixel border
+  1      Subtle    ~17% border darkening — closest to original hardware
+  2      Moderate  ~41% border darkening
+  3      Strong    ~76% border darkening — clearly defined pixel grid
+
+---
+
+Shadow X Offset — PT_SHADOW_OFFSET_X
+  Default: 1.0  |  Range: -10.0 – 10.0
+
+  Horizontal position of the drop shadow. 1.0 is the smallest visible diagonal shift.
+  Positive = right, negative = left.
+
+---
+
+Shadow Y Offset — PT_SHADOW_OFFSET_Y
+  Default: 1.0  |  Range: -10.0 – 10.0
+
+  Vertical position of the drop shadow. Positive = down, negative = up.
+
+---
+
+Shadow Opacity — PT_SHADOW_OPACITY
+  Default: 0.30  |  Range: 0.00 – 1.00
+
+  How dark the drop shadow is. Set to 0 to disable shadows entirely.
+
+---
+
+Vignette — PT_VIGNETTE
+  Default: 0.08  |  Range: 0.00 – 1.00
+
+  Darkens the screen toward the edges and corners, simulating the uneven light distribution
+  of original handheld screens. Pure math — no extra texture samples. Set to 0 to disable.
+
+---
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  HIDDEN PARAMETERS                                               ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+Some values are intentionally not exposed in the RetroArch shader menu. They can be changed
+by opening PT_SkyWalker541.slang in a text editor and editing the relevant #define near the
+top of the file.
+
+---
+
+Chromatic Shift — PT_CHROMA_STRENGTH
+  Default: 0.0 (off)  |  Suggested range: 0.3 – 0.8
+
+  Applies a subtle radial RGB channel separation from the screen centre — R shifts slightly
+  outward, B shifts slightly inward. Adds a very mild optical fringing effect at the edges
+  of the image. Zero GPU cost at default value.
+
+  To enable, edit this line in the shader file:
+
+    #define PT_CHROMA_STRENGTH 0.0   // change to e.g. 0.5 to enable
 
 ---
 
@@ -375,23 +470,20 @@ Darkens the screen toward the edges and corners, simulating the uneven light dis
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
-To change a default value, open `PT_SkyWalker541.slang` in any text editor and find the `#pragma parameter` block near the top of the file. Each line has this format:
+To change a default value, open PT_SkyWalker541.slang in any text editor and find the
+#pragma parameter block near the top of the file. Each line has this format:
 
-```
-#pragma parameter NAME  "Menu label"  default  min  max  step
-```
+    #pragma parameter NAME  "Menu label"  default  min  max  step
 
-Edit the **default** value (the first number after the label string) on the relevant line. For example, to change the default system preset from GB to GBC:
+Edit the default value (the first number after the label string) on the relevant line.
 
-```glsl
-// Before:
-#pragma parameter PT_SYSTEM  "System (0=Manual, 1=GB, 2=GBC, 3=GBA SP, 4=GBA Orig)"  1.0  0.0  4.0  1.0
+Example — changing the default system preset from GB to GBC:
 
-// After (GBC default):
-#pragma parameter PT_SYSTEM  "System (0=Manual, 1=GB, 2=GBC, 3=GBA SP, 4=GBA Orig)"  2.0  0.0  4.0  1.0
-```
+    Before:  #pragma parameter PT_SYSTEM  "..."  1.0  0.0  4.0  1.0
+    After:   #pragma parameter PT_SYSTEM  "..."  2.0  0.0  4.0  1.0
 
-These values load when the preset is first applied and can still be adjusted live from the shader parameters menu at any time.
+These values load when the preset is first applied and can still be adjusted live from the
+shader parameters menu at any time.
 
 ---
 
@@ -401,45 +493,12 @@ These values load when the preset is first applied and can still be adjusted liv
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
-Works on any RetroArch-supported platform and display resolution. The shader works at any scale mode — aspect ratio, integer, or custom — no separate variants required.
+Works on any RetroArch-supported platform and display resolution. The shader works at any
+scale mode — aspect ratio, integer, or custom — no separate variants required.
 
-Works on any RetroArch video driver that supports Slang shaders: **Vulkan**, **glcore**, **D3D11**, **D3D12**, and **Metal**. Does not work with the legacy **gl** driver — use `PT_SkyWalker541.glslp` for that.
-
----
-
-```
-╔══════════════════════════════════════════════════════════════════╗
-║  CHANGELOG                                                       ║
-╚══════════════════════════════════════════════════════════════════╝
-```
-
-> **Version note:** All PT_SkyWalker541 variants — Standard, Pro, and NextUI — share a unified version number. v1.5.0 represents the same release generation across all three.
-
-| Version | Notes |
-|---|---|
-| v1.4.0 | Rebuilt as single-pass shader. Passthrough pass removed. RawFrame alias replaced with RetroArch built-in `Original` semantic natively. Resolves "failed to load preset" on Android/Retroid devices. All shader logic, parameters, and visual output identical to v1.3.0 |
-| v1.5.0 | Added PT_SYSTEM = 4 (GBA Original) with threshold 0.75, tuned for the original GBA's dim, creamy whites |
-| v1.3.0 | Merged Aspect and Integer variants into a single shader. Ported to standard RetroArch GLSL (.glslp). White detection and transparency gating run against raw pre-correction frame for clean accurate thresholds. Thresholds retuned: GB 0.58→0.88, GBC 0.65→0.85, GBA 0.42→0.80 |
-| v1.2.2 | Replaced noiseHash with reference shader's cheaper single-pass hash — no visible change to grain quality, lower arithmetic cost per fragment |
-| v1.2.1 | Updated defaults to period-authentic values — shadow offset 1.5→1.0, shadow opacity 0.50→0.30, vignette 0.12→0.08 |
-| v1.1.6 | Removed shadow blur — single texture tap. At GB/GBC/GBA pixel scales, blur is imperceptible at any typical display resolution |
-| v1.1.5 | Replaced 4-tap cross shadow blur with 2-tap diagonal blur |
-| v1.1.4 | Fixed Aspect pixel border — wfactor multipliers were inverted |
-| v1.1.3 | Fixed shadow performance — removed redundant texel re-snapping |
-| v1.1.2 | Fixed pixel border precision on mediump hardware. Fixed shadows in large white fills |
-| v1.1.1 | Fixed shadow texel snapping. Fixed pixel border sine-wave values |
-| v1.1.0 | Split into Aspect and Integer variants. Shadow formula rewritten |
-| v1.0.9 | Fixed PT_PIXEL_BORDER modes 2 and 3 |
-| v1.0.8 | Replaced sin()-based noise hash — significant speedup |
-| v1.0.7 | Chromatic shift rewritten as pure math |
-| v1.0.6 | Replaced subpixel fringing with chromatic shift |
-| v1.0.5 | Added chromatic shift and vignette |
-| v1.0.4 | Shadow blur upgraded to weighted 4-tap |
-| v1.0.3 | Removed all ON/OFF toggle parameters |
-| v1.0.2 | Added PT_PIXEL_BORDER |
-| v1.0.1 | Replaced adaptive white detection with dual-channel method |
-| v1.0.0 | Initial release |
+Works on any RetroArch video driver that supports Slang shaders: Vulkan, glcore, D3D11, D3D12,
+and Metal. Does not work with the legacy gl driver — use PT_SkyWalker541.glslp for that.
 
 ---
 
-*PT SkyWalker541 by SkyWalker541 | Written for RetroArch*
+*PT SkyWalker541 by SkyWalker541 | v1.5.2 | Written for RetroArch*
