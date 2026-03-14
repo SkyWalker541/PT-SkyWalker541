@@ -95,17 +95,20 @@ If you are unsure, use the Aspect variant.
 
 Each variant is two files — a .glsl shader and a .cfg preset that loads it.
 
-    PT_SkyWalker541_Aspect.glsl
+  Shaders folder:
     PT_SkyWalker541_Aspect.cfg
-
-    PT_SkyWalker541_Integer.glsl
     PT_SkyWalker541_Integer.cfg
 
-  1. Place all four files in your NextUI shaders folder
-  2. Launch a game and open the in-game shader menu
-  3. Load the .cfg for your chosen variant — not the .glsl file directly
-  4. Open shader settings and set PT_SYSTEM to match your target system
-  5. Apply the recommended settings for that system from the section below
+  Shaders/glsl folder:
+    PT_SkyWalker541_Aspect.glsl
+    PT_SkyWalker541_Integer.glsl
+
+  1. Place the .cfg files in your NextUI shaders folder
+  2. Place the .glsl files in the glsl subfolder inside your NextUI shaders folder
+  3. Launch a game and open the in-game shader menu
+  4. Load the .cfg for your chosen variant — not the .glsl file directly
+  5. Open shader settings and set PT_SYSTEM to match your target system
+  6. Apply the recommended settings for that system from the section below
 
 ---
 
