@@ -1,6 +1,6 @@
 /*
 ╔══════════════════════════════════════════════════════════════════╗
-║  PT SkyWalker541  v1.5.0                                         ║
+║  PT SkyWalker541  v1.5.2                                         ║
 ║  by SkyWalker541  |  Written for RetroArch (GLSL)                ║
 ╚══════════════════════════════════════════════════════════════════╝
 
@@ -95,14 +95,13 @@
 // ┌──────────────────────────────────┐
 // │  Drop Shadow                     │
 // └──────────────────────────────────┘
-#pragma parameter PT_SHADOW_OFFSET_X "Shadow X offset"                        2.0 -10.0 10.0 0.5
-#pragma parameter PT_SHADOW_OFFSET_Y "Shadow Y offset"                        2.0 -10.0 10.0 0.5
+#pragma parameter PT_SHADOW_OFFSET_X "Shadow X offset"                        1.0 -10.0 10.0 0.5
+#pragma parameter PT_SHADOW_OFFSET_Y "Shadow Y offset"                        1.0 -10.0 10.0 0.5
 #pragma parameter PT_SHADOW_OPACITY  "Shadow opacity (0=off)"                 0.30 0.0 1.0 0.01
 
 // ┌──────────────────────────────────┐
 // │  Post-Blend Effects              │
 // └──────────────────────────────────┘
-#pragma parameter PT_CHROMA          "Chromatic shift (0=off)"                0.0 0.0 1.0 0.01
 #pragma parameter PT_VIGNETTE        "Vignette strength (0=off)"              0.08 0.0 1.0 0.01
 
 // ╔══════════════════════════════════════════════════════════════╗
@@ -204,7 +203,6 @@ uniform COMPAT_PRECISION float PT_PIXEL_BORDER;
 uniform COMPAT_PRECISION float PT_SHADOW_OFFSET_X;
 uniform COMPAT_PRECISION float PT_SHADOW_OFFSET_Y;
 uniform COMPAT_PRECISION float PT_SHADOW_OPACITY;
-uniform COMPAT_PRECISION float PT_CHROMA;
 uniform COMPAT_PRECISION float PT_VIGNETTE;
 #else
 #define PT_SYSTEM             1.0
@@ -217,10 +215,9 @@ uniform COMPAT_PRECISION float PT_VIGNETTE;
 #define PT_PALETTE_INTENSITY  1.0
 #define PT_DARK_FILTER_LEVEL  0.0
 #define PT_PIXEL_BORDER       1.0
-#define PT_SHADOW_OFFSET_X    2.0
-#define PT_SHADOW_OFFSET_Y    2.0
+#define PT_SHADOW_OFFSET_X    1.0
+#define PT_SHADOW_OFFSET_Y    1.0
 #define PT_SHADOW_OPACITY     0.30
-#define PT_CHROMA             0.0
 #define PT_VIGNETTE           0.08
 #endif
 
@@ -233,6 +230,15 @@ uniform COMPAT_PRECISION float PT_VIGNETTE;
 
 #define PI                      3.141592654
 #define BORDER_WIDTH_FACTOR_MAX 31.0
+
+// ┌──────────────────────────────────┐
+// │  Chromatic Shift (hidden)        │
+// │  Radial RGB channel separation.  │
+// │  Not exposed in the shader menu. │
+// │  Edit this value to adjust.      │
+// │  0.0 = off. Suggested: 0.3–0.8   │
+// └──────────────────────────────────┘
+#define PT_CHROMA_STRENGTH 0.0
 
 // ╔══════════════════════════════════════════════════════════════╗
 // ║  HELPER FUNCTIONS                                            ║
@@ -366,15 +372,6 @@ float pixelBorderFactor(vec2 coord)
 // │  Post-Blend Effects              │
 // └──────────────────────────────────┘
 
-// Chromatic shift — pure UV math, zero extra taps.
-vec3 applyChromaShift(vec3 color, vec2 coord)
-{
-    if (PT_CHROMA < 0.001) return color;
-    vec2  offset = (coord - 0.5) * PT_CHROMA * 0.02;
-    float r      = mix(color.r, color.r * (1.0 + offset.x), 0.5);
-    float b      = mix(color.b, color.b * (1.0 - offset.x), 0.5);
-    return clamp(vec3(r, color.g, b), 0.0, 1.0);
-}
 
 // Vignette — pure math, zero extra taps.
 vec3 applyVignette(vec3 color, vec2 coord)
@@ -384,6 +381,24 @@ vec3 applyVignette(vec3 color, vec2 coord)
     float dist     = dot(uv, uv);
     float vignette = 1.0 - dist * PT_VIGNETTE;
     return color * clamp(vignette, 0.0, 1.0);
+}
+
+// ┌──────────────────────────────────┐
+// │  Chromatic Shift                 │
+// └──────────────────────────────────┘
+
+// Radial RGB channel separation from screen centre.
+// R shifts outward, B shifts inward by the same amount.
+// Strength is in source texels. Only samples two extra taps.
+// Skipped entirely when PT_CHROMA_STRENGTH is 0.
+vec3 applyChroma(vec3 color, vec2 coord)
+{
+    if (PT_CHROMA_STRENGTH < 0.001) return color;
+    vec2 toCenter = coord - vec2(0.5);
+    vec2 offset   = toCenter * PT_CHROMA_STRENGTH * (1.0 / TextureSize);
+    float r = COMPAT_TEXTURE(Texture, coord + offset).r;
+    float b = COMPAT_TEXTURE(Texture, coord - offset).b;
+    return vec3(r, color.g, b);
 }
 
 // ╔══════════════════════════════════════════════════════════════╗
@@ -440,17 +455,23 @@ void main()
     }
 
     // Drop shadow — single tap on OrigTexture.
-    if (willBeTransparent > 0.5 && PT_SHADOW_OPACITY > 0.001) {
-        // Scale shadow offset proportionally to output scale so it appears
-        // consistent regardless of how much the source frame is scaled up.
-        float shadow_sx      = OutputSize.x / InputSize.x;
-        float shadow_sy      = OutputSize.y / InputSize.y;
-        float shadow_scale   = sqrt(shadow_sx * shadow_sy);
+    // Gated on shadow source being non-white rather than current pixel being transparent,
+    // so shadows appear at all sprite and tile edges regardless of local transparency.
+    if (PT_SHADOW_OPACITY > 0.001) {
         vec2  shadow_offset  = vec2(-PT_SHADOW_OFFSET_X, -PT_SHADOW_OFFSET_Y)
-                               * (1.0 / TextureSize) * shadow_scale;
-        float shadowDark     = 1.0 - getBrightness(COMPAT_TEXTURE(OrigTexture, orig_coord + shadow_offset).rgb);
-        float shadowStrength = (shadowDark * shadowDark) * PT_SHADOW_OPACITY;
-        bg = mix(bg, bg * 0.2, shadowStrength);
+                               * (1.0 / TextureSize);
+        vec2  shadowPos      = orig_coord + shadow_offset;
+        // Skip shadow if sample position is outside valid texture bounds —
+        // out-of-range UVs clamp to edge and produce false dark bars.
+        if (shadowPos.x >= 0.0 && shadowPos.x <= 1.0 && shadowPos.y >= 0.0 && shadowPos.y <= 1.0) {
+            vec3  shadowSrc      = COMPAT_TEXTURE(OrigTexture, shadowPos).rgb;
+            float shadowSrcWhite = isWhitePixel(shadowSrc, threshold);
+            if (shadowSrcWhite < 0.5) {
+                float shadowDark     = 1.0 - getBrightness(shadowSrc);
+                float shadowStrength = (shadowDark * shadowDark) * PT_SHADOW_OPACITY;
+                bg = mix(bg, bg * 0.2, shadowStrength);
+            }
+        }
     }
 
     // Transparency blend.
@@ -480,8 +501,8 @@ void main()
 
     // Post-blend effects.
     result = result * pixelBorderFactor(TEX0.xy);
-    result = applyChromaShift(result, TEX0.xy);
     result = applyVignette(result, TEX0.xy);
+    result = applyChroma(result, TEX0.xy);
 
     FragColor = vec4(result, lcd.a);
 }
