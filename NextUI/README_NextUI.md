@@ -106,7 +106,7 @@ Each variant is two files — a .glsl shader and a .cfg preset that loads it.
   1. Place the .cfg files in your NextUI shaders folder
   2. Place the .glsl files in the glsl subfolder inside your NextUI shaders folder
   3. Launch a game and open the in-game shader menu
-  4. Load the .cfg for your chosen variant — not the .glsl file directly
+  4. Load the .cfg for your chosen variant
   5. Open shader settings and set PT_SYSTEM to match your target system
   6. Apply the recommended settings for that system from the section below
 
