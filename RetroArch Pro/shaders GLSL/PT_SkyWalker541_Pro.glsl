@@ -1,6 +1,6 @@
 /*
 ╔══════════════════════════════════════════════════════════════════╗
-║  PT SkyWalker541 Pro  v1.5.1                                     ║
+║  PT SkyWalker541 Pro  v1.5.2                                     ║
 ║  by SkyWalker541  |  Written for RetroArch (GLSL)                ║
 ╚══════════════════════════════════════════════════════════════════╝
 
@@ -48,7 +48,6 @@
   Disable Pro features in this order to reduce GPU load:
     1. PT_SHADOW_BLUR = 0    — biggest saving (15-tap blur)
     2. PT_HALATION = 0       — 8-tap radial glow
-    3. PT_CURVATURE = 0      — per-fragment UV distortion
     4. PT_DITHER = 0         — minor (Bayer lookup)
     5. PT_PIXEL_BORDER = 0   — minor (per-fragment trig)
   With all Pro features off = equivalent to PT_SkyWalker541.glsl.
@@ -76,7 +75,7 @@
 
   v1.0.0 - Initial Pro release. Directional gaussian shadow blur
            (15-tap), LCD halation, Bayer dithering (2x2/4x4/8x8),
-           screen curvature with edge fringing, improved grain,
+           improved grain, and more.
            PT_SYSTEM expanded to include GBA SP (3) and GBA
            Original (4), green-grey palette option added.
 */
@@ -143,17 +142,12 @@
 // 0=off. Strength/matrix in ADVANCED DEFAULTS.
 #pragma parameter PT_DITHER "Dither blend edges (0=off, 1=on)" 1.0 0.0 1.0 1.0
 
-// ┌──────────────────────────────────┐
-// │  Screen Curvature                │
-// └──────────────────────────────────┘
-// 0=off. All original screens were flat — aesthetic only.
-// Strength/fringe in ADVANCED DEFAULTS.
-#pragma parameter PT_CURVATURE "Screen curvature (0=off)" 0.0 0.0 1.0 0.01
 
 // ┌──────────────────────────────────┐
 // │  Post-Blend Effects              │
 // └──────────────────────────────────┘
-#pragma parameter PT_CHROMA "Chromatic shift (0=off)" 0.0 0.0 1.0 0.01
+#pragma parameter PT_SHADOW_OFFSET_X "Shadow X offset" 1.0 -10.0 10.0 0.5
+#pragma parameter PT_SHADOW_OFFSET_Y "Shadow Y offset" 1.0 -10.0 10.0 0.5
 #pragma parameter PT_VIGNETTE "Vignette strength (0=off)" 0.08 0.0 1.0 0.01
 
 // ╔══════════════════════════════════════════════════════════════╗
@@ -191,11 +185,9 @@
 // └──────────────────────────────────┘
 // Horizontal offset of the drop shadow in source texels.
 // Positive = right, negative = left.  Range: -10.0 to 10.0
-#define PT_SHADOW_OFFSET_X_DEFAULT    2.0
 
 // Vertical offset of the drop shadow in source texels.
 // Positive = down, negative = up.  Range: -10.0 to 10.0
-#define PT_SHADOW_OFFSET_Y_DEFAULT    2.0
 
 // How far the gaussian blur spreads from the shadow origin, in source texels.
 // Only active when PT_SHADOW_BLUR > 0.
@@ -227,17 +219,41 @@
 // 0.0 = 2x2 (coarse, fastest)  1.0 = 4x4 (balanced)  2.0 = 8x8 (finest)
 #define PT_DITHER_MATRIX_DEFAULT      1.0
 
-// ┌──────────────────────────────────┐
-// │  Screen Curvature                │
-// └──────────────────────────────────┘
-// Amount of barrel distortion when PT_CURVATURE > 0.
-// 0.1=barely visible  0.2=subtle  0.3=moderate  0.5=strong.  Range: 0.0-1.0
-#define PT_CURVATURE_STRENGTH_DEFAULT 0.20
-
-// Colour channel separation at screen edges, simulating lens refraction.
-// Only active when PT_CURVATURE > 0.
 // 0.0=off  0.4=subtle  1.0=strong.  Range: 0.0-1.0
-#define PT_CURVATURE_FRINGE_DEFAULT   0.4
+
+// ┌──────────────────────────────────┐
+// │  Subpixel Layout                 │
+// └──────────────────────────────────┘
+// Simulates the RGB stripe subpixel structure of the original LCD panels.
+// 0.0 = off. Suggested: 0.2-0.5
+// Per-system: GB=0.0 (monochrome), GBC=0.25, GBA SP=0.30, GBA Orig=0.20
+#define PT_SUBPIXEL_STRENGTH_DEFAULT  0.0
+
+// ┌──────────────────────────────────┐
+// │  Tight Bloom                     │
+// └──────────────────────────────────┘
+// Close-range pixel bleed between adjacent bright pixels.
+// Separate from the wide halation. Only for backlit screens (GBA SP).
+// 0.0 = off. Suggested GBA SP: 0.10-0.20
+// Radius in source texels. Suggested: 0.5-1.0
+#define PT_TIGHT_BLOOM_DEFAULT        0.0
+#define PT_TIGHT_BLOOM_RADIUS_DEFAULT 0.6
+
+// ┌──────────────────────────────────┐
+// │  Screen Warp                     │
+// └──────────────────────────────────┘
+// Subtle barrel distortion simulating the slight curvature of the screen
+// glass under the bezel. Applies to all systems.
+// 0.0 = off. Suggested: 0.02-0.06
+#define PT_WARP_STRENGTH_DEFAULT      0.0
+
+// ┌──────────────────────────────────┐
+// │  Reflective Sheen                │
+// └──────────────────────────────────┘
+// Subtle edge brightening simulating ambient light on the reflective LCD.
+// Most authentic for GB, GBC, GBA Original. Off for GBA SP (front-lit).
+// 0.0 = off. Suggested: 0.03-0.08
+#define PT_SHEEN_STRENGTH_DEFAULT     0.0
 
 // ╔══════════════════════════════════════════════════════════════╗
 // ║  VERTEX SHADER                                               ║
@@ -335,12 +351,12 @@ uniform COMPAT_PRECISION float PT_WHITE_TRANSPARENCY;
 uniform COMPAT_PRECISION float PT_PALETTE;
 uniform COMPAT_PRECISION float PT_DARK_FILTER_LEVEL;
 uniform COMPAT_PRECISION float PT_PIXEL_BORDER;
+uniform COMPAT_PRECISION float PT_SHADOW_OFFSET_X;
+uniform COMPAT_PRECISION float PT_SHADOW_OFFSET_Y;
 uniform COMPAT_PRECISION float PT_SHADOW_OPACITY;
 uniform COMPAT_PRECISION float PT_SHADOW_BLUR;
 uniform COMPAT_PRECISION float PT_HALATION;
 uniform COMPAT_PRECISION float PT_DITHER;
-uniform COMPAT_PRECISION float PT_CURVATURE;
-uniform COMPAT_PRECISION float PT_CHROMA;
 uniform COMPAT_PRECISION float PT_VIGNETTE;
 #else
 // Fallback when PARAMETER_UNIFORM is not set
@@ -352,12 +368,12 @@ uniform COMPAT_PRECISION float PT_VIGNETTE;
 #define PT_PALETTE            1.0
 #define PT_DARK_FILTER_LEVEL  0.0
 #define PT_PIXEL_BORDER       1.0
+#define PT_SHADOW_OFFSET_X    1.0
+#define PT_SHADOW_OFFSET_Y    1.0
 #define PT_SHADOW_OPACITY     0.30
 #define PT_SHADOW_BLUR        1.0
 #define PT_HALATION           0.0
 #define PT_DITHER             1.0
-#define PT_CURVATURE          0.0
-#define PT_CHROMA             0.0
 #define PT_VIGNETTE           0.08
 #endif
 
@@ -366,15 +382,16 @@ uniform COMPAT_PRECISION float PT_VIGNETTE;
 #define PT_PALETTE_INTENSITY  PT_PALETTE_INTENSITY_DEFAULT
 #define PT_GRAIN_INTENSITY    PT_GRAIN_INTENSITY_DEFAULT
 #define PT_GRAIN_SCALE        PT_GRAIN_SCALE_DEFAULT
-#define PT_SHADOW_OFFSET_X    PT_SHADOW_OFFSET_X_DEFAULT
-#define PT_SHADOW_OFFSET_Y    PT_SHADOW_OFFSET_Y_DEFAULT
 #define PT_SHADOW_BLUR_RADIUS PT_SHADOW_BLUR_RADIUS_DEFAULT
 #define PT_HALATION_RADIUS    PT_HALATION_RADIUS_DEFAULT
 #define PT_HALATION_WARMTH    PT_HALATION_WARMTH_DEFAULT
 #define PT_DITHER_STRENGTH    PT_DITHER_STRENGTH_DEFAULT
 #define PT_DITHER_MATRIX      PT_DITHER_MATRIX_DEFAULT
-#define PT_CURVATURE_STRENGTH PT_CURVATURE_STRENGTH_DEFAULT
-#define PT_CURVATURE_FRINGE   PT_CURVATURE_FRINGE_DEFAULT
+#define PT_SUBPIXEL_STRENGTH  PT_SUBPIXEL_STRENGTH_DEFAULT
+#define PT_TIGHT_BLOOM        PT_TIGHT_BLOOM_DEFAULT
+#define PT_TIGHT_BLOOM_RADIUS PT_TIGHT_BLOOM_RADIUS_DEFAULT
+#define PT_WARP_STRENGTH      PT_WARP_STRENGTH_DEFAULT
+#define PT_SHEEN_STRENGTH     PT_SHEEN_STRENGTH_DEFAULT
 
 // ┌──────────────────────────────────┐
 // │  Constants                       │
@@ -384,6 +401,15 @@ uniform COMPAT_PRECISION float PT_VIGNETTE;
 #define LUMA_B 0.0722
 #define PI     3.141592654
 #define BORDER_WIDTH_FACTOR_MAX 31.0
+
+// ┌──────────────────────────────────┐
+// │  Chromatic Shift (hidden)        │
+// │  Radial RGB channel separation.  │
+// │  Not exposed in the shader menu. │
+// │  Edit this value to adjust.      │
+// │  0.0 = off. Suggested: 0.3–0.8   │
+// └──────────────────────────────────┘
+#define PT_CHROMA_STRENGTH 0.0
 
 // ╔══════════════════════════════════════════════════════════════╗
 // ║  HELPER FUNCTIONS                                            ║
@@ -582,17 +608,17 @@ vec3 applyHalation(vec3 color, vec2 coord, float isTransparent)
 {
     if (PT_HALATION < 0.001 || isTransparent < 0.5) return color;
 
-    float step = PT_HALATION_RADIUS * texel.x;
+    float hStep = PT_HALATION_RADIUS * texel.x;
 
     float glow = 0.0;
-    glow += getBrightness(COMPAT_TEXTURE(Texture, coord + vec2( step,  0.0)).rgb);
-    glow += getBrightness(COMPAT_TEXTURE(Texture, coord + vec2(-step,  0.0)).rgb);
-    glow += getBrightness(COMPAT_TEXTURE(Texture, coord + vec2( 0.0,  step)).rgb);
-    glow += getBrightness(COMPAT_TEXTURE(Texture, coord + vec2( 0.0, -step)).rgb);
-    glow += getBrightness(COMPAT_TEXTURE(Texture, coord + vec2( step,  step)).rgb) * 0.5;
-    glow += getBrightness(COMPAT_TEXTURE(Texture, coord + vec2(-step,  step)).rgb) * 0.5;
-    glow += getBrightness(COMPAT_TEXTURE(Texture, coord + vec2( step, -step)).rgb) * 0.5;
-    glow += getBrightness(COMPAT_TEXTURE(Texture, coord + vec2(-step, -step)).rgb) * 0.5;
+    glow += getBrightness(COMPAT_TEXTURE(Texture, coord + vec2( hStep,  0.0)).rgb);
+    glow += getBrightness(COMPAT_TEXTURE(Texture, coord + vec2(-hStep,  0.0)).rgb);
+    glow += getBrightness(COMPAT_TEXTURE(Texture, coord + vec2( 0.0,  hStep)).rgb);
+    glow += getBrightness(COMPAT_TEXTURE(Texture, coord + vec2( 0.0, -hStep)).rgb);
+    glow += getBrightness(COMPAT_TEXTURE(Texture, coord + vec2( hStep,  hStep)).rgb) * 0.5;
+    glow += getBrightness(COMPAT_TEXTURE(Texture, coord + vec2(-hStep,  hStep)).rgb) * 0.5;
+    glow += getBrightness(COMPAT_TEXTURE(Texture, coord + vec2( hStep, -hStep)).rgb) * 0.5;
+    glow += getBrightness(COMPAT_TEXTURE(Texture, coord + vec2(-hStep, -hStep)).rgb) * 0.5;
     glow /= 6.0;
 
     vec3 glowColor = mix(vec3(1.0, 1.0, 1.0), vec3(1.0, 0.92, 0.75), PT_HALATION_WARMTH);
@@ -682,52 +708,11 @@ float getBayerDither(vec2 coord)
     }
 }
 
-// ┌──────────────────────────────────┐
-// │  Screen Curvature                │
-// └──────────────────────────────────┘
-
-// Barrel distortion. Returns vec2(-1) sentinel for out-of-bounds pixels.
-vec2 applyCurvature(vec2 coord)
-{
-    if (PT_CURVATURE < 0.5) return coord;
-    vec2  uv       = coord * 2.0 - 1.0;
-    float strength = PT_CURVATURE_STRENGTH * 0.3;
-    uv = uv + uv * dot(uv, uv) * strength;
-    vec2 remapped = uv * 0.5 + 0.5;
-    if (remapped.x < 0.0 || remapped.x > 1.0 ||
-        remapped.y < 0.0 || remapped.y > 1.0) {
-        return vec2(-1.0);
-    }
-    return remapped;
-}
-
-// Edge chromatic fringing — simulates lens refraction at screen periphery.
-vec3 sampleWithFringe(vec2 coord)
-{
-    if (PT_CURVATURE_FRINGE < 0.001) return COMPAT_TEXTURE(Texture, coord).rgb;
-    vec2  fromCenter = coord - 0.5;
-    float dist       = length(fromCenter);
-    float fringe     = dist * 0.02 * PT_CURVATURE_FRINGE;
-    vec2  dir        = normalize(fromCenter + vec2(0.0001));
-    float r = COMPAT_TEXTURE(Texture, coord + dir * fringe).r;
-    float g = COMPAT_TEXTURE(Texture, coord            ).g;
-    float b = COMPAT_TEXTURE(Texture, coord - dir * fringe).b;
-    return vec3(r, g, b);
-}
 
 // ┌──────────────────────────────────┐
 // │  Post-Blend Effects              │
 // └──────────────────────────────────┘
 
-// Global chromatic aberration — pure UV math, zero extra taps.
-vec3 applyChromaShift(vec3 color, vec2 coord)
-{
-    if (PT_CHROMA < 0.001) return color;
-    vec2  offset = (coord - 0.5) * PT_CHROMA * 0.02;
-    float r      = mix(color.r, color.r * (1.0 + offset.x), 0.5);
-    float b      = mix(color.b, color.b * (1.0 - offset.x), 0.5);
-    return clamp(vec3(r, color.g, b), 0.0, 1.0);
-}
 
 // Vignette — pure math, zero extra taps.
 vec3 applyVignette(vec3 color, vec2 coord)
@@ -739,28 +724,115 @@ vec3 applyVignette(vec3 color, vec2 coord)
     return color * clamp(vignette, 0.0, 1.0);
 }
 
+// ┌──────────────────────────────────┐
+// │  Chromatic Shift                 │
+// └──────────────────────────────────┘
+
+// Radial RGB channel separation from screen centre.
+// R shifts outward, B shifts inward by the same amount.
+// Strength is in source texels. Only samples two extra taps.
+// Skipped entirely when PT_CHROMA_STRENGTH is 0.
+vec3 applyChroma(vec3 color, vec2 coord)
+{
+    if (PT_CHROMA_STRENGTH < 0.001) return color;
+    vec2 toCenter = coord - vec2(0.5);
+    vec2 offset   = toCenter * PT_CHROMA_STRENGTH * (1.0 / TextureSize);
+    float r = COMPAT_TEXTURE(Texture, coord + offset).r;
+    float b = COMPAT_TEXTURE(Texture, coord - offset).b;
+    return vec3(r, color.g, b);
+}
+
+// ┌──────────────────────────────────┐
+// │  Subpixel Layout                 │
+// └──────────────────────────────────┘
+
+// Simulates the RGB stripe subpixel structure of the original LCD panels.
+// Modulates R, G, B channels independently based on horizontal sub-pixel
+// position within each logical pixel. Strength 0 = off, no cost.
+vec3 applySubpixel(vec3 color, vec2 coord)
+{
+    if (PT_SUBPIXEL_STRENGTH < 0.001) return color;
+    float subX  = fract(coord.x * TextureSize.x * 3.0);
+    float rMask = smoothstep(0.0, 0.33, subX) * (1.0 - smoothstep(0.33, 0.66, subX));
+    float gMask = smoothstep(0.33, 0.66, subX) * (1.0 - smoothstep(0.66, 1.0, subX));
+    float bMask = 1.0 - smoothstep(0.66, 1.0, subX) + smoothstep(0.0, 0.0, subX) * (1.0 - smoothstep(0.0, 0.33, subX));
+    vec3 mask   = clamp(vec3(rMask, gMask, bMask) * 3.0, 0.0, 1.5);
+    return clamp(mix(color, color * mask, PT_SUBPIXEL_STRENGTH), 0.0, 1.0);
+}
+
+// ┌──────────────────────────────────┐
+// │  Tight Bloom                     │
+// └──────────────────────────────────┘
+
+// Close-range pixel bleed between adjacent bright pixels.
+// Simulates the tight local glow of the GBA SP front-light diffuser.
+// Separate from the wide halation — use both together for full GBA SP look.
+// Only physically meaningful for backlit screens. Off by default.
+vec3 applyTightBloom(vec3 color, vec2 coord)
+{
+    if (PT_TIGHT_BLOOM < 0.001) return color;
+    float s = PT_TIGHT_BLOOM_RADIUS * texel.x;
+    vec3 bloom = vec3(0.0);
+    bloom += COMPAT_TEXTURE(Texture, coord + vec2( s,  0.0)).rgb;
+    bloom += COMPAT_TEXTURE(Texture, coord + vec2(-s,  0.0)).rgb;
+    bloom += COMPAT_TEXTURE(Texture, coord + vec2( 0.0,  s)).rgb;
+    bloom += COMPAT_TEXTURE(Texture, coord + vec2( 0.0, -s)).rgb;
+    bloom *= 0.25;
+    float bloomLuma = perceptualBrightness(bloom);
+    return clamp(color + bloom * bloomLuma * PT_TIGHT_BLOOM, 0.0, 1.0);
+}
+
+// ┌──────────────────────────────────┐
+// │  Screen Warp                     │
+// └──────────────────────────────────┘
+
+// Returns warped UV coordinates simulating slight barrel distortion
+// from the physical curvature of the screen glass under the bezel.
+// Applied before sampling in main() — warp affects the whole image.
+vec2 warpCoord(vec2 coord)
+{
+    if (PT_WARP_STRENGTH < 0.001) return coord;
+    vec2 uv    = coord * 2.0 - 1.0;
+    float dist = dot(uv, uv);
+    uv         = uv * (1.0 + dist * PT_WARP_STRENGTH);
+    return uv * 0.5 + 0.5;
+}
+
+// ┌──────────────────────────────────┐
+// │  Reflective Sheen                │
+// └──────────────────────────────────┘
+
+// Subtle edge brightening simulating ambient light bouncing off the
+// reflective LCD surface of GB, GBC, and GBA Original screens.
+// Inverse radial gradient — brightens toward the edges, not the centre.
+// Not physically meaningful for backlit screens (GBA SP). Off by default.
+vec3 applySheen(vec3 color, vec2 coord)
+{
+    if (PT_SHEEN_STRENGTH < 0.001) return color;
+    vec2  uv    = coord * 2.0 - 1.0;
+    float dist  = dot(uv, uv);
+    float sheen = dist * PT_SHEEN_STRENGTH;
+    return clamp(color + sheen, 0.0, 1.0);
+}
+
 // ╔══════════════════════════════════════════════════════════════╗
 // ║  MAIN                                                        ║
 // ╚══════════════════════════════════════════════════════════════╝
 void main()
 {
-    // Screen curvature UV remapping — must happen first.
-    vec2 curvedUV = applyCurvature(TEX0.xy);
-    if (curvedUV.x < 0.0) {
-        FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-        return;
-    }
-    vec2 curvedOrigCoord = orig_coord + (curvedUV - TEX0.xy);
+    // Screen warp — applied first, remaps UV for all subsequent samples.
+    vec2 warpedUV = warpCoord(TEX0.xy);
+
+    // Snap to texel centre to eliminate bilinear filtering artifacts.
+    vec2 imgPixelCoord = warpedUV * TextureSize;
+    vec2 snappedUV     = (floor(imgPixelCoord) + vec2(0.5)) / TextureSize;
 
     // Sample source textures.
-    vec4 lcd;
-    if (PT_CURVATURE > 0.5 && PT_CURVATURE_FRINGE > 0.001) {
-        lcd = vec4(sampleWithFringe(curvedUV), 1.0);
-    } else {
-        lcd = COMPAT_TEXTURE(Texture, curvedUV);
-    }
+    // lcd      — colour-corrected frame (Texture). Used for display and shadows.
+    // rawPixel — raw pre-correction frame (OrigTexture). Used for white detection.
+    vec4 lcd      = COMPAT_TEXTURE(Texture, snappedUV);
     vec3 pixel    = lcd.rgb;
-    vec3 rawPixel = COMPAT_TEXTURE(OrigTexture, curvedOrigCoord).rgb;
+    vec3 rawPixel = COMPAT_TEXTURE(OrigTexture, orig_coord).rgb;
 
     // Color harshness filter.
     if (PT_DARK_FILTER_LEVEL > 0.5) {
@@ -775,7 +847,7 @@ void main()
     float rawBrightness = perceptualBrightness(rawPixel);
 
     // Build procedural backing texture.
-    vec3 bg = proceduralBackground(curvedUV);
+    vec3 bg = proceduralBackground(snappedUV);
     if (PT_PALETTE > 0.5) {
         vec3 tint;
         if      (PT_PALETTE < 1.5) tint = vec3(0.651, 0.675, 0.518); // Pocket grey
@@ -800,33 +872,37 @@ void main()
     else                          willBeTransparent = 1.0;
 
     // Drop shadow with optional directional gaussian blur.
-    if (willBeTransparent > 0.5 && PT_SHADOW_OPACITY > 0.001) {
-        // Scale shadow offset proportionally to output scale so it appears
-        // consistent regardless of how much the source frame is scaled up.
-        float shadow_sx    = OutputSize.x / InputSize.x;
-        float shadow_sy    = OutputSize.y / InputSize.y;
-        float shadow_scale = sqrt(shadow_sx * shadow_sy);
+    // Gated on shadow source being non-white rather than current pixel being transparent,
+    // so shadows appear at all sprite and tile edges regardless of local transparency.
+    if (PT_SHADOW_OPACITY > 0.001) {
         vec2 shadowOffset  = vec2(-PT_SHADOW_OFFSET_X, -PT_SHADOW_OFFSET_Y)
-                            * (1.0 / TextureSize) * shadow_scale;
-        vec2 shadowPos    = curvedOrigCoord + shadowOffset;
-
-        float shadowDark;
-        if (PT_SHADOW_BLUR > 0.001) {
-            vec2  shadowDir = normalize(shadowOffset + vec2(0.0001));
-            float stepSize  = PT_SHADOW_BLUR_RADIUS * (1.0 / TextureSize.x);
-            shadowDark = directionalShadowBlur(shadowPos, shadowDir, stepSize, PT_SHADOW_BLUR / 5.0);
-        } else {
-            shadowDark = 1.0 - getBrightness(COMPAT_TEXTURE(OrigTexture, shadowPos).rgb);
+                            * (1.0 / TextureSize);
+        vec2 shadowPos     = orig_coord + shadowOffset;
+        // Skip shadow if sample position is outside valid texture bounds —
+        // out-of-range UVs clamp to edge and produce false dark bars.
+        if (shadowPos.x >= 0.0 && shadowPos.x <= 1.0 && shadowPos.y >= 0.0 && shadowPos.y <= 1.0) {
+            vec3 shadowSrc       = COMPAT_TEXTURE(OrigTexture, shadowPos).rgb;
+            float shadowSrcWhite = whitePixelStrength(shadowSrc, threshold);
+            if (shadowSrcWhite < 0.5) {
+                float shadowDark;
+                if (PT_SHADOW_BLUR > 0.001) {
+                    vec2  shadowDir = normalize(shadowOffset + vec2(0.0001));
+                    float stepSize  = PT_SHADOW_BLUR_RADIUS * (1.0 / TextureSize.x);
+                    shadowDark = directionalShadowBlur(shadowPos, shadowDir, stepSize, PT_SHADOW_BLUR / 5.0);
+                } else {
+                    shadowDark = 1.0 - getBrightness(shadowSrc);
+                }
+                float shadowStrength = (shadowDark * shadowDark) * PT_SHADOW_OPACITY;
+                bg = mix(bg, bg * 0.2, shadowStrength);
+            }
         }
-        float shadowStrength = (shadowDark * shadowDark) * PT_SHADOW_OPACITY;
-        bg = mix(bg, bg * 0.2, shadowStrength);
     }
 
     // Transparency blend with optional Bayer dithering.
     // Alpha driven by raw brightness — consistent with detection on raw frame.
     // White pixels: plain mix(). Coloured pixels: hue-preserving blend.
     float dither = 0.0;
-    if (PT_DITHER > 0.5) dither = getBayerDither(curvedUV) * PT_DITHER_STRENGTH;
+    if (PT_DITHER > 0.5) dither = getBayerDither(snappedUV) * PT_DITHER_STRENGTH;
     vec3 result = pixel;
 
     if (PT_PIXEL_MODE < 0.5) {
@@ -848,12 +924,15 @@ void main()
     }
 
     // Halation — after blend, only on transparent pixels.
-    result = applyHalation(result, curvedUV, willBeTransparent);
+    result = applyHalation(result, snappedUV, willBeTransparent);
 
     // Post-blend effects.
-    result = result * pixelBorderFactor(curvedUV);
-    result = applyChromaShift(result, curvedUV);
-    result = applyVignette(result, curvedUV);
+    result = result * pixelBorderFactor(warpedUV);
+    result = applySubpixel(result, warpedUV);
+    result = applyTightBloom(result, snappedUV);
+    result = applyVignette(result, warpedUV);
+    result = applySheen(result, warpedUV);
+    result = applyChroma(result, warpedUV);
 
     FragColor = vec4(result, lcd.a);
 }
