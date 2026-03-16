@@ -74,7 +74,7 @@
 // ┌──────────────────────────────────┐
 // │  Background                      │
 // └──────────────────────────────────┘
-#pragma parameter PT_PALETTE         "Background tint (0=Off, 1=Pocket, 2=Grey, 3=White)" 1.0 0.0 3.0 1.0
+#pragma parameter PT_PALETTE         "Background tint (0=Off, 1=Pocket, 2=Grey, 3=White, 4=GrnGrey)" 1.0 0.0 4.0 1.0
 #pragma parameter PT_HALATION        "Halation glow (0=off)" 0.0 0.0 1.0 0.01
 
 // ┌──────────────────────────────────┐
@@ -676,7 +676,7 @@ void main()
         if      (params.PT_PALETTE < 1.5) tint = vec3(0.651, 0.675, 0.518); // Pocket grey
         else if (params.PT_PALETTE < 2.5) tint = vec3(0.737, 0.737, 0.737); // Cool grey
         else if (params.PT_PALETTE < 3.5) tint = vec3(1.0,   1.0,   1.0  ); // White (GBA SP)
-        else                       tint = vec3(0.60,  0.64,  0.46  ); // Green-grey (GBA Orig)
+        else                              tint = vec3(0.60,  0.64,  0.46  ); // Green-grey (GBA Orig)
         // Overlay blend: grain texture onto tint colour.
         // Dark grain pulls the tint down, bright grain lifts it --
         // matching the physical behaviour of a textured backing material.

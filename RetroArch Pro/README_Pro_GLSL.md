@@ -1,6 +1,6 @@
 # PT SkyWalker541 Pro
-### Pixel Transparency Shader for RetroArch — Slang Pro Version
-**by SkyWalker541 | v1.5.2 | Slang (.slangp) — works on Vulkan / glcore / D3D11 / Metal**
+### Pixel Transparency Shader for RetroArch — GLSL Pro Version
+**by SkyWalker541 | v1.5.2 | GLSL (.glslp) — works on gl / glcore drivers**
 
 ---
 
@@ -14,8 +14,8 @@ On modern displays and emulators, those same pixels render as bright white, whic
 intended look. PT SkyWalker541 Pro restores the original appearance with a full suite of
 hardware-accurate effects, targeting powerful handhelds and PC.
 
-  Looking for the GLSL version? Use PT_SkyWalker541_Pro.glslp if your RetroArch video driver
-  is set to gl. Both versions produce identical output.
+  Looking for the GLSL version? Use PT_SkyWalker541_Pro.slangp if your RetroArch video driver
+  is set to Vulkan, glcore, D3D11, D3D12, or Metal. Both versions produce identical output.
 
   Looking for the lighter version? PT_SkyWalker541.slangp is the standard shader without the
   Pro-exclusive effects — better suited to modest hardware.
@@ -93,12 +93,12 @@ All features from the standard shader, plus:
 
 Place both files in the same folder inside your RetroArch shaders directory:
 
-    PT_SkyWalker541_Pro.slangp
-    PT_SkyWalker541_Pro.slang
+    PT_SkyWalker541_Pro.glslp
+    PT_SkyWalker541_Pro.glsl
 
   1. Launch a game
   2. Open the RetroArch menu and go to Quick Menu > Shaders > Load Shader Preset
-  3. Select PT_SkyWalker541_Pro.slangp — not the .slang file directly
+  3. Select PT_SkyWalker541_Pro.glslp — not the .slang file directly
   4. Open Shader Parameters and set PT_SYSTEM to match your target system
   5. Apply the recommended settings for that system from the section below
   6. Optionally save via Save Shader Preset As for automatic loading on future sessions
@@ -149,7 +149,7 @@ panel's response time.
   SHADER PARAMETERS
   ─────────────────────────────────────────────────────────────────
   PT_SYSTEM (System)  1   GB
-  PT_PIXEL_MODE (Pixel mode)  0   White only
+  PT_PIXEL_MODE (Transparency mode)  0   White only
   PT_BASE_ALPHA (Base transparency)  0.20
   PT_WHITE_TRANSPARENCY (White pixel min transparency)  0.20
   PT_PALETTE (Background tint)  1   Pocket grey
@@ -158,12 +158,12 @@ panel's response time.
   PT_SHADOW_OFFSET_X (Shadow X offset)  1.0
   PT_SHADOW_OFFSET_Y (Shadow Y offset)  1.0
   PT_SHADOW_OPACITY (Shadow opacity)  0.30
-  PT_SHADOW_BLUR (Shadow blur)  1.0
+  PT_SHADOW_BLUR (Shadow blur amount)  1.0
   PT_HALATION (Halation glow)  0.0   off — no backlight
-  PT_DITHER (Dither)  1.0   on
+  PT_DITHER (Dither blend edges)  1.0   on
   PT_VIGNETTE (Vignette strength)  0.10
 
-  HIDDEN PARAMETERS  (edit in PT_SkyWalker541_Pro.slang)
+  HIDDEN PARAMETERS  (edit in PT_SkyWalker541_Pro.glsl)
   ─────────────────────────────────────────────────────────────────
   PT_BRIGHTNESS_MODE         0.0        (Simple)
   PT_PALETTE_INTENSITY       1.0
@@ -199,7 +199,7 @@ is subtler.
   SHADER PARAMETERS
   ─────────────────────────────────────────────────────────────────
   PT_SYSTEM (System)  2   GBC
-  PT_PIXEL_MODE (Pixel mode)  0   White only
+  PT_PIXEL_MODE (Transparency mode)  0   White only
   PT_BASE_ALPHA (Base transparency)  0.20
   PT_WHITE_TRANSPARENCY (White pixel min transparency)  0.20
   PT_PALETTE (Background tint)  1   Pocket grey
@@ -208,12 +208,12 @@ is subtler.
   PT_SHADOW_OFFSET_X (Shadow X offset)  1.0
   PT_SHADOW_OFFSET_Y (Shadow Y offset)  1.0
   PT_SHADOW_OPACITY (Shadow opacity)  0.25
-  PT_SHADOW_BLUR (Shadow blur)  1.0
+  PT_SHADOW_BLUR (Shadow blur amount)  1.0
   PT_HALATION (Halation glow)  0.0   off — no backlight
-  PT_DITHER (Dither)  1.0   on
+  PT_DITHER (Dither blend edges)  1.0   on
   PT_VIGNETTE (Vignette strength)  0.08
 
-  HIDDEN PARAMETERS  (edit in PT_SkyWalker541_Pro.slang)
+  HIDDEN PARAMETERS  (edit in PT_SkyWalker541_Pro.glsl)
   ─────────────────────────────────────────────────────────────────
   PT_BRIGHTNESS_MODE         0.0        (Simple)
   PT_PALETTE_INTENSITY       1.0
@@ -254,7 +254,7 @@ neighbouring pixels — this is what the halation and tight bloom effects recrea
   SHADER PARAMETERS
   ─────────────────────────────────────────────────────────────────
   PT_SYSTEM (System)  3   GBA SP
-  PT_PIXEL_MODE (Pixel mode)  0   White only
+  PT_PIXEL_MODE (Transparency mode)  0   White only
   PT_BASE_ALPHA (Base transparency)  0.15
   PT_WHITE_TRANSPARENCY (White pixel min transparency)  0.45
   PT_PALETTE (Background tint)  3   White
@@ -263,12 +263,12 @@ neighbouring pixels — this is what the halation and tight bloom effects recrea
   PT_SHADOW_OFFSET_X (Shadow X offset)  1.0
   PT_SHADOW_OFFSET_Y (Shadow Y offset)  1.0
   PT_SHADOW_OPACITY (Shadow opacity)  0.20
-  PT_SHADOW_BLUR (Shadow blur)  1.5
+  PT_SHADOW_BLUR (Shadow blur amount)  1.5
   PT_HALATION (Halation glow)  0.08   front-lit diffuser glow
-  PT_DITHER (Dither)  1.0   on
+  PT_DITHER (Dither blend edges)  1.0   on
   PT_VIGNETTE (Vignette strength)  0.05
 
-  HIDDEN PARAMETERS  (edit in PT_SkyWalker541_Pro.slang)
+  HIDDEN PARAMETERS  (edit in PT_SkyWalker541_Pro.glsl)
   ─────────────────────────────────────────────────────────────────
   PT_BRIGHTNESS_MODE         1.0        (Perceptual)
   PT_PALETTE_INTENSITY       1.0
@@ -308,7 +308,7 @@ distinctive yellowish-green tint of the original GBA backing.
   SHADER PARAMETERS
   ─────────────────────────────────────────────────────────────────
   PT_SYSTEM (System)  4   GBA Orig
-  PT_PIXEL_MODE (Pixel mode)  0   White only
+  PT_PIXEL_MODE (Transparency mode)  0   White only
   PT_BASE_ALPHA (Base transparency)  0.25
   PT_WHITE_TRANSPARENCY (White pixel min transparency)  0.55
   PT_PALETTE (Background tint)  4   Green-grey — matches original GBA polariser tint
@@ -317,12 +317,12 @@ distinctive yellowish-green tint of the original GBA backing.
   PT_SHADOW_OFFSET_X (Shadow X offset)  1.0
   PT_SHADOW_OFFSET_Y (Shadow Y offset)  1.0
   PT_SHADOW_OPACITY (Shadow opacity)  0.20
-  PT_SHADOW_BLUR (Shadow blur)  1.0
+  PT_SHADOW_BLUR (Shadow blur amount)  1.0
   PT_HALATION (Halation glow)  0.0   off — no backlight
-  PT_DITHER (Dither)  1.0   on
+  PT_DITHER (Dither blend edges)  1.0   on
   PT_VIGNETTE (Vignette strength)  0.12
 
-  HIDDEN PARAMETERS  (edit in PT_SkyWalker541_Pro.slang)
+  HIDDEN PARAMETERS  (edit in PT_SkyWalker541_Pro.glsl)
   ─────────────────────────────────────────────────────────────────
   PT_BRIGHTNESS_MODE         1.0        (Perceptual)
   PT_PALETTE_INTENSITY       1.0
@@ -372,7 +372,7 @@ preset. Changes preview live.
 
 Some values are not exposed in the menu — these are Advanced Defaults controlled via #define
 constants in the .slang file. They are noted as (hidden) throughout this section and can be
-found and edited in the Advanced Defaults block near the top of PT_SkyWalker541_Pro.slang.
+found and edited in the Advanced Defaults block near the top of PT_SkyWalker541_Pro.glsl.
 
 ---
 
@@ -762,8 +762,8 @@ from the shader parameters menu at any time. Hidden values require a file edit a
 Works on any RetroArch-supported platform and display resolution. The shader works at any
 scale mode — aspect ratio, integer, or custom — no separate variants required.
 
-Works on any RetroArch video driver that supports Slang shaders: Vulkan, glcore, D3D11, D3D12,
-and Metal. Does not work with the legacy gl driver — use PT_SkyWalker541_Pro.glslp for that.
+Requires a RetroArch video driver that supports GLSL shaders: gl or glcore. Does not work
+with the Vulkan driver — use PT_SkyWalker541_Pro.slangp for Vulkan.
 
 ---
 

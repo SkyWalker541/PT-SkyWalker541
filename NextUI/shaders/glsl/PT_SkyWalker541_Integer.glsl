@@ -168,7 +168,7 @@
 // │  Background Tint                 │
 // └──────────────────────────────────┘
 // 0=OFF  1=Pocket grey  2=Grey  3=White
-#pragma parameter PT_PALETTE           "== Background tint == (0=OFF, 1=Pocket, 2=Grey, 3=White)" 1.0 0.0 3.0 1.0
+#pragma parameter PT_PALETTE           "== Background tint == (0=OFF, 1=Pocket, 2=Grey, 3=White, 4=GrnGrey)" 1.0 0.0 4.0 1.0
 #pragma parameter PT_PALETTE_INTENSITY "     ↳ Tint intensity" 1.0 0.0 2.0 0.05
 
 // ┌──────────────────────────────────┐
@@ -514,8 +514,10 @@ void main()
             tint = vec3(0.651, 0.675, 0.518); // Pocket: warm green-grey
         } else if (PT_PALETTE < 2.5) {
             tint = vec3(0.737, 0.737, 0.737); // Grey
-        } else {
+        } else if (PT_PALETTE < 3.5) {
             tint = vec3(1.0, 1.0, 1.0);       // White
+        } else {
+            tint = vec3(0.60, 0.64, 0.46);    // Green-grey (GBA Orig)
         }
         // Overlay blend: grain texture onto tint colour.
         // Dark grain pulls the tint down, bright grain lifts it --

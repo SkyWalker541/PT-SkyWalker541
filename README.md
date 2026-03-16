@@ -2,8 +2,6 @@
 
 # PT SkyWalker541
 
-## Please note, the Pro version of the GLSL shader is not ready for release, and will be coming at a later date. The slang version is available now.
-
 ### Pixel Transparency Shader for GB · GBC · GBA Emulation
 
 **by SkyWalker541**

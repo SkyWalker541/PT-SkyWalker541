@@ -136,19 +136,19 @@ trails, and the boundary between transparent and opaque areas was naturally soft
 
   SHADER PARAMETERS
   ─────────────────────────────────────────────────────────────────
-  PT_SYSTEM                  1          (GB)
-  PT_PIXEL_MODE              0          (White only)
-  PT_BASE_ALPHA              0.20
-  PT_WHITE_TRANSPARENCY      0.20
-  PT_BRIGHTNESS_MODE         0          (Simple)
-  PT_PALETTE                 1          (Pocket grey)
-  PT_PALETTE_INTENSITY       1.00
-  PT_DARK_FILTER_LEVEL       0          (off)
-  PT_PIXEL_BORDER            1          (Subtle)
-  PT_SHADOW_OFFSET_X         1.0
-  PT_SHADOW_OFFSET_Y         1.0
-  PT_SHADOW_OPACITY          0.30
-  PT_VIGNETTE                0.10
+  PT_SYSTEM (System)  1   GB
+  PT_PIXEL_MODE (Pixel mode)  0   White only
+  PT_BASE_ALPHA (Base transparency)  0.20
+  PT_WHITE_TRANSPARENCY (White pixel min transparency)  0.20
+  PT_BRIGHTNESS_MODE (Brightness mode)  0   Simple
+  PT_PALETTE (Background tint)  1   Pocket grey
+  PT_PALETTE_INTENSITY (Tint intensity)  1.00
+  PT_DARK_FILTER_LEVEL (Dark color filter)  0   off
+  PT_PIXEL_BORDER (Pixel border)  1   Subtle
+  PT_SHADOW_OFFSET_X (Shadow X offset)  1.0
+  PT_SHADOW_OFFSET_Y (Shadow Y offset)  1.0
+  PT_SHADOW_OPACITY (Shadow opacity)  0.30
+  PT_VIGNETTE (Vignette strength)  0.10
 
   HIDDEN PARAMETERS  (edit in PT_SkyWalker541.slang)
   ─────────────────────────────────────────────────────────────────
@@ -174,19 +174,19 @@ is subtler.
 
   SHADER PARAMETERS
   ─────────────────────────────────────────────────────────────────
-  PT_SYSTEM                  2          (GBC)
-  PT_PIXEL_MODE              0          (White only)
-  PT_BASE_ALPHA              0.20
-  PT_WHITE_TRANSPARENCY      0.20
-  PT_BRIGHTNESS_MODE         0          (Simple)
-  PT_PALETTE                 1          (Pocket grey)
-  PT_PALETTE_INTENSITY       1.00
-  PT_DARK_FILTER_LEVEL       10         (softens aggressive GBC palettes)
-  PT_PIXEL_BORDER            1          (Subtle)
-  PT_SHADOW_OFFSET_X         1.0
-  PT_SHADOW_OFFSET_Y         1.0
-  PT_SHADOW_OPACITY          0.25
-  PT_VIGNETTE                0.08
+  PT_SYSTEM (System)  2   GBC
+  PT_PIXEL_MODE (Pixel mode)  0   White only
+  PT_BASE_ALPHA (Base transparency)  0.20
+  PT_WHITE_TRANSPARENCY (White pixel min transparency)  0.20
+  PT_BRIGHTNESS_MODE (Brightness mode)  0   Simple
+  PT_PALETTE (Background tint)  1   Pocket grey
+  PT_PALETTE_INTENSITY (Tint intensity)  1.00
+  PT_DARK_FILTER_LEVEL (Dark color filter)  10   softens aggressive GBC palettes
+  PT_PIXEL_BORDER (Pixel border)  1   Subtle
+  PT_SHADOW_OFFSET_X (Shadow X offset)  1.0
+  PT_SHADOW_OFFSET_Y (Shadow Y offset)  1.0
+  PT_SHADOW_OPACITY (Shadow opacity)  0.25
+  PT_VIGNETTE (Vignette strength)  0.08
 
   HIDDEN PARAMETERS  (edit in PT_SkyWalker541.slang)
   ─────────────────────────────────────────────────────────────────
@@ -211,19 +211,19 @@ white backing makes see-through areas look more like polished glass than the DMG
 
   SHADER PARAMETERS
   ─────────────────────────────────────────────────────────────────
-  PT_SYSTEM                  3          (GBA SP)
-  PT_PIXEL_MODE              0          (White only)
-  PT_BASE_ALPHA              0.15
-  PT_WHITE_TRANSPARENCY      0.45
-  PT_BRIGHTNESS_MODE         1          (Perceptual)
-  PT_PALETTE                 3          (White)
-  PT_PALETTE_INTENSITY       1.00
-  PT_DARK_FILTER_LEVEL       0          (off)
-  PT_PIXEL_BORDER            0          (Off)
-  PT_SHADOW_OFFSET_X         1.0
-  PT_SHADOW_OFFSET_Y         1.0
-  PT_SHADOW_OPACITY          0.20
-  PT_VIGNETTE                0.05
+  PT_SYSTEM (System)  3   GBA SP
+  PT_PIXEL_MODE (Pixel mode)  0   White only
+  PT_BASE_ALPHA (Base transparency)  0.15
+  PT_WHITE_TRANSPARENCY (White pixel min transparency)  0.45
+  PT_BRIGHTNESS_MODE (Brightness mode)  1   Perceptual
+  PT_PALETTE (Background tint)  3   White
+  PT_PALETTE_INTENSITY (Tint intensity)  1.00
+  PT_DARK_FILTER_LEVEL (Dark color filter)  0   off
+  PT_PIXEL_BORDER (Pixel border)  0   Off
+  PT_SHADOW_OFFSET_X (Shadow X offset)  1.0
+  PT_SHADOW_OFFSET_Y (Shadow Y offset)  1.0
+  PT_SHADOW_OPACITY (Shadow opacity)  0.20
+  PT_VIGNETTE (Vignette strength)  0.05
 
   HIDDEN PARAMETERS  (edit in PT_SkyWalker541.slang)
   ─────────────────────────────────────────────────────────────────
@@ -249,19 +249,19 @@ pronounced here than on any other system.
 
   SHADER PARAMETERS
   ─────────────────────────────────────────────────────────────────
-  PT_SYSTEM                  4          (GBA Orig)
-  PT_PIXEL_MODE              0          (White only)
-  PT_BASE_ALPHA              0.25
-  PT_WHITE_TRANSPARENCY      0.55
-  PT_BRIGHTNESS_MODE         1          (Perceptual)
-  PT_PALETTE                 2          (Grey — GBA backing was neutral, not green-grey)
-  PT_PALETTE_INTENSITY       1.00
-  PT_DARK_FILTER_LEVEL       0          (off)
-  PT_PIXEL_BORDER            0          (Off)
-  PT_SHADOW_OFFSET_X         1.0
-  PT_SHADOW_OFFSET_Y         1.0
-  PT_SHADOW_OPACITY          0.20
-  PT_VIGNETTE                0.12
+  PT_SYSTEM (System)  4   GBA Orig
+  PT_PIXEL_MODE (Pixel mode)  0   White only
+  PT_BASE_ALPHA (Base transparency)  0.25
+  PT_WHITE_TRANSPARENCY (White pixel min transparency)  0.55
+  PT_BRIGHTNESS_MODE (Brightness mode)  1   Perceptual
+  PT_PALETTE (Background tint)  2   Grey — GBA backing was neutral, not green-grey
+  PT_PALETTE_INTENSITY (Tint intensity)  1.00
+  PT_DARK_FILTER_LEVEL (Dark color filter)  0   off
+  PT_PIXEL_BORDER (Pixel border)  0   Off
+  PT_SHADOW_OFFSET_X (Shadow X offset)  1.0
+  PT_SHADOW_OFFSET_Y (Shadow Y offset)  1.0
+  PT_SHADOW_OPACITY (Shadow opacity)  0.20
+  PT_VIGNETTE (Vignette strength)  0.12
 
   HIDDEN PARAMETERS  (edit in PT_SkyWalker541.slang)
   ─────────────────────────────────────────────────────────────────
@@ -374,8 +374,9 @@ Background Tint — PT_PALETTE
   -----  -----------  -------------------------------------------------------
   0      Off          Neutral grey grain
   1      Pocket grey  Warm green-grey — approximates the DMG/Pocket backing
-  2      Grey         Neutral grey — good for GBC or GBA Original
+  2      Grey         Neutral grey — good for GBC
   3      White        Clean white — recommended for GBA SP
+  4      Green-grey   Yellowish-green — matches the original GBA polariser tint
 
 ---
 
