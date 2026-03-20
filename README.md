@@ -15,6 +15,18 @@
 
 ---
 
+
+Just FYI, for everyone...
+
+Once the new shader implementation for NextUI is released, I will be deleting my pixel transparency shaders on github.
+
+This is out of respect for mattakins (Matt Akins). https://github.com/mattakins/Pixel_Transparency
+He is the original creator, that I based my work on. Mine were heavily inspired by his work, but I reworked all of the math, and I used different approaches to achieve similar outcomes.
+
+He has not asked me to do this, or contacted me, but I am doing this out of respect for his work. There will also be no need for my shader at that point, and that's OK with me. It was a fun learning project, and I had fun with it.
+
+---
+
 <div align="center">
 
 *On original Game Boy hardware, pixels that were fully off didn't show as white.*  
