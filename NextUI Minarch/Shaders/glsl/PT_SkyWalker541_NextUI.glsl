@@ -14,7 +14,7 @@
 
 // System
 #pragma parameter PT_SYSTEM            "System (0=Manual, 1=GB, 2=GBC, 3=GBA SP, 4=GBA Orig)" 1.0 0.0 4.0 1.0
-#pragma parameter PT_SENSITIVITY       "  Manual sensitivity threshold"          0.62 0.0 1.0 0.01
+#pragma parameter PT_SENSITIVITY       "  Manual sensitivity threshold"          0.52 0.35 0.75 0.01
 
 // Pixel Transparency
 #pragma parameter PT_PIXEL_MODE        "Pixel mode (0=White, 1=Bright, 2=All)"  0.0 0.0 2.0 1.0
@@ -120,7 +120,7 @@ uniform COMPAT_PRECISION float PT_SHADOW_OPACITY;
 uniform COMPAT_PRECISION float PT_BEZEL;
 #else
 #define PT_SYSTEM             1.0
-#define PT_SENSITIVITY        0.62
+#define PT_SENSITIVITY        0.52
 #define PT_PIXEL_MODE         0.0
 #define PT_BASE_ALPHA         0.20
 #define PT_WHITE_TRANSPARENCY 0.20
