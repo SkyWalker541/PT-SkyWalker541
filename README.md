@@ -64,12 +64,12 @@ This shader targets low-power emulation devices — handhelds, SBCs, and budget 
 
 ## Features
 
-- **Pixel transparency restoration** — detects white and near-white pixels and blends them toward a procedurally generated backing texture. Detection runs on the raw pre-correction frame (RetroArch) or the post-processed frame with compensated thresholds (NextUI). Three modes: white-only, brightness-proportional, or all pixels.
-- **Procedural backing texture** — noise grain tinted to match the original hardware's backing material. Four palette options: off, Pocket grey (warm green-grey, DMG/Pocket), grey (GBC/GBA Original), white (GBA SP). Adjustable tint intensity.
-- **Drop shadow** — cast by all solid non-white pixels onto the backing behind them. Appears at all sprite and tile edges regardless of surrounding transparency.
-- **Pixel border** — continuous strength control simulating the thin physical gap between individual LCD dots. Works correctly at any scale mode.
-- **Bezel shadow** — rectangular edge darkening simulating the shadow cast by the physical bezel onto the LCD panel. Width is set automatically per PT_SYSTEM based on actual bezel recess depth. Strength is user adjustable.
-- **Colour harshness filter** — softens overly vivid dark colours. Most useful for GBC games with aggressive colour palettes.
+- **Pixel transparency restoration** (`PT_PIXEL_MODE`, `PT_BASE_ALPHA`, `PT_WHITE_TRANSPARENCY`) — detects white and near-white pixels and blends them toward a procedurally generated backing texture. Detection runs on the raw pre-correction frame (RetroArch) or the post-processed frame with compensated thresholds (NextUI). Three modes: white-only, brightness-proportional, or all pixels.
+- **Procedural backing texture** (`PT_PALETTE`, `PT_PALETTE_INTENSITY`) — noise grain tinted to match the original hardware's backing material. Four palette options: off, Pocket grey (warm green-grey, DMG/Pocket), grey (GBC/GBA Original), white (GBA SP). Adjustable tint intensity.
+- **Drop shadow** (`PT_SHADOW_OFFSET`, `PT_SHADOW_OPACITY`) — cast by all solid non-white pixels onto the backing behind them. Appears at all sprite and tile edges regardless of surrounding transparency.
+- **Pixel border** (`PT_PIXEL_BORDER`) — continuous strength control simulating the thin physical gap between individual LCD dots. Works correctly at any scale mode.
+- **Bezel shadow** (`PT_BEZEL`) — rectangular edge darkening simulating the shadow cast by the physical bezel onto the LCD panel. Width is set automatically per `PT_SYSTEM` based on actual bezel recess depth. Strength is user adjustable.
+- **Colour harshness filter** (`PT_DARK_FILTER_LEVEL`) — softens overly vivid dark colours. Most useful for GBC games with aggressive colour palettes.
 
 ---
 
