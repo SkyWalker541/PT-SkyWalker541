@@ -49,6 +49,16 @@ Inspired by mattakins' pixel transparency work.
 
 </div>
 
+*Black Castle 2 by User0x7f (RetroArch Version)*
+
+<div align="center">
+
+| Without Shader | With Shader |
+|:---:|:---:|
+| ![Without shader](screenshots/without2.png) | ![With shader](screenshots/with2.png) |
+
+</div>
+
 ---
 
 ## v1.6.0 — What Changed
