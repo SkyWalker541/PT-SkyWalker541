@@ -39,7 +39,7 @@ Inspired by mattakins' pixel transparency work.
 
 ## Screenshots
 
-*Black Castle 2 by User0x7f*
+*Black Castle 2 by User0x7f (NextUI Version)*
 
 <div align="center">
 
