@@ -37,6 +37,20 @@ Inspired by mattakins' pixel transparency work.
 
 ---
 
+## Screenshots
+
+*Black Castle 2 by User0x7f*
+
+<div align="center">
+
+| Without Shader | With Shader |
+|:---:|:---:|
+| ![Without shader](screenshots/without.png) | ![With shader](screenshots/with.png) |
+
+</div>
+
+---
+
 ## v1.6.0 — What Changed
 
 This release is a significant rebuild focused on low-power devices. The Pro variant and Slang builds have been removed. mattakins' shader already covers high-end hardware excellently — this shader exists specifically for devices where cost matters. A single optimised GLSL build serves that purpose better than maintaining multiple variants.
