@@ -1,6 +1,6 @@
 PT SkyWalker541
 Pixel Transparency Shader for RetroArch — GLSL
-by SkyWalker541 | v1.7.0 | works on gl / glcore drivers
+by SkyWalker541 | v1.7.1 | works on gl / glcore drivers
 
 Inspired by mattakins' pixel transparency work.
 Pixel Effect dot and phosphor modes inspired by Themaister's dot shader (public domain).
@@ -15,10 +15,16 @@ bright white. PT SkyWalker541 restores the original appearance by detecting
 white and bright pixels and blending them toward a procedurally generated
 backing texture.
 
-v1.7.0 adds a unified Pixel Effect system replacing the previous pixel border
-parameter. Three display simulation modes are now available — Grid, LCD Dot,
-and CRT Phosphor — each with their own dedicated parameters and tuned to run
-at minimum cost when not selected.
+v1.7.0 added a unified Pixel Effect system replacing the previous pixel border
+parameter. Three display simulation modes are available — Grid, LCD Dot, and
+CRT Phosphor — each with their own dedicated parameters, tuned to run at
+minimum cost when not selected.
+
+v1.7.1 adds a Black Level Threshold parameter shared by LCD Dot and CRT
+Phosphor modes. The threshold uses the raw input frame before color correction,
+so unlit pixels remain clean regardless of emulator color settings. A hard gate
+on truly black pixels ensures clean blacks at zero cost regardless of the
+threshold setting.
 
 ───────────────────────────────────────────────────────────────────────────────
 
@@ -30,16 +36,13 @@ at minimum cost when not selected.
 
 RetroArch expects the preset and shader in separate locations:
 
-    shaders_glsl/handheld/
+    shaders/
         PT_SkyWalker541.glslp       ← place the preset here
-    
-    shaders_glsl/handheld/shaders/
+        shaders/
             PT_SkyWalker541.glsl    ← place the shader here
-	
-This setup may vary.
 
 The preset file references the shader at:
-    shaders/PT_SkyWalker541.glsl (This is a subfolder inside the "handheld" folder)
+    shaders/PT_SkyWalker541.glsl
 
 This path is relative to RetroArch's shader root and is correct for a
 standard RetroArch installation. No editing of the preset file is needed.
@@ -47,7 +50,7 @@ standard RetroArch installation. No editing of the preset file is needed.
   1. Launch a game
   2. Quick Menu > Shaders > Load Shader Preset
   3. Navigate to PT_SkyWalker541.glslp and load it
-  4. Open Shader Parameters and set PT_SYSTEM to match your system
+  4. Open Shader Parameters and set System to match your hardware
   5. Apply the recommended settings from the section below
   6. Save via Save Shader Preset As for automatic loading in future sessions
 
@@ -80,111 +83,145 @@ Save the file. The preset will now find the shader correctly in NextUI.
   ─────────────────────────────────────────────────────────────────
 
 Accessible from Quick Menu > Shaders > Shader Parameters after loading.
+Parameter names below match exactly what you will see in the RetroArch menu.
 
-  PT_SYSTEM            default: 1
-    Selects the hardware preset. Sets white detection threshold and
-    bezel shadow width automatically. 0=Manual, 1=GB, 2=GBC,
-    3=GBA SP, 4=GBA Orig.
+  ── System ──────────────────────────────────────────────────────
 
-  PT_SENSITIVITY       default: 0.85
-    Only active when PT_SYSTEM = 0. Sets the white detection threshold
+  System (0=Manual, 1=GB, 2=GBC, 3=GBA SP, 4=GBA Orig)   default: 1
+    Selects the hardware preset. Sets the white detection threshold
+    and bezel shadow width automatically to match each system.
+    Set this first before adjusting any other parameters.
+
+  Manual sensitivity threshold   default: 0.85
+    Only active when System = 0. Sets the white detection threshold
     manually. Use this when colorization is enabled or when the
     hardware presets do not detect correctly.
 
-  PT_PIXEL_MODE        default: 0
-    Which pixels receive transparency. 0=White only, 1=Bright,
-    2=All pixels. White only is the most accurate.
+  ── Pixel Transparency ──────────────────────────────────────────
 
-  PT_BASE_ALPHA        default: 0.20
-    How transparent detected pixels become. Lower = more opaque.
+  Pixel mode (0=White, 1=Bright, 2=All)   default: 0
+    Which pixels receive transparency. White only is the most
+    accurate to original hardware. Bright includes near-white pixels.
+    All applies transparency to every pixel.
 
-  PT_WHITE_TRANSPARENCY   default: 0.20
+  Base transparency amount   default: 0.20
+    How transparent detected pixels become. Lower = more opaque and
+    brighter. Higher = more of the backing texture shows through.
+
+  White pixel min transparency   default: 0.20
     Minimum transparency floor for confirmed white pixels. Ensures
     white pixels are always at least this transparent regardless of
-    PT_BASE_ALPHA.
+    Base transparency amount.
 
-  PT_PALETTE           default: 1
-    Tint colour of the procedural backing texture. 0=Off, 1=Pocket
-    (warm green-grey, DMG/Pocket), 2=Grey (GBC/GBA Original),
-    3=White (GBA SP).
+  ── Background ──────────────────────────────────────────────────
 
-  PT_PALETTE_INTENSITY    default: 1.00
+  Background tint (0=Off, 1=Pocket, 2=Grey, 3=White)   default: 1
+    Tint colour of the procedural backing texture. Pocket is a warm
+    green-grey matching the DMG and Pocket screen backing. Grey
+    matches GBC and GBA Original. White matches GBA SP.
+
+  Tint intensity   default: 1.00
     How strongly the tint colour is applied. 0 = no tint.
-    Raise above 1.0 on LCD screens if the tint feels too subtle.
+    Raise above 1.0 if the tint feels too subtle on your display.
 
-  PT_DARK_FILTER_LEVEL    default: 0
-    Softens overly vivid dark colours. Most useful for GBC games with
-    aggressive colour palettes. 0 = off.
+  ── Color Filter ────────────────────────────────────────────────
+
+  Dark color filter (0=off)   default: 0
+    Softens overly vivid dark colours. Most useful for GBC games
+    with aggressive colour palettes. 0 = off. Raise gradually
+    until dark colours look natural.
 
   ── Pixel Effect ────────────────────────────────────────────────
 
-  PT_GRID_MODE         default: 1
+  Pixel Effect (0=Off, 1=Grid, 2=LCD Dot, 3=CRT Phosphor)   default: 1
     Selects the pixel structure simulation effect. Each mode has its
-    own dedicated parameters below. Parameters for inactive modes have
-    no effect on the image.
-    0=Off, 1=Grid, 2=LCD Dot, 3=CRT Phosphor.
+    own dedicated parameters below. Parameters for inactive modes
+    have no effect on the image and cost nothing to process.
 
-  [Grid] parameters — active when PT_GRID_MODE = 1
+  [Grid] parameters — active when Pixel Effect = 1
+  ─────────────────────────────────────────────────────────────────
 
-  PT_GRID_STRENGTH     default: 0.08
+  [Grid]     Grid strength   default: 0.08
     Strength of the gap between pixels. Higher values produce a more
     visible grid. Dial to taste. 0 = off.
 
-  [LCD Dot] parameters — active when PT_GRID_MODE = 2
+  [LCD Dot] parameters — active when Pixel Effect = 2
+  ─────────────────────────────────────────────────────────────────
 
-  PT_DOT_SIZE          default: 0.50
-    Radius of each dot within its pixel cell. Smaller values increase
-    the visible gap between dots.
+  [LCD Dot]  Dot size   default: 0.50
+    Radius of each dot within its pixel cell. Larger values fill
+    more of the cell and leave a smaller gap. Smaller values leave
+    a larger gap between dots. Range 0.1 to 0.9.
 
-  PT_DOT_SHARPNESS     default: 0.0
-    Controls the edge of each dot. 0 = soft Gaussian falloff.
-    Higher values produce a harder, more defined dot edge.
+  [LCD Dot]  Dot sharpness   default: 0.0
+    Controls the edge of each dot. 0 = soft Gaussian falloff,
+    natural and subtle. Higher values produce a harder, more defined
+    dot edge. Dial to taste.
 
-  PT_DOT_BRIGHTNESS    default: 0.0
-    Compensates for brightness lost to the inter-dot gaps. Raise if
-    the image appears too dark with LCD Dot enabled. 0 = no compensation.
+  [LCD Dot]  Dot brightness compensation   default: 0.0
+    Compensates for overall brightness lost to the inter-dot gaps.
+    Raise slowly if the image appears too dark with LCD Dot enabled.
+    0 = no compensation.
 
-  [Phosphor] parameters — active when PT_GRID_MODE = 3
+  [Phosphor] parameters — active when Pixel Effect = 3
+  ─────────────────────────────────────────────────────────────────
 
-  PT_PHOS_SIZE         default: 0.50
-    Size of each phosphor dot. Affects how far each dot reaches into
-    its neighbours during bloom.
+  [Phosphor] Phosphor dot size   default: 0.50
+    Size of each phosphor dot within its cell. Affects how far each
+    dot reaches into neighbouring cells during bloom. Range 0.1 to 0.9.
 
-  PT_PHOS_BLOOM        default: 0.0
+  [Phosphor] Bloom spread   default: 0.0
     How far each phosphor dot bleeds light into surrounding gaps.
-    0 = tight dots, no bleed. Higher values simulate the glow of
-    lit phosphors spreading across the screen surface.
+    0 = tight dots with no bleed. Higher values simulate the glow
+    of lit phosphors spreading across the screen surface.
 
-  PT_PHOS_GAMMA        default: 2.40
+  [Phosphor] Dot gamma   default: 2.40
     Controls how quickly each phosphor dot fades from centre to edge.
     Lower = soft, diffuse dots. Higher = tight, crisp dots.
+    2.40 matches a typical CRT phosphor response and is a good
+    starting point.
 
-  PT_PHOS_BRIGHTNESS   default: 0.0
-    Compensates for brightness lost to subpixel masking. Raise if the
-    image appears too dark with CRT Phosphor enabled. 0 = no compensation.
+  [Phosphor] Phosphor brightness comp   default: 0.0
+    Compensates for brightness lost to subpixel masking. Raise slowly
+    if the image appears too dark with CRT Phosphor enabled.
+    0 = no compensation.
 
-  PT_PHOS_SCANLINE     default: 0.0
+  [Phosphor] Scanline strength   default: 0.0
     Adds a vertical brightness roll-off between pixel rows to simulate
     the dark gap between CRT scanlines. 0 = off.
 
-  PT_PHOS_LAYOUT       default: 0
-    Subpixel stripe order. Match to your monitor's physical subpixel
-    layout to avoid colour fringing. 0 = RGB, 1 = BGR.
-    Most monitors use RGB. If colours appear fringed, try BGR.
+  [Phosphor] Subpixel layout (0=RGB, 1=BGR)   default: 0
+    Subpixel stripe order. Match this to your monitor's physical
+    subpixel layout to avoid colour fringing. Most monitors use RGB.
+    If colours appear fringed or shifted, switch to BGR.
+
+  [Dot/Phosphor] shared parameter — active when Pixel Effect = 2 or 3
+  ─────────────────────────────────────────────────────────────────
+
+  [Dot/Phosphor] Black level threshold   default: 0.15
+    Controls where the dot or phosphor effect fades in above black.
+    Black detection uses the raw input frame before color correction,
+    so unlit pixels remain clean regardless of emulator color settings.
+    A hard gate on truly black pixels ensures they are always clean
+    at zero cost regardless of this setting.
+    0 = dot effect applies to all pixels including near-black.
+    Higher values suppress dots on progressively brighter dark pixels.
 
   ── Drop Shadow ─────────────────────────────────────────────────
 
-  PT_SHADOW_OFFSET     default: 1.0
-    Distance of the drop shadow in texels. Moves X and Y together.
+  Shadow offset   default: 1.0
+    Distance of the drop shadow cast by solid pixels onto the backing
+    texture. Moves X and Y together in texels. Negative values shift
+    the shadow in the opposite direction.
 
-  PT_SHADOW_OPACITY    default: 0.30
+  Shadow opacity (0=off)   default: 0.30
     Strength of the drop shadow. 0 = off.
 
   ── Bezel ───────────────────────────────────────────────────────
 
-  PT_BEZEL             default: 0.40
+  Bezel shadow strength (0=off)   default: 0.40
     Darkens screen edges to simulate the shadow cast by the physical
-    bezel onto the LCD panel. Width is set automatically per PT_SYSTEM.
+    bezel onto the LCD panel. Width is set automatically by System.
     0 = off.
 
 ───────────────────────────────────────────────────────────────────────────────
@@ -192,7 +229,7 @@ Accessible from Quick Menu > Shaders > Shader Parameters after loading.
   RECOMMENDED SETTINGS PER SYSTEM
   ─────────────────────────────────────────────────────────────────
 
-Set PT_SYSTEM first. The following are set automatically by PT_SYSTEM
+Set System first. The following are configured automatically by System
 and do not need manual adjustment:
 
   White detection threshold
@@ -202,7 +239,7 @@ All other parameters use the defaults listed above unless noted below.
 
 ───────────────────────────────────────────────────────────────────────────────
 
-  Game Boy DMG / Pocket  —  PT_SYSTEM = 1
+  Game Boy DMG / Pocket  —  System = 1
   ─────────────────────────────────────────────────────────────────
 
 The DMG and Pocket used a slow reflective LCD with no backlight. The
@@ -215,19 +252,19 @@ unlit pixels. The bezel had a deep recess casting a pronounced shadow.
   Interframe blending        Disabled
   GB Colorization            Disabled
 
-  Note: If using GB colorization, set PT_SYSTEM = 0 and adjust
-  PT_SENSITIVITY until backgrounds go transparent.
+  Note: If using GB colorization, set System = 0 and adjust
+  Manual sensitivity threshold until backgrounds go transparent.
 
   SHADER PARAMETERS
   ─────────────────────────────────────────────────────────────────
-  PT_SYSTEM              1
-  PT_PALETTE             1    (Pocket)
+  System                         1
+  Background tint                1    (Pocket)
 
   All other parameters use defaults.
 
 ───────────────────────────────────────────────────────────────────────────────
 
-  Game Boy Color  —  PT_SYSTEM = 2
+  Game Boy Color  —  System = 2
   ─────────────────────────────────────────────────────────────────
 
 Similar reflective LCD to the DMG but with improved colour response.
@@ -240,15 +277,15 @@ No backlight. The backing was cleaner and more neutral than the DMG.
 
   SHADER PARAMETERS
   ─────────────────────────────────────────────────────────────────
-  PT_SYSTEM              2
-  PT_PALETTE             1    (Pocket)
-  PT_DARK_FILTER_LEVEL   10
+  System                         2
+  Background tint                1    (Pocket)
+  Dark color filter              10
 
   All other parameters use defaults.
 
 ───────────────────────────────────────────────────────────────────────────────
 
-  Game Boy Advance SP (front-lit)  —  PT_SYSTEM = 3
+  Game Boy Advance SP (front-lit)  —  System = 3
   ─────────────────────────────────────────────────────────────────
 
 The GBA SP had a front-lit screen — brighter and more vivid than any
@@ -262,16 +299,16 @@ is subtler. The bezel was thin with minimal shadow.
 
   SHADER PARAMETERS
   ─────────────────────────────────────────────────────────────────
-  PT_SYSTEM              3
-  PT_BASE_ALPHA          0.15
-  PT_WHITE_TRANSPARENCY  0.45
-  PT_PALETTE             3    (White)
-  PT_SHADOW_OPACITY      0.20
-  PT_BEZEL               0.30
+  System                         3
+  Base transparency amount       0.15
+  White pixel min transparency   0.45
+  Background tint                3    (White)
+  Shadow opacity                 0.20
+  Bezel shadow strength          0.30
 
 ───────────────────────────────────────────────────────────────────────────────
 
-  Game Boy Advance Original  —  PT_SYSTEM = 4
+  Game Boy Advance Original  —  System = 4
   ─────────────────────────────────────────────────────────────────
 
 The original GBA had a dim reflective screen with no backlight. Colours
@@ -285,11 +322,11 @@ more pronounced than on any other system.
 
   SHADER PARAMETERS
   ─────────────────────────────────────────────────────────────────
-  PT_SYSTEM              4
-  PT_BASE_ALPHA          0.25
-  PT_WHITE_TRANSPARENCY  0.55
-  PT_PALETTE             2    (Grey)
-  PT_SHADOW_OPACITY      0.20
+  System                         4
+  Base transparency amount       0.25
+  White pixel min transparency   0.55
+  Background tint                2    (Grey)
+  Shadow opacity                 0.20
 
   All other parameters use defaults.
 
@@ -299,33 +336,35 @@ more pronounced than on any other system.
   ─────────────────────────────────────────────────────────────────
 
 To change a default, open PT_SkyWalker541.glsl in any text editor and
-find the #define block near the top of the fragment shader:
+find the #define block near the top of the fragment shader. The menu
+name for each parameter is shown alongside for reference:
 
-    #define PT_SYSTEM             1.0
-    #define PT_SENSITIVITY        0.85
-    #define PT_PIXEL_MODE         0.0
-    #define PT_BASE_ALPHA         0.20
-    #define PT_WHITE_TRANSPARENCY 0.20
-    #define PT_PALETTE            1.0
-    #define PT_PALETTE_INTENSITY  1.0
-    #define PT_DARK_FILTER_LEVEL  0.0
-    #define PT_GRID_MODE          1.0
-    #define PT_GRID_STRENGTH      0.08
-    #define PT_DOT_SIZE           0.50
-    #define PT_DOT_SHARPNESS      0.0
-    #define PT_DOT_BRIGHTNESS     0.0
-    #define PT_PHOS_SIZE          0.50
-    #define PT_PHOS_BLOOM         0.0
-    #define PT_PHOS_GAMMA         2.40
-    #define PT_PHOS_BRIGHTNESS    0.0
-    #define PT_PHOS_SCANLINE      0.0
-    #define PT_PHOS_LAYOUT        0.0
-    #define PT_SHADOW_OFFSET      1.0
-    #define PT_SHADOW_OPACITY     0.30
-    #define PT_BEZEL              0.40
+    #define PT_SYSTEM             1.0    System
+    #define PT_SENSITIVITY        0.85   Manual sensitivity threshold
+    #define PT_PIXEL_MODE         0.0    Pixel mode
+    #define PT_BASE_ALPHA         0.20   Base transparency amount
+    #define PT_WHITE_TRANSPARENCY 0.20   White pixel min transparency
+    #define PT_PALETTE            1.0    Background tint
+    #define PT_PALETTE_INTENSITY  1.0    Tint intensity
+    #define PT_DARK_FILTER_LEVEL  0.0    Dark color filter
+    #define PT_GRID_MODE          1.0    Pixel Effect
+    #define PT_GRID_STRENGTH      0.08   [Grid] Grid strength
+    #define PT_DOT_SIZE           0.50   [LCD Dot] Dot size
+    #define PT_DOT_SHARPNESS      0.0    [LCD Dot] Dot sharpness
+    #define PT_DOT_BRIGHTNESS     0.0    [LCD Dot] Dot brightness compensation
+    #define PT_PHOS_SIZE          0.50   [Phosphor] Phosphor dot size
+    #define PT_PHOS_BLOOM         0.0    [Phosphor] Bloom spread
+    #define PT_PHOS_GAMMA         2.40   [Phosphor] Dot gamma
+    #define PT_PHOS_BRIGHTNESS    0.0    [Phosphor] Phosphor brightness comp
+    #define PT_PHOS_SCANLINE      0.0    [Phosphor] Scanline strength
+    #define PT_PHOS_LAYOUT        0.0    [Phosphor] Subpixel layout
+    #define PT_BLACK_THRESHOLD    0.15   [Dot/Phosphor] Black level threshold
+    #define PT_SHADOW_OFFSET      1.0    Shadow offset
+    #define PT_SHADOW_OPACITY     0.30   Shadow opacity
+    #define PT_BEZEL              0.40   Bezel shadow strength
 
 Change the value on the right of any line to set a new default.
 
 ───────────────────────────────────────────────────────────────────────────────
 
-PT SkyWalker541 by SkyWalker541 | v1.7.0 | Written for RetroArch
+PT SkyWalker541 by SkyWalker541 | v1.7.1 | Written for RetroArch
