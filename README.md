@@ -22,6 +22,7 @@
 > * **Optimized Performance:** Each mode is tuned to run at minimum cost when not specifically selected.
 > * **Enhanced Control:** Adds dedicated parameters for dot sharpness, phosphor bloom, and subpixel layouts (RGB/BGR).
 > * **NextUI Note:** The NextUI version remains at **v1.6.0** to maintain compatibility with its specific post-processing pipeline.
+> * Note, some parameters are set to 0, and will need adjusted to the user's device.
 
 ---
 
