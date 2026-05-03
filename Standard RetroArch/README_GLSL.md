@@ -1,6 +1,6 @@
 PT SkyWalker541
 Pixel Transparency Shader for RetroArch — GLSL
-by SkyWalker541 | v1.7.1 | works on gl / glcore drivers
+by SkyWalker541 | AI Assisted Development | v1.7.1 | works on gl / glcore drivers
 
 Inspired by mattakins' pixel transparency work.
 Pixel Effect dot and phosphor modes inspired by Themaister's dot shader (public domain).
