@@ -106,5 +106,6 @@ This shader specifically targets low-power emulation devices—handhelds and bud
 <div align="center">
 
 *PT SkyWalker541 by SkyWalker541 | RetroArch v1.7.1 | NextUI v1.6.0*
+*AI assisted development*
 
 </div>
