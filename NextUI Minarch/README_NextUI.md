@@ -239,4 +239,4 @@ Change the value on the right of any line to set a new default.
 
 ───────────────────────────────────────────────────────────────────────────────
 
-PT SkyWalker541 NextUI by SkyWalker541 | v1.6.0 | Written for NextUI / minarch
+PT SkyWalker541 NextUI by SkyWalker541 | AI Assisted Development | v1.6.0 | Written for NextUI / minarch
