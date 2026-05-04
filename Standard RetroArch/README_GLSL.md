@@ -1,6 +1,6 @@
 PT SkyWalker541
 Pixel Transparency Shader for RetroArch — GLSL
-by SkyWalker541 | v1.7.1 | works on gl / glcore drivers
+by SkyWalker541 | v1.7.2 | works on gl / glcore drivers
 
 Inspired by mattakins' pixel transparency work.
 Pixel Effect dot and phosphor modes inspired by Themaister's dot shader (public domain).
@@ -25,6 +25,16 @@ Phosphor modes. The threshold uses the raw input frame before color correction,
 so unlit pixels remain clean regardless of emulator color settings. A hard gate
 on truly black pixels ensures clean blacks at zero cost regardless of the
 threshold setting.
+
+v1.7.2 adds Gap Color and Gap Color Intensity parameters. The gap color applies
+to Grid, LCD Dot, and CRT Phosphor modes. Backing Texture uses the already
+computed backing texture at zero extra cost, with color and appearance fully
+controlled by the existing Background tint and Tint intensity parameters.
+Dot brightness compensation and Phosphor brightness comp parameters have been
+removed. These were designed to recover brightness lost to pure black gaps.
+Gap Color now solves this at the source — Backing Texture and White gap options
+make compensation redundant, and compensation could cause overbightening when
+combined with non-black gap colors.
 
 ───────────────────────────────────────────────────────────────────────────────
 
@@ -115,9 +125,13 @@ Parameter names below match exactly what you will see in the RetroArch menu.
   [Grid] parameters — active when Pixel Effect = 1
   ─────────────────────────────────────────────────────────────────
 
-  [Grid]     Grid strength   default: 0.08
-    Strength of the gap between pixels. Higher values produce a more
-    visible grid. Dial to taste. 0 = off.
+  [Grid]     Grid width   default: 0.08
+    Width of the gap between pixels. Higher values produce a wider,
+    more visible gap. Dial to taste. 0 = off.
+    Note: Gap / Grid color intensity controls how opaque the gap color
+    is within the gap. Grid width and Gap / Grid color intensity are
+    independent — width sets the gap size, intensity sets the color
+    visibility.
 
   [LCD Dot] parameters — active when Pixel Effect = 2
   ─────────────────────────────────────────────────────────────────
@@ -131,11 +145,6 @@ Parameter names below match exactly what you will see in the RetroArch menu.
     Controls the edge of each dot. 0 = soft Gaussian falloff,
     natural and subtle. Higher values produce a harder, more defined
     dot edge. Dial to taste.
-
-  [LCD Dot]  Dot brightness compensation   default: 0.0
-    Compensates for overall brightness lost to the inter-dot gaps.
-    Raise slowly if the image appears too dark with LCD Dot enabled.
-    0 = no compensation.
 
   [Phosphor] parameters — active when Pixel Effect = 3
   ─────────────────────────────────────────────────────────────────
@@ -154,11 +163,6 @@ Parameter names below match exactly what you will see in the RetroArch menu.
     Lower = soft, diffuse dots. Higher = tight, crisp dots.
     2.40 matches a typical CRT phosphor response and is a good
     starting point.
-
-  [Phosphor] Phosphor brightness comp   default: 0.0
-    Compensates for brightness lost to subpixel masking. Raise slowly
-    if the image appears too dark with CRT Phosphor enabled.
-    0 = no compensation.
 
   [Phosphor] Scanline strength   default: 0.0
     Adds a vertical brightness roll-off between pixel rows to simulate
@@ -180,6 +184,80 @@ Parameter names below match exactly what you will see in the RetroArch menu.
     at zero cost regardless of this setting.
     0 = dot effect applies to all pixels including near-black.
     Higher values suppress dots on progressively brighter dark pixels.
+
+  ── Gap / Grid Color ────────────────────────────────────────────
+
+  Gap / Grid color (0=Backing Texture, 1=Black, 2=White)   default: 0
+    Sets the color that appears in the gaps between pixels for Grid,
+    LCD Dot, and CRT Phosphor modes. The name reflects that this
+    parameter controls both the gaps in LCD Dot and CRT Phosphor modes
+    and the grid lines in Grid mode.
+
+    Backing Texture (0) — the procedural backing texture fills the gaps.
+    The appearance is fully controlled by the existing background
+    parameters. Background tint selects the tint color and Tint intensity
+    controls how strongly it is applied. This is the most authentic option
+    as it matches the physical backing material visible between pixels on
+    real hardware. Uses the already-computed backing texture at zero
+    extra processing cost.
+
+    Black (1) — gaps and grid lines are darkened toward pure black.
+    Gap / Grid color intensity
+    controls how opaque the black is. At 1.0 gaps are fully black. At 0.0
+    gaps are invisible and the game pixel color shows through.
+
+    White (2) — gaps and grid lines are brightened toward pure white.
+    Gap / Grid color intensity
+    controls how opaque the white is. At 1.0 gaps are fully white. At 0.0
+    gaps are invisible and the game pixel color shows through.
+
+  Gap / Grid color intensity   default: 1.0
+    Controls how strongly the selected gap / grid color asserts itself
+    into the gaps and grid lines. Applies to all three modes.
+
+    Backing Texture — intensity controls how strongly the backing texture
+    shows in the gaps versus blending back toward the game pixel color.
+    1.0 = full backing texture in gaps. 0.0 = gaps invisible.
+
+    Black — intensity controls opacity of black in the gaps.
+    1.0 = pure black gaps. 0.0 = gaps invisible.
+
+    White — intensity controls opacity of white in the gaps.
+    1.0 = pure white gaps. 0.0 = gaps invisible.
+
+    At 0.0 all three options look identical — gaps are invisible and the
+    game pixel color shows through with no gap effect.
+
+  Parameter interactions
+  ─────────────────────────────────────────────────────────────────
+
+  Gap / Grid color = Backing Texture is affected by two other parameters:
+
+    Background tint — selects the tint colour of the backing texture.
+    Whatever tint is selected here will also appear in the pixel gaps
+    when Gap / Grid color = Backing Texture. Changing Background tint
+    changes the gap / grid color simultaneously.
+
+    Tint intensity — controls how strongly the tint colour is applied
+    to the backing texture. This affects both the transparency blend on
+    white/bright pixels AND the gap / grid color when Gap / Grid color = Backing
+    Texture. Raising Tint intensity makes the tint more visible in both
+    the transparent areas and the pixel gaps.
+
+  If you want the gaps and the transparent areas to look consistent,
+  use Gap / Grid color = Backing Texture and adjust Background tint
+  and Tint intensity together. This gives the most authentic hardware
+  appearance.
+
+  Gap / Grid color = Black or White are independent of all background
+  parameters. Only Gap / Grid color intensity affects their appearance.
+
+  Brightness note — Dot brightness compensation and Phosphor brightness
+  comp have been removed in v1.7.2. If the image feels too dark with
+  LCD Dot or CRT Phosphor enabled, switch Gap / Grid color from Black
+  to Backing Texture or White, or reduce Gap / Grid color intensity. These
+  options control gap brightness directly at the source rather than
+  compensating after the fact.
 
   ── Drop Shadow ─────────────────────────────────────────────────
 
@@ -322,17 +400,17 @@ name for each parameter is shown alongside for reference:
     #define PT_PALETTE_INTENSITY  1.0    Tint intensity
     #define PT_DARK_FILTER_LEVEL  0.0    Dark color filter
     #define PT_GRID_MODE          1.0    Pixel Effect
-    #define PT_GRID_STRENGTH      0.08   [Grid] Grid strength
+    #define PT_GRID_STRENGTH      0.08   [Grid] Grid width
     #define PT_DOT_SIZE           0.50   [LCD Dot] Dot size
     #define PT_DOT_SHARPNESS      0.0    [LCD Dot] Dot sharpness
-    #define PT_DOT_BRIGHTNESS     0.0    [LCD Dot] Dot brightness compensation
     #define PT_PHOS_SIZE          0.50   [Phosphor] Phosphor dot size
     #define PT_PHOS_BLOOM         0.0    [Phosphor] Bloom spread
     #define PT_PHOS_GAMMA         2.40   [Phosphor] Dot gamma
-    #define PT_PHOS_BRIGHTNESS    0.0    [Phosphor] Phosphor brightness comp
     #define PT_PHOS_SCANLINE      0.0    [Phosphor] Scanline strength
     #define PT_PHOS_LAYOUT        0.0    [Phosphor] Subpixel layout
     #define PT_BLACK_THRESHOLD    0.15   [Dot/Phosphor] Black level threshold
+    #define PT_GAP_COLOR          0.0    Gap / Grid color
+    #define PT_GAP_INTENSITY      1.0    Gap / Grid color intensity
     #define PT_SHADOW_OFFSET      1.0    Shadow offset
     #define PT_SHADOW_OPACITY     0.30   Shadow opacity
     #define PT_BEZEL              0.40   Bezel shadow strength
@@ -341,4 +419,4 @@ Change the value on the right of any line to set a new default.
 
 ───────────────────────────────────────────────────────────────────────────────
 
-PT SkyWalker541 by SkyWalker541 | AI Assisted Development | v1.7.1 | Written for RetroArch
+PT SkyWalker541 by SkyWalker541 | AI Assisted Development | v1.7.2 | Written for RetroArch
