@@ -39,13 +39,6 @@ to produce accurate results. This means:
     to the RetroArch version due to the post-processed frame difference
   - If white detection seems off, set System = 0 and adjust
     Manual sensitivity threshold until backgrounds go transparent correctly
-  - When NextUI adds OrigTexture support this shader will be updated to
-    match the RetroArch version's architecture
-
-Previous NextUI versions required two separate files — Aspect and Integer —
-because the sine-wave pixel border behaved differently at different scale
-modes. This version uses a fract/abs pixel border that works correctly at
-any scale mode, so one file covers both integer and aspect ratio scaling.
 
 ───────────────────────────────────────────────────────────────────────────────
 
