@@ -31,14 +31,11 @@ threshold setting.
   INSTALLATION
   ─────────────────────────────────────────────────────────────────
 
-  RetroArch (standard installation)
-  ─────────────────────────────────────────────────────────────────
-
 RetroArch expects the preset and shader in separate locations:
 
     shaders_glsl/handheld/
         PT_SkyWalker541.glslp       ← place the preset here
-        shaders_glsl/hanheld/shaders/
+        shaders_glsl/handheld/shaders/
             PT_SkyWalker541.glsl    ← place the shader here
 
 The preset file references the shader at:
@@ -53,29 +50,6 @@ standard RetroArch installation. No editing of the preset file is needed.
   4. Open Shader Parameters and set System to match your hardware
   5. Apply the recommended settings from the section below
   6. Save via Save Shader Preset As for automatic loading in future sessions
-
-  ─────────────────────────────────────────────────────────────────
-
-  NextUI
-  ─────────────────────────────────────────────────────────────────
-
-NextUI places both the preset and shader in the same folder. Place both
-files together in your shader folder:
-
-    PT_SkyWalker541.glslp
-    PT_SkyWalker541.glsl
-
-Because both files are in the same folder, the preset's shader path must
-be edited before use. Open PT_SkyWalker541.glslp in any text editor and
-change the shader path from:
-
-    shader0 = shaders/PT_SkyWalker541.glsl
-
-to:
-
-    shader0 = PT_SkyWalker541.glsl
-
-Save the file. The preset will now find the shader correctly in NextUI.
 
 ───────────────────────────────────────────────────────────────────────────────
 
@@ -367,4 +341,4 @@ Change the value on the right of any line to set a new default.
 
 ───────────────────────────────────────────────────────────────────────────────
 
-PT SkyWalker541 by SkyWalker541 | AI Assited Development | v1.7.1 | Written for RetroArch
+PT SkyWalker541 by SkyWalker541 | AI Assisted Development | v1.7.1 | Written for RetroArch
