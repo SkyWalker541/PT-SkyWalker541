@@ -1,13 +1,21 @@
 /*
-  PT SkyWalker541 NextUI  v1.6.0
+  PT SkyWalker541 NextUI  v1.7.1
   by SkyWalker541  |  NextUI / minarch GLSL
 
   Pixel transparency shader inspired by mattakins' pixel transparency work.
   Restores GB/GBC/GBA backing material appearance on white/bright pixels.
 
+  Pixel Effect LCD Dot mode inspired by Themaister's dot shader (public domain).
+
   NextUI variant — white detection runs against the post-processed frame.
   Thresholds are pre-compensated for NextUI's post-processing pipeline.
-  When OrigTexture support is added to NextUI this shader will be updated.
+  OrigTexture is not available in NextUI — black level threshold uses the
+  post-processed frame brightness. When OrigTexture support is added to
+  NextUI this shader will be updated.
+
+  v1.7.1 — replaced PT_PIXEL_BORDER with unified Pixel Effect system:
+            Grid and LCD Dot modes. All LCD Dot parameters strictly gated
+            so they cost nothing when Grid or Off is selected.
 */
 
 // ── PARAMETERS ───────────────────────────────────────────────────────────────
@@ -28,8 +36,17 @@
 // Color Filter
 #pragma parameter PT_DARK_FILTER_LEVEL "Dark color filter (0=off)"              0.0 0.0 100.0 1.0
 
-// Pixel Border
-#pragma parameter PT_PIXEL_BORDER      "Pixel border strength (0=off)"          0.08 0.0 1.0 0.01
+// Pixel Effect
+#pragma parameter PT_GRID_MODE         "Pixel Effect (0=Off, 1=Grid, 2=LCD Dot)" 1.0 0.0 2.0 1.0
+
+// [Grid] parameters — only active when PT_GRID_MODE = 1
+#pragma parameter PT_GRID_STRENGTH     "  [Grid]     Grid strength"              0.08 0.0 1.0 0.01
+
+// [LCD Dot] parameters — only active when PT_GRID_MODE = 2
+#pragma parameter PT_DOT_SIZE          "  [LCD Dot]  Dot size"                   0.50 0.1 0.9 0.01
+#pragma parameter PT_DOT_SHARPNESS     "  [LCD Dot]  Dot sharpness"              0.0  0.0 5.0 0.1
+#pragma parameter PT_DOT_BRIGHTNESS    "  [LCD Dot]  Dot brightness compensation" 0.0 0.0 1.0 0.01
+#pragma parameter PT_BLACK_THRESHOLD   "  [LCD Dot]  Black level threshold"      0.15 0.0 1.0 0.01
 
 // Drop Shadow
 #pragma parameter PT_SHADOW_OFFSET     "Shadow offset"                           1.0 -10.0 10.0 0.5
@@ -114,7 +131,12 @@ uniform COMPAT_PRECISION float PT_WHITE_TRANSPARENCY;
 uniform COMPAT_PRECISION float PT_PALETTE;
 uniform COMPAT_PRECISION float PT_PALETTE_INTENSITY;
 uniform COMPAT_PRECISION float PT_DARK_FILTER_LEVEL;
-uniform COMPAT_PRECISION float PT_PIXEL_BORDER;
+uniform COMPAT_PRECISION float PT_GRID_MODE;
+uniform COMPAT_PRECISION float PT_GRID_STRENGTH;
+uniform COMPAT_PRECISION float PT_DOT_SIZE;
+uniform COMPAT_PRECISION float PT_DOT_SHARPNESS;
+uniform COMPAT_PRECISION float PT_DOT_BRIGHTNESS;
+uniform COMPAT_PRECISION float PT_BLACK_THRESHOLD;
 uniform COMPAT_PRECISION float PT_SHADOW_OFFSET;
 uniform COMPAT_PRECISION float PT_SHADOW_OPACITY;
 uniform COMPAT_PRECISION float PT_BEZEL;
@@ -127,7 +149,12 @@ uniform COMPAT_PRECISION float PT_BEZEL;
 #define PT_PALETTE            1.0
 #define PT_PALETTE_INTENSITY  1.0
 #define PT_DARK_FILTER_LEVEL  0.0
-#define PT_PIXEL_BORDER       0.08
+#define PT_GRID_MODE          1.0
+#define PT_GRID_STRENGTH      0.08
+#define PT_DOT_SIZE           0.50
+#define PT_DOT_SHARPNESS      0.0
+#define PT_DOT_BRIGHTNESS     0.0
+#define PT_BLACK_THRESHOLD    0.15
 #define PT_SHADOW_OFFSET      1.0
 #define PT_SHADOW_OPACITY     0.30
 #define PT_BEZEL              0.40
@@ -137,6 +164,7 @@ uniform COMPAT_PRECISION float PT_BEZEL;
 #define LUMA_R 0.2126
 #define LUMA_G 0.7152
 #define LUMA_B 0.0722
+#define PI     3.14159265
 
 // ── HELPER FUNCTIONS ─────────────────────────────────────────────────────────
 
@@ -190,14 +218,65 @@ vec3 proceduralBackground(vec2 uv)
     return vec3(0.50 + offset);
 }
 
-// Pixel border — fract/abs method, works at any scale mode.
-float pixelBorderFactor(vec2 coord)
+// ── PIXEL EFFECT — MODE 1 : GRID ─────────────────────────────────────────────
+// fract/abs border darkening. No texture samples, no exp(), no sqrt().
+// Only PT_GRID_STRENGTH is evaluated.
+
+vec3 applyGrid(vec3 color, vec2 coord)
 {
-    if (PT_PIXEL_BORDER < 0.001) return 1.0;
-    vec2  f  = fract(coord * TextureSize);
-    float bx = 1.0 - abs(f.x * 2.0 - 1.0);
-    float by = 1.0 - abs(f.y * 2.0 - 1.0);
-    return mix(1.0, bx * by, PT_PIXEL_BORDER);
+    vec2  cellUV = fract(coord * TextureSize);
+    float bx     = 1.0 - abs(cellUV.x * 2.0 - 1.0);
+    float by     = 1.0 - abs(cellUV.y * 2.0 - 1.0);
+    return color * mix(1.0, bx * by, PT_GRID_STRENGTH);
+}
+
+// ── PIXEL EFFECT — MODE 2 : LCD DOT ──────────────────────────────────────────
+// Gaussian falloff from dot centre with brightness-dependent dot sizing.
+// Single sample. Only PT_DOT_SIZE, PT_DOT_SHARPNESS, PT_DOT_BRIGHTNESS,
+// PT_BLACK_THRESHOLD evaluated. Uses post-processed brightness for black gate
+// since OrigTexture is not available in NextUI.
+
+vec3 applyLCDDot(vec3 color, vec2 coord, float pixLuma)
+{
+    // Gate: pure black and near-black pixels pass through unchanged.
+    if (pixLuma < 0.01) return color;
+    float lumaFade = smoothstep(0.0, PT_BLACK_THRESHOLD, pixLuma);
+
+    vec2  cellUV = fract(coord * TextureSize);
+    vec2  delta  = cellUV - 0.5;
+    float dist   = sqrt(dot(delta, delta));
+
+    // Brightness-dependent radius: bright pixels get slightly larger dots,
+    // dark pixels slightly smaller.
+    float bloomBias = mix(0.0, 0.08, pixLuma);
+    float radius    = PT_DOT_SIZE * 0.5 + bloomBias;
+
+    // Sharpness controls Gaussian falloff rate.
+    float falloff = PT_DOT_SHARPNESS + 1.0;
+    float edge    = clamp(radius - dist, 0.0, 1.0);
+    float dotMask = pow(edge / max(radius, 0.001), falloff);
+    dotMask       = clamp(dotMask, 0.0, 1.0);
+
+    // Blend dot result with original color based on pixel brightness —
+    // dark pixels get original color, bright pixels get full dot effect.
+    vec3 dotResult = color * dotMask;
+    vec3 result    = mix(color, dotResult, lumaFade);
+
+    // Brightness compensation restores luminance lost to inter-dot gaps.
+    float litFraction = clamp(PI * radius * radius, 0.001, 1.0);
+    result = mix(result, result / litFraction, PT_DOT_BRIGHTNESS * lumaFade);
+
+    return result;
+}
+
+// ── UNIFIED PIXEL EFFECT DISPATCHER ──────────────────────────────────────────
+// Strictly gated — each branch only evaluates its own mode's parameters.
+
+vec3 applyPixelEffect(vec3 color, vec2 coord, float pixLuma)
+{
+    if (PT_GRID_MODE < 0.5) return color;
+    if (PT_GRID_MODE < 1.5) return applyGrid(color, coord);
+    return applyLCDDot(color, coord, pixLuma);
 }
 
 // Bezel shadow — rectangular edge darkening simulating physical bezel shadow.
@@ -247,7 +326,7 @@ void main()
     // White mode — non-white pixels exit early, still applying post effects.
     float alpha = 0.0;
     if (PT_PIXEL_MODE < 0.5 && isWhite < 0.5) {
-        vec3 result = pixel * pixelBorderFactor(TEX0.xy);
+        vec3 result = applyPixelEffect(pixel, TEX0.xy, pixBrightness);
         result = applyBezelShadow(result, TEX0.xy);
         FragColor = vec4(result, lcd.a);
         return;
@@ -297,8 +376,8 @@ void main()
 
     vec3 result = mix(pixel, bg, alpha);
 
-    // Post-blend effects.
-    result = result * pixelBorderFactor(TEX0.xy);
+    // Post-blend pixel effect — applied last.
+    result = applyPixelEffect(result, TEX0.xy, pixBrightness);
     result = applyBezelShadow(result, TEX0.xy);
 
     FragColor = vec4(result, lcd.a);
