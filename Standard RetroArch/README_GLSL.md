@@ -36,9 +36,9 @@ threshold setting.
 
 RetroArch expects the preset and shader in separate locations:
 
-    shaders/
+    shaders_glsl/handheld/
         PT_SkyWalker541.glslp       ← place the preset here
-        shaders/
+        shaders_glsl/hanheld/shaders/
             PT_SkyWalker541.glsl    ← place the shader here
 
 The preset file references the shader at:
