@@ -6,23 +6,23 @@
 **Performance-focused GLSL shader for low-power handhelds.**
 
 [![RetroArch Version](https://img.shields.io/badge/RetroArch-v1.7.1-brightgreen?style=flat-square)](#)
-[![NextUI Version](https://img.shields.io/badge/NextUI-v1.6.0-orange?style=flat-square)](#)
+[![NextUI Version](https://img.shields.io/badge/NextUI-v1.7.1-brightgreen?style=flat-square)](#)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey?style=flat-square)](#)
 
-[What It Does](#what-it-does) • [Latest Update](#-v170-update-retroarch-only) • [Installation](#installation) • [Parameters](#parameters)
+[What It Does](#what-it-does) • [Latest Update](#-v171-update) • [Installation](#installation) • [Parameters](#parameters)
 
 </div>
 
 ---
 
 > [!IMPORTANT]
-> ### v1.7.1 Update (RetroArch Only)
-> The RetroArch version has been upgraded to **v1.7.1**, introducing a major overhaul to the display simulation system.
-> * **Unified Pixel Effect System:** Replaces the previous pixel border parameter with three distinct simulation modes: **Grid, LCD Dot, and CRT Phosphor**.
+> ### v1.7.1 Update
+> Both the RetroArch and NextUI versions have been upgraded to **v1.7.1**.
+> * **Unified Pixel Effect System:** Replaces the previous pixel border parameter with distinct simulation modes: **Grid, LCD Dot, and CRT Phosphor**.
 > * **Optimized Performance:** Each mode is tuned to run at minimum cost when not selected. Parameters for inactive modes have no effect on the image.
 > * **Enhanced Control:** Adds dedicated parameters for dot size, dot sharpness, phosphor bloom, scanlines, and subpixel layout (RGB/BGR).
-> * **Black Level Threshold:** A shared parameter for LCD Dot and CRT Phosphor modes that controls where the dot effect fades in relative to black. Uses the raw input frame so color correction cannot cause unlit pixels to appear lit.
-> * **NextUI Note:** The NextUI version remains at **v1.6.0** to maintain compatibility with its specific post-processing pipeline.
+> * **Black Level Threshold:** A parameter for LCD Dot and CRT Phosphor modes that controls where the dot effect fades in relative to black. The RetroArch version uses the raw input frame so color correction cannot cause unlit pixels to appear lit.
+> * **NextUI Note:** The NextUI version includes Grid and LCD Dot modes. CRT Phosphor is not included in the NextUI version to keep performance optimal for TrimUI Brick users.
 > * Note: some parameters default to 0 and will need adjusted to suit your device and preference.
 
 ---
@@ -42,8 +42,8 @@ Pixel Effect dot and phosphor modes inspired by Themaister's dot shader (public 
 
 | Variant | Version | Platform | Primary Focus |
 | :--- | :---: | :--- | :--- |
-| **Standard** | **v1.7.1** | RetroArch (`gl` / `glcore`) | Optimized for low-power devices, with optional advanced display simulation (Grid/Dot/Phosphor). |
-| **NextUI** | **v1.6.0** | NextUI / minarch | Optimized single-pass logic for low-power handhelds (Grid Option Only). |
+| **Standard** | **v1.7.1** | RetroArch (`gl` / `glcore`) | Optimized for low-power devices, with optional advanced display simulation (Grid / LCD Dot / CRT Phosphor). |
+| **NextUI** | **v1.7.1** | NextUI / minarch | Optimized for TrimUI Brick and similar low-power handhelds (Grid and LCD Dot). CRT Phosphor excluded for performance. |
 
 ---
 
@@ -52,12 +52,12 @@ Pixel Effect dot and phosphor modes inspired by Themaister's dot shader (public 
 * **Pixel Transparency Restoration:** Detects white and near-white pixels to blend them toward a procedural backing texture. Includes modes for White-only, Bright, or All pixels.
 * **Procedural Backing Texture:** Grainy noise tinted to match original hardware (Pocket grey, GBC/GBA grey, or GBA SP white).
 * **Unified Pixel Effects (v1.7.1):**
-    * **Grid:** Classic gap simulation between pixels.
-    * **LCD Dot:** Circular Gaussian dots with adjustable size, sharpness, brightness compensation, and black level threshold. Dot structure uses the raw input frame for black detection so color correction does not affect unlit pixels.
-    * **CRT Phosphor:** 9-sample neighbourhood simulation with RGB/BGR subpixel stripes, bloom spread, dot gamma, scanline roll-off, brightness compensation, and black level threshold.
-* **Black Level Threshold (v1.7.1):** Shared by LCD Dot and CRT Phosphor. Controls where the dot effect fades in above black. Hard gate on truly black pixels ensures zero cost and clean blacks regardless of setting.
+    * **Grid:** Classic gap simulation between pixels. Available in both RetroArch and NextUI versions.
+    * **LCD Dot:** Circular Gaussian dots with adjustable size, sharpness, brightness compensation, and black level threshold. Available in both versions. The RetroArch version uses the raw input frame for black detection so color correction does not affect unlit pixels.
+    * **CRT Phosphor:** 9-sample neighbourhood simulation with RGB/BGR subpixel stripes, bloom spread, dot gamma, scanline roll-off, and brightness compensation. RetroArch version only — excluded from NextUI to maintain performance on low-power hardware.
+* **Black Level Threshold (v1.7.1):** Controls where the dot effect fades in above black. Hard gate on truly black pixels ensures zero cost and clean blacks regardless of setting.
 * **Drop Shadow:** Casts a subtle shadow from solid pixels onto the backing material at all sprite and tile edges.
-* **Bezel Shadow:** Darkens screen edges to simulate the shadow cast by the physical bezel; width is set automatically per `PT_SYSTEM`.
+* **Bezel Shadow:** Darkens screen edges to simulate the shadow cast by the physical bezel; width is set automatically per system.
 * **Color Harshness Filter:** Softens overly vivid dark colors, most useful for aggressive GBC palettes.
 
 ---
@@ -71,10 +71,12 @@ Pixel Effect dot and phosphor modes inspired by Themaister's dot shader (public 
 4. Set `PT_SYSTEM` to match your target hardware in the Shader Parameters.
 5. Refer to **README_GLSL.md** for full documentation and recommended settings per system.
 
-### NextUI (v1.6.0)
-1. Place `PT_SkyWalker541_NextUI.cfg` and `PT_SkyWalker541_NextUI.glsl` in your NextUI shaders folder.
-2. Load the `.cfg` from the in-game shader menu.
-3. Set `PT_SYSTEM` to match your target system.
+### NextUI (v1.7.1)
+1. Place `PT_SkyWalker541_NextUI.cfg` in your `Shaders/` folder.
+2. Place `PT_SkyWalker541_NextUI.glsl` in the `Shaders/glsl/` subfolder.
+3. Load the `.cfg` from the in-game shader menu.
+4. Set `PT_SYSTEM` to match your target system.
+5. Refer to **README_NextUI.md** for full documentation and recommended settings per system.
 
 ---
 
@@ -94,7 +96,7 @@ Pixel Effect dot and phosphor modes inspired by Themaister's dot shader (public 
 
 ## Parameters
 
-Full parameter documentation, recommended settings per system, and editing defaults are covered in **README_GLSL.md** included with the shader files.
+Full parameter documentation, recommended settings per system, and editing defaults are covered in **README_GLSL.md** for the RetroArch version and **README_NextUI.md** for the NextUI version, both included with the shader files.
 
 ---
 
@@ -105,6 +107,6 @@ This shader specifically targets low-power emulation devices—handhelds and bud
 
 <div align="center">
 
-*PT SkyWalker541 by SkyWalker541 | RetroArch v1.7.1 | NextUI v1.6.0 | AI assisted development*
+*PT SkyWalker541 by SkyWalker541 | RetroArch v1.7.1 | NextUI v1.7.1 | AI assisted development*
 
 </div>
