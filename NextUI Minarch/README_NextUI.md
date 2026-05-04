@@ -1,8 +1,9 @@
 PT SkyWalker541 NextUI
 Pixel Transparency Shader for NextUI / minarch
-by SkyWalker541 | v1.6.0
+by SkyWalker541 | v1.7.1
 
 Inspired by mattakins' pixel transparency work.
+Pixel Effect LCD Dot mode inspired by Themaister's dot shader (public domain).
 
 ───────────────────────────────────────────────────────────────────────────────
 
@@ -14,22 +15,30 @@ bright white. PT SkyWalker541 restores the original appearance by detecting
 white and bright pixels and blending them toward a procedurally generated
 backing texture.
 
+v1.7.1 replaces the previous pixel border parameter with a unified Pixel Effect
+system. Grid and LCD Dot modes are now available, each with dedicated parameters
+that cost nothing to process when their mode is not selected.
+
 ───────────────────────────────────────────────────────────────────────────────
 
   NEXTUI VERSION — KEY DIFFERENCES
   ─────────────────────────────────────────────────────────────────
 
 The RetroArch version of this shader uses RetroArch's built-in OrigTexture
-uniform to run white detection against the raw unprocessed game frame. This
-gives clean, accurate detection that does not require threshold compensation.
+uniform to run white detection and black level gating against the raw
+unprocessed game frame. This gives clean, accurate detection that does not
+require threshold compensation.
 
-NextUI does not provide OrigTexture. This version detects white pixels against
-the post-processed frame instead. The detection thresholds are pre-compensated
-for NextUI's post-processing pipeline to produce accurate results. This means:
+NextUI does not provide OrigTexture. This version detects white pixels and
+the LCD Dot black level gate against the post-processed frame instead. The
+detection thresholds are pre-compensated for NextUI's post-processing pipeline
+to produce accurate results. This means:
 
   - Thresholds are lower than the RetroArch version
-  - If results seem off, set PT_SYSTEM = 0 and adjust PT_SENSITIVITY
-    until backgrounds go transparent correctly
+  - The LCD Dot black level threshold may need slight adjustment compared
+    to the RetroArch version due to the post-processed frame difference
+  - If white detection seems off, set System = 0 and adjust
+    Manual sensitivity threshold until backgrounds go transparent correctly
   - When NextUI adds OrigTexture support this shader will be updated to
     match the RetroArch version's architecture
 
@@ -55,56 +64,112 @@ Apply via your NextUI shader settings.
   PARAMETERS
   ─────────────────────────────────────────────────────────────────
 
-  PT_SYSTEM            default: 1
-    Selects the hardware preset. Sets white detection threshold and
-    bezel shadow width automatically. 0=Manual, 1=GB, 2=GBC,
-    3=GBA SP, 4=GBA Orig.
+Parameter names below match exactly what you will see in the NextUI menu.
 
-  PT_SENSITIVITY       default: 0.52   range: 0.35 to 0.75
-    Only active when PT_SYSTEM = 0. Sets the white detection threshold
+  ── System ──────────────────────────────────────────────────────
+
+  System (0=Manual, 1=GB, 2=GBC, 3=GBA SP, 4=GBA Orig)   default: 1
+    Selects the hardware preset. Sets the white detection threshold
+    and bezel shadow width automatically to match each system.
+    Set this first before adjusting any other parameters.
+
+  Manual sensitivity threshold   default: 0.52   range: 0.35 to 0.75
+    Only active when System = 0. Sets the white detection threshold
     manually. Range is restricted to the effective zone for NextUI's
-    post-processed frame. Use this when colorization is enabled or when
-    the hardware presets do not detect correctly.
+    post-processed frame. Use this when colorization is enabled or
+    when the hardware presets do not detect correctly.
 
-  PT_PIXEL_MODE        default: 0
-    Which pixels receive transparency. 0=White only, 1=Bright,
-    2=All pixels. White only is the most accurate.
+  ── Pixel Transparency ──────────────────────────────────────────
 
-  PT_BASE_ALPHA        default: 0.20
-    How transparent detected pixels become. Lower = more opaque.
+  Pixel mode (0=White, 1=Bright, 2=All)   default: 0
+    Which pixels receive transparency. White only is the most
+    accurate to original hardware. Bright includes near-white pixels.
+    All applies transparency to every pixel.
 
-  PT_WHITE_TRANSPARENCY   default: 0.20
+  Base transparency amount   default: 0.20
+    How transparent detected pixels become. Lower = more opaque and
+    brighter. Higher = more of the backing texture shows through.
+
+  White pixel min transparency   default: 0.20
     Minimum transparency floor for confirmed white pixels. Ensures
     white pixels are always at least this transparent regardless of
-    PT_BASE_ALPHA.
+    Base transparency amount.
 
-  PT_PALETTE           default: 1
-    Tint colour of the procedural backing texture. 0=Off, 1=Pocket
-    (warm green-grey, DMG/Pocket), 2=Grey (GBC/GBA Original),
-    3=White (GBA SP).
+  ── Background ──────────────────────────────────────────────────
+
+  Background tint (0=Off, 1=Pocket, 2=Grey, 3=White)   default: 1
+    Tint colour of the procedural backing texture. Pocket is a warm
+    green-grey matching the DMG and Pocket screen backing. Grey
+    matches GBC and GBA Original. White matches GBA SP.
     Note: tint appears more subtle on LCD screens than OLED. Raise
-    PT_PALETTE_INTENSITY above 1.0 if the tint feels too subtle.
+    Tint intensity above 1.0 if the tint feels too subtle.
 
-  PT_PALETTE_INTENSITY    default: 1.00
+  Tint intensity   default: 1.00
     How strongly the tint colour is applied. 0 = no tint.
 
-  PT_DARK_FILTER_LEVEL    default: 0
-    Softens overly vivid dark colours. Most useful for GBC games with
-    aggressive colour palettes. 0 = off.
+  ── Color Filter ────────────────────────────────────────────────
 
-  PT_PIXEL_BORDER      default: 0.08
-    Simulates the thin gap between individual LCD pixels. Continuous
-    range — dial to taste. 0 = off.
+  Dark color filter (0=off)   default: 0
+    Softens overly vivid dark colours. Most useful for GBC games
+    with aggressive colour palettes. 0 = off. Raise gradually
+    until dark colours look natural.
 
-  PT_SHADOW_OFFSET     default: 1.0
-    Distance of the drop shadow in texels. Moves X and Y together.
+  ── Pixel Effect ────────────────────────────────────────────────
 
-  PT_SHADOW_OPACITY    default: 0.30
+  Pixel Effect (0=Off, 1=Grid, 2=LCD Dot)   default: 1
+    Selects the pixel structure simulation effect. Each mode has its
+    own dedicated parameters below. Parameters for inactive modes
+    have no effect on the image and cost nothing to process.
+    Note: CRT Phosphor is not available in the NextUI version.
+
+  [Grid] parameters — active when Pixel Effect = 1
+  ─────────────────────────────────────────────────────────────────
+
+  [Grid]     Grid strength   default: 0.08
+    Strength of the gap between pixels. Higher values produce a more
+    visible grid. Dial to taste. 0 = off.
+
+  [LCD Dot] parameters — active when Pixel Effect = 2
+  ─────────────────────────────────────────────────────────────────
+
+  [LCD Dot]  Dot size   default: 0.50
+    Radius of each dot within its pixel cell. Larger values fill
+    more of the cell and leave a smaller gap. Smaller values leave
+    a larger gap between dots. Range 0.1 to 0.9.
+
+  [LCD Dot]  Dot sharpness   default: 0.0
+    Controls the edge of each dot. 0 = soft Gaussian falloff,
+    natural and subtle. Higher values produce a harder, more defined
+    dot edge. Dial to taste.
+
+  [LCD Dot]  Dot brightness compensation   default: 0.0
+    Compensates for overall brightness lost to the inter-dot gaps.
+    Raise slowly if the image appears too dark with LCD Dot enabled.
+    0 = no compensation.
+
+  [LCD Dot]  Black level threshold   default: 0.15
+    Controls where the dot effect fades in above black. Uses the
+    post-processed frame brightness since OrigTexture is not
+    available in NextUI. May need slight adjustment compared to
+    the RetroArch version.
+    0 = dot effect applies to all pixels including near-black.
+    Higher values suppress dots on progressively brighter dark pixels.
+
+  ── Drop Shadow ─────────────────────────────────────────────────
+
+  Shadow offset   default: 1.0
+    Distance of the drop shadow cast by solid pixels onto the backing
+    texture. Moves X and Y together in texels. Negative values shift
+    the shadow in the opposite direction.
+
+  Shadow opacity (0=off)   default: 0.30
     Strength of the drop shadow. 0 = off.
 
-  PT_BEZEL             default: 0.40
+  ── Bezel ───────────────────────────────────────────────────────
+
+  Bezel shadow strength (0=off)   default: 0.40
     Darkens screen edges to simulate the shadow cast by the physical
-    bezel onto the LCD panel. Width is set automatically per PT_SYSTEM.
+    bezel onto the LCD panel. Width is set automatically by System.
     0 = off.
 
 ───────────────────────────────────────────────────────────────────────────────
@@ -114,9 +179,9 @@ Apply via your NextUI shader settings.
 
 This version uses lower thresholds than the RetroArch version to compensate
 for NextUI's post-processing pipeline. If backgrounds are not going transparent
-as expected, set PT_SYSTEM = 0 and adjust PT_SENSITIVITY manually.
+as expected, set System = 0 and adjust Manual sensitivity threshold manually.
 
-  PT_SYSTEM    RetroArch threshold   NextUI threshold
+  System       RetroArch threshold   NextUI threshold
   ─────────    ───────────────────   ────────────────
   1 (GB)       0.90                  0.62
   2 (GBC)      0.85                  0.68
@@ -128,7 +193,7 @@ as expected, set PT_SYSTEM = 0 and adjust PT_SENSITIVITY manually.
   RECOMMENDED SETTINGS PER SYSTEM
   ─────────────────────────────────────────────────────────────────
 
-Set PT_SYSTEM first. The following are set automatically by PT_SYSTEM
+Set System first. The following are configured automatically by System
 and do not need manual adjustment:
 
   White detection threshold
@@ -138,7 +203,7 @@ All other parameters use the defaults listed above unless noted below.
 
 ───────────────────────────────────────────────────────────────────────────────
 
-  Game Boy DMG / Pocket  —  PT_SYSTEM = 1
+  Game Boy DMG / Pocket  —  System = 1
   ─────────────────────────────────────────────────────────────────
 
   CORE SETTINGS
@@ -147,19 +212,19 @@ All other parameters use the defaults listed above unless noted below.
   Interframe blending        Disabled
   GB Colorization            Disabled
 
-  Note: If using GB colorization, set PT_SYSTEM = 0 and adjust
-  PT_SENSITIVITY until backgrounds go transparent.
+  Note: If using GB colorization, set System = 0 and adjust
+  Manual sensitivity threshold until backgrounds go transparent.
 
   SHADER PARAMETERS
   ─────────────────────────────────────────────────────────────────
-  PT_SYSTEM              1
-  PT_PALETTE             1    (Pocket)
+  System                         1
+  Background tint                1    (Pocket)
 
   All other parameters use defaults.
 
 ───────────────────────────────────────────────────────────────────────────────
 
-  Game Boy Color  —  PT_SYSTEM = 2
+  Game Boy Color  —  System = 2
   ─────────────────────────────────────────────────────────────────
 
   CORE SETTINGS
@@ -169,15 +234,15 @@ All other parameters use the defaults listed above unless noted below.
 
   SHADER PARAMETERS
   ─────────────────────────────────────────────────────────────────
-  PT_SYSTEM              2
-  PT_PALETTE             1    (Pocket)
-  PT_DARK_FILTER_LEVEL   10
+  System                         2
+  Background tint                1    (Pocket)
+  Dark color filter              10
 
   All other parameters use defaults.
 
 ───────────────────────────────────────────────────────────────────────────────
 
-  Game Boy Advance SP (front-lit)  —  PT_SYSTEM = 3
+  Game Boy Advance SP (front-lit)  —  System = 3
   ─────────────────────────────────────────────────────────────────
 
   CORE SETTINGS
@@ -187,16 +252,16 @@ All other parameters use the defaults listed above unless noted below.
 
   SHADER PARAMETERS
   ─────────────────────────────────────────────────────────────────
-  PT_SYSTEM              3
-  PT_BASE_ALPHA          0.15
-  PT_WHITE_TRANSPARENCY  0.45
-  PT_PALETTE             3    (White)
-  PT_SHADOW_OPACITY      0.20
-  PT_BEZEL               0.30
+  System                         3
+  Base transparency amount       0.15
+  White pixel min transparency   0.45
+  Background tint                3    (White)
+  Shadow opacity                 0.20
+  Bezel shadow strength          0.30
 
 ───────────────────────────────────────────────────────────────────────────────
 
-  Game Boy Advance Original  —  PT_SYSTEM = 4
+  Game Boy Advance Original  —  System = 4
   ─────────────────────────────────────────────────────────────────
 
   CORE SETTINGS
@@ -206,11 +271,11 @@ All other parameters use the defaults listed above unless noted below.
 
   SHADER PARAMETERS
   ─────────────────────────────────────────────────────────────────
-  PT_SYSTEM              4
-  PT_BASE_ALPHA          0.25
-  PT_WHITE_TRANSPARENCY  0.55
-  PT_PALETTE             2    (Grey)
-  PT_SHADOW_OPACITY      0.20
+  System                         4
+  Base transparency amount       0.25
+  White pixel min transparency   0.55
+  Background tint                2    (Grey)
+  Shadow opacity                 0.20
 
   All other parameters use defaults.
 
@@ -220,23 +285,29 @@ All other parameters use the defaults listed above unless noted below.
   ─────────────────────────────────────────────────────────────────
 
 To change a default, open PT_SkyWalker541_NextUI.glsl in any text editor
-and find the #define block near the top of the fragment shader:
+and find the #define block near the top of the fragment shader. The menu
+name for each parameter is shown alongside for reference:
 
-    #define PT_SYSTEM             1.0
-    #define PT_SENSITIVITY        0.52
-    #define PT_PIXEL_MODE         0.0
-    #define PT_BASE_ALPHA         0.20
-    #define PT_WHITE_TRANSPARENCY 0.20
-    #define PT_PALETTE            1.0
-    #define PT_PALETTE_INTENSITY  1.0
-    #define PT_DARK_FILTER_LEVEL  0.0
-    #define PT_PIXEL_BORDER       0.08
-    #define PT_SHADOW_OFFSET      1.0
-    #define PT_SHADOW_OPACITY     0.30
-    #define PT_BEZEL              0.40
+    #define PT_SYSTEM             1.0    System
+    #define PT_SENSITIVITY        0.52   Manual sensitivity threshold
+    #define PT_PIXEL_MODE         0.0    Pixel mode
+    #define PT_BASE_ALPHA         0.20   Base transparency amount
+    #define PT_WHITE_TRANSPARENCY 0.20   White pixel min transparency
+    #define PT_PALETTE            1.0    Background tint
+    #define PT_PALETTE_INTENSITY  1.0    Tint intensity
+    #define PT_DARK_FILTER_LEVEL  0.0    Dark color filter
+    #define PT_GRID_MODE          1.0    Pixel Effect
+    #define PT_GRID_STRENGTH      0.08   [Grid] Grid strength
+    #define PT_DOT_SIZE           0.50   [LCD Dot] Dot size
+    #define PT_DOT_SHARPNESS      0.0    [LCD Dot] Dot sharpness
+    #define PT_DOT_BRIGHTNESS     0.0    [LCD Dot] Dot brightness compensation
+    #define PT_BLACK_THRESHOLD    0.15   [LCD Dot] Black level threshold
+    #define PT_SHADOW_OFFSET      1.0    Shadow offset
+    #define PT_SHADOW_OPACITY     0.30   Shadow opacity
+    #define PT_BEZEL              0.40   Bezel shadow strength
 
 Change the value on the right of any line to set a new default.
 
 ───────────────────────────────────────────────────────────────────────────────
 
-PT SkyWalker541 NextUI by SkyWalker541 | AI Assisted Development | v1.6.0 | Written for NextUI / minarch
+PT SkyWalker541 NextUI by SkyWalker541 | AI Assisted Development | v1.7.1 | Written for NextUI / minarch
