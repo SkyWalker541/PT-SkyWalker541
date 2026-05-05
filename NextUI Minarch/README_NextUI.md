@@ -1,6 +1,6 @@
 PT SkyWalker541 NextUI
 Pixel Transparency Shader for NextUI / minarch
-by SkyWalker541 | v1.7.2 | AI Assisted Development
+by SkyWalker541 | v1.8.0 | AI Assisted Development
 
 Inspired by mattakins' pixel transparency work.
 Pixel Effect LCD Dot mode inspired by Themaister's dot shader (public domain).
@@ -19,10 +19,11 @@ v1.7.1 replaces the previous pixel border parameter with a unified Pixel Effect
 system. Grid and LCD Dot modes are now available, each with dedicated parameters
 that cost nothing to process when their mode is not selected.
 
-v1.7.2 renames Grid strength to Grid width for clarity. Removes Dot brightness
+v1.8.0 renames Grid strength to Grid width for clarity. Removes Dot brightness
 compensation — Gap / Grid Color solves brightness at the source making it
 redundant. Adds Gap / Grid Color and Gap / Grid Color Intensity parameters
-matching the RetroArch version.
+matching the RetroArch version. All parameter code names updated to closely
+match their menu label names for clarity when editing defaults.
 
 ───────────────────────────────────────────────────────────────────────────────
 
@@ -199,7 +200,7 @@ Parameter names below match exactly what you will see in the NextUI menu.
   parameters. Only Gap / Grid color intensity affects their appearance.
 
   Brightness note — Dot brightness compensation has been removed in
-  v1.7.2. If the image feels too dark with LCD Dot enabled, switch
+  v1.8.0. If the image feels too dark with LCD Dot enabled, switch
   Gap / Grid color from Black to Backing Texture or White, or reduce
   Gap / Grid color intensity.
 
@@ -337,26 +338,26 @@ and find the #define block near the top of the fragment shader. The menu
 name for each parameter is shown alongside for reference:
 
     #define PT_SYSTEM             1.0    System
-    #define PT_SENSITIVITY        0.52   Manual sensitivity threshold
+    #define PT_MANUAL_SENSITIVITY_THRESHOLD        0.52   Manual sensitivity threshold
     #define PT_PIXEL_MODE         0.0    Pixel mode
-    #define PT_BASE_ALPHA         0.20   Base transparency amount
-    #define PT_WHITE_TRANSPARENCY 0.20   White pixel min transparency
-    #define PT_PALETTE            1.0    Background tint
-    #define PT_PALETTE_INTENSITY  1.0    Tint intensity
-    #define PT_DARK_FILTER_LEVEL  0.0    Dark color filter
-    #define PT_GRID_MODE          1.0    Pixel Effect
-    #define PT_GRID_STRENGTH      0.08   [Grid] Grid width
+    #define PT_BASE_TRANSPARENCY_AMOUNT         0.20   Base transparency amount
+    #define PT_WHITE_PIXEL_MIN_TRANSPARENCY 0.20   White pixel min transparency
+    #define PT_BACKGROUND_TINT            1.0    Background tint
+    #define PT_TINT_INTENSITY  1.0    Tint intensity
+    #define PT_DARK_COLOR_FILTER  0.0    Dark color filter
+    #define PT_PIXEL_EFFECT          1.0    Pixel Effect
+    #define PT_GRID_WIDTH      0.08   [Grid] Grid width
     #define PT_DOT_SIZE           0.50   [LCD Dot] Dot size
     #define PT_DOT_SHARPNESS      0.0    [LCD Dot] Dot sharpness
-    #define PT_BLACK_THRESHOLD    0.15   [LCD Dot] Black level threshold
-    #define PT_GAP_COLOR          0.0    Gap / Grid color
-    #define PT_GAP_INTENSITY      1.0    Gap / Grid color intensity
+    #define PT_BLACK_LEVEL_THRESHOLD    0.15   [LCD Dot] Black level threshold
+    #define PT_GAP_GRID_COLOR          0.0    Gap / Grid color
+    #define PT_GAP_GRID_COLOR_INTENSITY      1.0    Gap / Grid color intensity
     #define PT_SHADOW_OFFSET      1.0    Shadow offset
     #define PT_SHADOW_OPACITY     0.30   Shadow opacity
-    #define PT_BEZEL              0.40   Bezel shadow strength
+    #define PT_BEZEL_SHADOW_STRENGTH              0.40   Bezel shadow strength
 
 Change the value on the right of any line to set a new default.
 
 ───────────────────────────────────────────────────────────────────────────────
 
-PT SkyWalker541 NextUI by SkyWalker541 | AI Assisted Development | v1.7.2 | Written for NextUI / minarch
+PT SkyWalker541 NextUI by SkyWalker541 | AI Assisted Development | v1.8.0 | Written for NextUI / minarch
