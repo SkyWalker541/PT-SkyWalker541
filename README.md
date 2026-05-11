@@ -32,12 +32,15 @@
 
 ## What It Does
 
-On original Game Boy, GBC, and GBA hardware, pixels that were fully off didn't show as white—the physical backing material showed through instead, creating a subtle grey-green translucency. Game developers designed around this, using white areas as intentional transparent zones for backgrounds and UI.
+On original Game Boy, GBC, and GBA hardware, pixels that were fully off didn't show as white — the physical backing material showed through instead, creating a subtle grey-green translucency. Game developers designed around this intentionally, using white areas as transparent zones for backgrounds, UI, and sky. On modern displays those same pixels render as solid bright white, losing that original quality entirely.
 
-**PT SkyWalker541** restores this original appearance by detecting white and bright pixels and blending them toward a procedurally generated backing texture.
+**PT SkyWalker541** restores this appearance by detecting white and bright pixels and blending them toward a procedurally generated backing texture that simulates the original screen material — complete with grain, palette tint matched to each system, and drop shadow at sprite edges.
 
-Inspired by mattakins' pixel transparency work.
-Pixel Effect dot and phosphor modes inspired by Themaister's dot shader (public domain).
+On top of the transparency system, the shader offers three display simulation modes — **Grid**, **LCD Dot**, and **CRT Phosphor** — that recreate the physical pixel structure of the original screens. Each mode is independently tunable and runs at minimum cost when not selected. Gap / Grid Color lets you choose what appears in the gaps between pixels, from the backing texture itself to black or white, with adjustable intensity.
+
+All features are designed to run efficiently on low-power hardware. The shader targets the  and  drivers used by budget handhelds and low-cost emulation devices where heavier Slang-based shaders cause performance issues.
+
+*Inspired by mattakins' pixel transparency work. Pixel Effect dot and phosphor modes inspired by Themaister's dot shader (public domain).*
 
 ---
 
@@ -57,14 +60,14 @@ Pixel Effect dot and phosphor modes inspired by Themaister's dot shader (public 
 
 ## Features
 
-* **Pixel Transparency Restoration:** Detects white and near-white pixels to blend them toward a procedural backing texture. Includes modes for White-only, Bright, or All pixels.
-* **Procedural Backing Texture:** Grainy noise tinted to match original hardware (Pocket grey, GBC/GBA grey, or GBA SP white).
+* **Pixel Transparency:** Detects white and near-white pixels and blends them toward a procedurally generated backing texture. Three modes — White-only, Bright, or All pixels — let you control which pixels are affected.
+* **Backing Texture:** Grainy procedural noise tinted to match each system's screen backing material — Pocket warm green-grey, GBC/GBA neutral grey, or GBA SP white.
 * **Unified Pixel Effects (v1.8.0):**
     * **Grid:** Classic gap simulation between pixels. Available in both RetroArch and NextUI versions.
     * **LCD Dot:** Circular Gaussian dots with adjustable size, sharpness, and black level threshold. Available in both versions. The RetroArch version uses the raw input frame for black detection so color correction does not affect unlit pixels.
     * **CRT Phosphor:** 9-sample neighbourhood simulation with RGB/BGR subpixel stripes, bloom spread, dot gamma, and scanline roll-off. RetroArch version only — excluded from NextUI to maintain performance on low-power hardware. *Due to its 9-sample design, CRT Phosphor is the most GPU-intensive mode. On low-power devices it may reduce performance — Grid or LCD Dot are recommended for constrained hardware.*
-* **Black Level Threshold (v1.7.1):** Controls where the dot effect fades in above black. Hard gate on truly black pixels ensures zero cost and clean blacks regardless of setting.
-* **Gap / Grid Color (v1.8.0):** Sets the color that appears in pixel gaps and grid lines for Grid, LCD Dot, and CRT Phosphor modes. Backing Texture uses the existing background parameters at zero extra cost. Black and White options include a Gap / Grid Color Intensity slider for opacity control. Dot and Phosphor brightness compensation parameters have been removed — Gap / Grid Color solves brightness at the source, making them redundant.
+* **Black Level Threshold:** Controls where the LCD Dot and CRT Phosphor effect fades in above black. A hard gate on truly black pixels ensures clean blacks at zero processing cost regardless of the threshold value.
+* **Gap / Grid Color:** Sets the color that appears in pixel gaps and grid lines for Grid, LCD Dot, and CRT Phosphor modes. Choose between Backing Texture, Black, or White. Gap / Grid Color Intensity controls opacity across all three options.
 * **Drop Shadow:** Casts a subtle shadow from solid pixels onto the backing material at all sprite and tile edges.
 * **Bezel Shadow:** Darkens screen edges to simulate the shadow cast by the physical bezel; width is set automatically per system.
 * **Color Harshness Filter:** Softens overly vivid dark colors, most useful for aggressive GBC palettes.
