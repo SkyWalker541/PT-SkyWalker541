@@ -50,6 +50,11 @@ Pixel Effect dot and phosphor modes inspired by Themaister's dot shader (public 
 
 ---
 
+> [!NOTE]
+> **On the future of the NextUI variant:** The NextUI version exists because NextUI's minarch did not originally support the `OrigTexture` uniform required by the standard RetroArch shader. As of [NextUI v6.11.0 alpha](https://github.com/LoveRetro/NextUI-nightly/releases/tag/v6.11.0a), `OrigTexture` support has been introduced. Once this reaches a stable official release, the RetroArch shader will work natively on NextUI and the separate NextUI variant will be retired. Note that NextUI uses a `.cfg` file instead of a `.glslp` preset — when the official release arrives, a `.cfg` file for the standard RetroArch shader will be provided so NextUI users can load it directly without needing the separate variant. Until then, both versions will continue to be maintained and updated in parallel.
+
+---
+
 ## Features
 
 * **Pixel Transparency Restoration:** Detects white and near-white pixels to blend them toward a procedural backing texture. Includes modes for White-only, Bright, or All pixels.
@@ -57,7 +62,7 @@ Pixel Effect dot and phosphor modes inspired by Themaister's dot shader (public 
 * **Unified Pixel Effects (v1.8.0):**
     * **Grid:** Classic gap simulation between pixels. Available in both RetroArch and NextUI versions.
     * **LCD Dot:** Circular Gaussian dots with adjustable size, sharpness, and black level threshold. Available in both versions. The RetroArch version uses the raw input frame for black detection so color correction does not affect unlit pixels.
-    * **CRT Phosphor:** 9-sample neighbourhood simulation with RGB/BGR subpixel stripes, bloom spread, dot gamma, and scanline roll-off. RetroArch version only — excluded from NextUI to maintain performance on low-power hardware.
+    * **CRT Phosphor:** 9-sample neighbourhood simulation with RGB/BGR subpixel stripes, bloom spread, dot gamma, and scanline roll-off. RetroArch version only — excluded from NextUI to maintain performance on low-power hardware. *Due to its 9-sample design, CRT Phosphor is the most GPU-intensive mode. On low-power devices it may reduce performance — Grid or LCD Dot are recommended for constrained hardware.*
 * **Black Level Threshold (v1.7.1):** Controls where the dot effect fades in above black. Hard gate on truly black pixels ensures zero cost and clean blacks regardless of setting.
 * **Gap / Grid Color (v1.8.0):** Sets the color that appears in pixel gaps and grid lines for Grid, LCD Dot, and CRT Phosphor modes. Backing Texture uses the existing background parameters at zero extra cost. Black and White options include a Gap / Grid Color Intensity slider for opacity control. Dot and Phosphor brightness compensation parameters have been removed — Gap / Grid Color solves brightness at the source, making them redundant.
 * **Drop Shadow:** Casts a subtle shadow from solid pixels onto the backing material at all sprite and tile edges.
