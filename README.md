@@ -38,7 +38,7 @@ On original Game Boy, GBC, and GBA hardware, pixels that were fully off didn't s
 
 On top of the transparency system, the shader offers three display simulation modes — **Grid**, **LCD Dot**, and **CRT Phosphor** — that recreate the physical pixel structure of the original screens. Each mode is independently tunable and runs at minimum cost when not selected. Gap / Grid Color lets you choose what appears in the gaps between pixels, from the backing texture itself to black or white, with adjustable intensity.
 
-All features are designed to run efficiently on low-power hardware. The shader targets the  and  drivers used by budget handhelds and low-cost emulation devices where heavier Slang-based shaders cause performance issues.
+All features are designed to run efficiently on low-power hardware, targeting the `gl` and `glcore` drivers common on budget handhelds and low-cost emulation devices.
 
 *Inspired by mattakins' pixel transparency work. Pixel Effect dot and phosphor modes inspired by Themaister's dot shader (public domain).*
 
@@ -109,11 +109,6 @@ The System parameter selects a pre-tuned white detection threshold and bezel wid
 ## Parameters
 
 Full parameter documentation, recommended settings per system, and editing defaults are covered in **README_GLSL.md** for the RetroArch version and **README_NextUI.md** for the NextUI version, both included with the shader files.
-
----
-
-## Why GLSL Only?
-This shader specifically targets low-power emulation devices—handhelds and budget hardware limited to `gl` or `glcore` drivers. By focusing on a highly optimized GLSL build, it provides high-quality transparency and display simulation where Slang-based shaders would cause performance issues on cost-effective hardware.
 
 ---
 
