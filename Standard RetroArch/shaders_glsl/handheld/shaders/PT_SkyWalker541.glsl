@@ -75,6 +75,7 @@
 
 // Drop Shadow
 #pragma parameter PT_SHADOW_OFFSET       "Shadow offset"                             1.0 -10.0 10.0 0.5
+#pragma parameter PT_SHADOW_DIRECTION    "  Shadow direction (0=Down Right, 1=Down Left, 2=Up Right, 3=Up Left)" 0.0 0.0 3.0 1.0
 #pragma parameter PT_SHADOW_OPACITY      "  Shadow opacity (0=off)"                  0.30 0.0 1.0 0.01
 
 // Bezel Shadow
@@ -215,6 +216,7 @@ uniform COMPAT_PRECISION float PT_BLACK_LEVEL_THRESHOLD;
 uniform COMPAT_PRECISION float PT_GAP_GRID_COLOR;
 uniform COMPAT_PRECISION float PT_GAP_GRID_COLOR_INTENSITY;
 uniform COMPAT_PRECISION float PT_SHADOW_OFFSET;
+uniform COMPAT_PRECISION float PT_SHADOW_DIRECTION;
 uniform COMPAT_PRECISION float PT_SHADOW_OPACITY;
 uniform COMPAT_PRECISION float PT_BEZEL_SHADOW_STRENGTH;
 #else
@@ -239,6 +241,7 @@ uniform COMPAT_PRECISION float PT_BEZEL_SHADOW_STRENGTH;
 #define PT_GAP_GRID_COLOR          0.0
 #define PT_GAP_GRID_COLOR_INTENSITY      1.0
 #define PT_SHADOW_OFFSET      1.0
+#define PT_SHADOW_DIRECTION   0.0
 #define PT_SHADOW_OPACITY     0.30
 #define PT_BEZEL_SHADOW_STRENGTH              0.40
 #endif
@@ -507,7 +510,12 @@ void main()
 
     // Drop shadow — single tap on raw frame, before palette tint.
     if (PT_SHADOW_OPACITY > 0.001) {
-        vec2  shadowPos      = orig_coord + vec2(-PT_SHADOW_OFFSET, PT_SHADOW_OFFSET) * texel;
+        vec2 shadowDir;
+        if      (PT_SHADOW_DIRECTION < 0.5) shadowDir = vec2(-1.0,  1.0);  // Down Right
+        else if (PT_SHADOW_DIRECTION < 1.5) shadowDir = vec2( 1.0,  1.0);  // Down Left
+        else if (PT_SHADOW_DIRECTION < 2.5) shadowDir = vec2(-1.0, -1.0);  // Up Right
+        else                                shadowDir = vec2( 1.0, -1.0);  // Up Left
+        vec2  shadowPos      = orig_coord + shadowDir * PT_SHADOW_OFFSET * texel;
         vec3  shadowSrc      = COMPAT_TEXTURE(OrigTexture, shadowPos).rgb;
         float shadowBright   = getBrightness(shadowSrc);
         float shadowSrcWhite = isWhitePixel(shadowSrc, shadowBright, threshold);
