@@ -507,7 +507,7 @@ void main()
 
     // Drop shadow — single tap on raw frame, before palette tint.
     if (PT_SHADOW_OPACITY > 0.001) {
-        vec2  shadowPos      = orig_coord + vec2(-PT_SHADOW_OFFSET, -PT_SHADOW_OFFSET) * texel;
+        vec2  shadowPos      = orig_coord + vec2(-PT_SHADOW_OFFSET, PT_SHADOW_OFFSET) * texel;
         vec3  shadowSrc      = COMPAT_TEXTURE(OrigTexture, shadowPos).rgb;
         float shadowBright   = getBrightness(shadowSrc);
         float shadowSrcWhite = isWhitePixel(shadowSrc, shadowBright, threshold);
