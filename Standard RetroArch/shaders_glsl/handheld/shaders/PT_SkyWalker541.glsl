@@ -29,6 +29,10 @@
             brightness lost to pure black gaps. PT_GAP_GRID_COLOR now solves
             this at the source making compensation redundant. Also renamed all
             parameter code names to closely match their menu label names.
+            Added PT_SHADOW_DIRECTION parameter — lets the user choose from
+            four drop shadow directions (Down Right, Down Left, Up Right,
+            Up Left). Default is Down Right. Corrected shadow offset direction
+            to cast down and to the right by default.
 */
 
 // ── PARAMETERS ───────────────────────────────────────────────────────────────
