@@ -66,7 +66,7 @@ All features are designed to run efficiently on low-power hardware, targeting th
 * **Unified Pixel Effects (v1.8.0):**
     * **Grid:** Classic gap simulation between pixels.
     * **LCD Dot:** Circular Gaussian dots with adjustable size, sharpness, and black level threshold. Uses the raw input frame for black detection so color correction does not affect unlit pixels.
-    * **CRT Phosphor:** 9-sample neighbourhood simulation with RGB/BGR subpixel stripes, bloom spread, dot gamma, and scanline roll-off. RetroArch version only — excluded from NextUI to maintain performance on low-power hardware. *Due to its 9-sample design, CRT Phosphor is the most GPU-intensive mode. On low-power devices it may reduce performance — Grid or LCD Dot are recommended for constrained hardware.*
+    * **CRT Phosphor:** 9-sample neighbourhood simulation with RGB/BGR subpixel stripes, bloom spread, dot gamma, and scanline roll-off. *Due to its 9-sample design, CRT Phosphor is the most GPU-intensive mode. On low-power devices it may reduce performance — Grid or LCD Dot are recommended for constrained hardware.*
 * **Black Level Threshold:** Controls where the LCD Dot and CRT Phosphor effect fades in above black. A hard gate on truly black pixels ensures clean blacks at zero processing cost regardless of the threshold value.
 * **Gap / Grid Color:** Sets the color that appears in pixel gaps and grid lines for Grid, LCD Dot, and CRT Phosphor modes. Choose between Backing Texture, Black, or White. Gap / Grid Color Intensity controls opacity across all three options.
 * **Drop Shadow:** Casts a subtle shadow from solid pixels onto the backing material at all sprite and tile edges.
