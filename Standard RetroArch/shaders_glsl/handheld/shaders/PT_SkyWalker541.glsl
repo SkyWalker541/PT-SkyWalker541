@@ -233,9 +233,9 @@ uniform COMPAT_PRECISION float PT_BEZEL_SHADOW_STRENGTH;
 #define PT_TINT_INTENSITY  1.0
 #define PT_DARK_COLOR_FILTER  0.0
 #define PT_PIXEL_EFFECT          1.0
-#define PT_GRID_WIDTH      0.08
-#define PT_DOT_SIZE           0.50
-#define PT_DOT_SHARPNESS      0.0
+#define PT_GRID_WIDTH      0.13
+#define PT_DOT_SIZE           0.60
+#define PT_DOT_SHARPNESS      0.20
 #define PT_PHOSPHOR_DOT_SIZE          0.50
 #define PT_PHOSPHOR_BLOOM_SPREAD         0.0
 #define PT_PHOSPHOR_DOT_GAMMA         2.40
@@ -243,11 +243,11 @@ uniform COMPAT_PRECISION float PT_BEZEL_SHADOW_STRENGTH;
 #define PT_PHOSPHOR_SUBPIXEL_LAYOUT        0.0
 #define PT_BLACK_LEVEL_THRESHOLD    0.15
 #define PT_GAP_GRID_COLOR          0.0
-#define PT_GAP_GRID_COLOR_INTENSITY      1.0
+#define PT_GAP_GRID_COLOR_INTENSITY      0.30
 #define PT_SHADOW_OFFSET      1.0
 #define PT_SHADOW_DIRECTION   0.0
 #define PT_SHADOW_OPACITY     0.30
-#define PT_BEZEL_SHADOW_STRENGTH              0.40
+#define PT_BEZEL_SHADOW_STRENGTH              0.30
 #endif
 
 // ── CONSTANTS ────────────────────────────────────────────────────────────────
