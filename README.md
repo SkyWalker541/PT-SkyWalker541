@@ -9,7 +9,7 @@
 [![NextUI Version](https://img.shields.io/badge/NextUI-v1.8.0-brightgreen?style=flat-square)](#)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey?style=flat-square)](#)
 
-[What It Does](#what-it-does) • [Latest Update](#-v180-update) • [Installation](#installation) • [Parameters](#parameters)
+[What It Does](#what-it-does) • [Latest Update](#-v180-update) • [Installation](#installation) • [Recommended Settings](#recommended-settings)
 
 </div>
 
@@ -27,11 +27,6 @@
 > * **Parameter Naming:** All parameter code names have been updated to closely match their menu label names, making it much easier to edit defaults directly in the shader file.
 > * **NextUI Update:** The NextUI version has been upgraded to **v1.8.0**, adding Gap / Grid Color, Gap / Grid Color Intensity, Grid width rename, removal of Dot brightness compensation, and parameter naming updates to match the RetroArch version.
 > * Note: some parameters default to 0 and will need adjusted to suit your device and preference.
-
----
-
-> [!NOTE]
-> **Tuned Defaults:** Parameter defaults have been adjusted in v1.8.0 to give a better starting point across all four systems. You can still adjust any parameter to suit your preference.
 
 ---
 
@@ -103,14 +98,150 @@ The System parameter selects a pre-tuned white detection threshold and bezel wid
 
 ---
 
-## Parameters
+## Recommended Settings
 
-Full parameter documentation, recommended settings per system, and editing defaults are covered in **README_GLSL.md** for the RetroArch version and **README_NextUI.md** for the NextUI version, both included with the shader files.
+> [!NOTE]
+> These are recommended starting points. All parameters can be adjusted to suit your preference and screen. See **README_GLSL.md** for full documentation.
+>
+> **Low-power devices (e.g. TrimUI Brick):** The pixel transparency system uses the majority of the GPU budget on constrained hardware. **Grid** is recommended over LCD Dot as the Pixel Effect mode — LCD Dot adds additional per-pixel cost that can cause slowdown. Grid remains nearly free at any setting.
+
+---
+
+### Game Boy DMG
+
+**Core Settings — Gambatte / SameBoy**
+
+| Setting | Value |
+| :--- | :--- |
+| Color correction | Disabled |
+| Interframe blending | Disabled |
+| GB Colorization | Disabled |
+
+**Shader Parameters**
+
+| Parameter | Value |
+| :--- | :--- |
+| System | 1 |
+| Pixel mode | 0 (White only) |
+| Base transparency amount | 0.20 |
+| White pixel min transparency | 0.20 |
+| Background tint | 1 (Pocket) |
+| Tint intensity | 1.00 |
+| Dark color filter | 0 |
+| Pixel Effect | 2 (LCD Dot) |
+| Dot size | 0.60 |
+| Dot sharpness | 0.20 |
+| Black level threshold | 0.15 |
+| Gap / Grid color | 0 (Backing Texture) |
+| Gap / Grid color intensity | 0.30 |
+| Shadow offset | 1.0 |
+| Shadow direction | 0 (Down Right) |
+| Shadow opacity | 0.30 |
+| Bezel shadow strength | 0.30 |
+
+---
+
+### Game Boy Color
+
+**Core Settings — Gambatte / SameBoy**
+
+| Setting | Value |
+| :--- | :--- |
+| Color correction | GBC Only |
+| Interframe blending | Disabled |
+
+**Shader Parameters**
+
+| Parameter | Value |
+| :--- | :--- |
+| System | 2 |
+| Pixel mode | 0 (White only) |
+| Base transparency amount | 0.20 |
+| White pixel min transparency | 0.20 |
+| Background tint | 1 (Pocket) |
+| Tint intensity | 1.00 |
+| Dark color filter | 10 |
+| Pixel Effect | 2 (LCD Dot) |
+| Dot size | 0.60 |
+| Dot sharpness | 0.20 |
+| Black level threshold | 0.15 |
+| Gap / Grid color | 0 (Backing Texture) |
+| Gap / Grid color intensity | 0.30 |
+| Shadow offset | 1.0 |
+| Shadow direction | 0 (Down Right) |
+| Shadow opacity | 0.30 |
+| Bezel shadow strength | 0.30 |
+
+---
+
+### Game Boy Advance Original
+
+**Core Settings — mGBA**
+
+| Setting | Value |
+| :--- | :--- |
+| Color correction | Enabled |
+| Interframe blending | LCD ghosting (accurate) |
+
+**Shader Parameters**
+
+| Parameter | Value |
+| :--- | :--- |
+| System | 4 |
+| Pixel mode | 0 (White only) |
+| Base transparency amount | 0.25 |
+| White pixel min transparency | 0.55 |
+| Background tint | 2 (Grey) |
+| Tint intensity | 1.00 |
+| Dark color filter | 0 |
+| Pixel Effect | 2 (LCD Dot) |
+| Dot size | 0.60 |
+| Dot sharpness | 0.15 |
+| Black level threshold | 0.15 |
+| Gap / Grid color | 0 (Backing Texture) |
+| Gap / Grid color intensity | 0.30 |
+| Shadow offset | 1.0 |
+| Shadow direction | 0 (Down Right) |
+| Shadow opacity | 0.20 |
+| Bezel shadow strength | 0.30 |
+
+---
+
+### Game Boy Advance SP
+
+**Core Settings — mGBA**
+
+| Setting | Value |
+| :--- | :--- |
+| Color correction | Enabled |
+| Interframe blending | Smart |
+
+**Shader Parameters**
+
+| Parameter | Value |
+| :--- | :--- |
+| System | 3 |
+| Pixel mode | 0 (White only) |
+| Base transparency amount | 0.15 |
+| White pixel min transparency | 0.45 |
+| Background tint | 3 (White) |
+| Tint intensity | 1.00 |
+| Dark color filter | 0 |
+| Pixel Effect | 2 (LCD Dot) |
+| Dot size | 0.65 |
+| Dot sharpness | 0.15 |
+| Black level threshold | 0.15 |
+| Gap / Grid color | 0 (Backing Texture) |
+| Gap / Grid color intensity | 0.30 |
+| Shadow offset | 1.0 |
+| Shadow direction | 0 (Down Right) |
+| Shadow opacity | 0.20 |
+| Bezel shadow strength | 0.30 |
 
 ---
 
 ## Why GLSL Only?
-This shader specifically targets low-power emulation devices—handhelds and budget hardware limited to `gl` or `glcore` drivers. By focusing on a highly optimized GLSL build, it provides high-quality transparency and display simulation where Slang-based shaders would cause performance issues on cost-effective hardware.
+This shader specifically targets low-power emulation devices — handhelds and budget hardware limited to `gl` or `glcore` drivers. By focusing on a highly optimized GLSL build, it provides high-quality transparency and display simulation where Slang-based shaders would cause performance issues on cost-effective hardware.
 
 ---
 
