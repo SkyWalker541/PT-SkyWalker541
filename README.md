@@ -11,6 +11,8 @@
 
 [What It Does](#what-it-does) • [Latest Update](#-v180-update) • [Installation](#installation) • [Recommended Settings](#recommended-settings)
 
+[![Shader Showcase](https://img.shields.io/badge/Shader_Showcase-View_Now-7c3aed?style=flat-square)](https://skywalker541.github.io/PT-SkyWalker541)
+
 </div>
 
 ---
