@@ -39,14 +39,6 @@ On original Game Boy, GBC, and GBA hardware, pixels that were fully off didn't s
 Inspired by mattakins' pixel transparency work.
 Pixel Effect dot and phosphor modes inspired by Themaister's dot shader (public domain).
 
----
-
-## Two Variants
-
-| Variant | Version | Platform | Primary Focus |
-| :--- | :---: | :--- | :--- |
-| **Standard** | **v1.8.0** | RetroArch (`gl` / `glcore`) | Optimized for low-power devices, with optional advanced display simulation (Grid / LCD Dot / CRT Phosphor). |
-| **NextUI** | **v1.8.0** | NextUI / minarch | Optimized for TrimUI Brick and similar low-power handhelds (Grid and LCD Dot). CRT Phosphor excluded for performance. |
 
 ---
 
