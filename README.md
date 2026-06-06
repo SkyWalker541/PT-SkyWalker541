@@ -196,7 +196,7 @@ The System parameter selects a pre-tuned white detection threshold and bezel wid
 | Dark color filter | 0 |
 | Pixel Effect | 2 (LCD Dot) |
 | Dot size | 0.60 |
-| Dot sharpness | 0.15 |
+| Dot sharpness | 0.20 |
 | Black level threshold | 0.15 |
 | Gap / Grid color | 0 (Backing Texture) |
 | Gap / Grid color intensity | 0.30 |
@@ -229,7 +229,7 @@ The System parameter selects a pre-tuned white detection threshold and bezel wid
 | Dark color filter | 0 |
 | Pixel Effect | 2 (LCD Dot) |
 | Dot size | 0.65 |
-| Dot sharpness | 0.15 |
+| Dot sharpness | 0.20 |
 | Black level threshold | 0.15 |
 | Gap / Grid color | 0 (Backing Texture) |
 | Gap / Grid color intensity | 0.30 |
