@@ -77,7 +77,7 @@
     position: relative;
     display: inline-block;
     width: clamp(220px, 38vw, 420px);
-    filter: drop-shadow(0 0 40px rgba(124, 58, 237, 0.35));
+    filter: drop-shadow(0 0 30px rgba(124, 58, 237, 0.3)) drop-shadow(0 0 70px rgba(124, 58, 237, 0.11));
   }
 
   .handheld-wrapper img.device {
@@ -167,17 +167,54 @@
     transition: color 0.2s;
   }
   .credit a:hover { color: #9f7fff; }
+
+  .also-by {
+    margin-top: 48px;
+    padding-top: 36px;
+    border-top: 1px solid #1a1228;
+    text-align: center;
+  }
+  .also-by .also-line {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 10px;
+  }
+  .also-by .also-text {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 300;
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #6a5a9a;
+  }
+  .also-by a {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 300;
+    font-size: 13px;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: #7a6aaa;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .also-by a:hover { color: #9f7fff; }
 </style>
 </head>
 <body>
 
   <div class="title-wrap">
-    <p class="title-sub">featuring</p>
-    <h1 class="title-main">PT SkyWalker541<br>Shader In Action</h1>
+    <h1 class="title-main">PT SkyWalker541<br>Shader</h1>
     <div class="title-line">
       <div class="line-accent"></div>
       <span class="title-tag">gameplay showcase</span>
       <div class="line-accent right"></div>
+    </div>
+    <div class="game-selector" style="margin-top: 20px; margin-bottom: 0;">
+      <button class="game-pill active" onclick="selectGame(0, this)">Bark Sequelo</button>
+      <button class="game-pill" onclick="selectGame(1, this)">Black Castle 2</button>
+      <button class="game-pill" onclick="selectGame(2, this)">Entomophobia DX</button>
     </div>
   </div>
 
@@ -186,13 +223,6 @@
     <div class="screen-overlay">
       <video id="game-video" autoplay loop muted playsinline src="gameplay.mp4"></video>
     </div>
-  </div>
-
-  <!-- Game selector pills -->
-  <div class="game-selector">
-    <button class="game-pill active" onclick="selectGame(0, this)">Bark Sequelo</button>
-    <button class="game-pill" onclick="selectGame(1, this)">Black Castle 2</button>
-    <button class="game-pill" onclick="selectGame(2, this)">Entomophobia DX</button>
   </div>
 
   <!-- Credit -->
@@ -243,6 +273,15 @@
     btn.classList.add('active');
   }
 </script>
+
+  <div class="also-by">
+    <div class="also-line">
+      <div class="line-accent"></div>
+      <span class="also-text">also by SkyWalker541</span>
+      <div class="line-accent right"></div>
+    </div>
+    <a href="https://github.com/SkyWalker541/Retroid-Pocket-Classic-Overlays" target="_blank">Retroid Pocket Classic Overlays</a>
+  </div>
 
 </body>
 </html>
