@@ -67,14 +67,14 @@ Pixel Effect dot and phosphor modes inspired by Themaister's dot shader (public 
 2. Place `PT_SkyWalker541.glsl` in the `shaders_glsl/handheld/shaders/` subfolder.
 3. Load the `.glslp` from **Quick Menu > Shaders > Load Shader Preset**.
 4. Open Shader Parameters and set System to match your target hardware.
-5. Refer to **README_GLSL.md** for full documentation and recommended settings per system.
+5. Refer to **[README_GLSL.md](Standard%20RetroArch/README_GLSL.md)** for full documentation and recommended settings per system.
 
 ### NextUI (v1.8.0)
 1. Place `PT_SkyWalker541_NextUI.cfg` in your `Shaders/` folder.
 2. Place `PT_SkyWalker541_NextUI.glsl` in the `Shaders/glsl/` subfolder.
 3. Load the `.cfg` from the in-game shader menu.
 4. Open Shader Parameters and set System to match your target system.
-5. Refer to **README_NextUI.md** for full documentation and recommended settings per system.
+5. Refer to **[README_GLSL.md](Standard%20RetroArch/README_GLSL.md)** for full documentation and recommended settings per system.
 
 ---
 
@@ -95,7 +95,7 @@ The System parameter selects a pre-tuned white detection threshold and bezel wid
 ## Recommended Settings
 
 > [!NOTE]
-> These are recommended starting points. All parameters can be adjusted to suit your preference and screen. See **README_GLSL.md**, found in the Standard Retroarch folder, for full documentation.
+> These are recommended starting points. All parameters can be adjusted to suit your preference and screen. See **[README_GLSL.md](Standard%20RetroArch/README_GLSL.md)**, found in the Standard RetroArch folder, for full documentation.
 >
 > **Low-power devices (e.g. TrimUI Brick):** The pixel transparency system uses the majority of the GPU budget on constrained hardware. **Grid** is recommended over LCD Dot as the Pixel Effect mode — LCD Dot adds additional per-pixel cost that can cause slowdown. Grid remains nearly free at any setting.
 
