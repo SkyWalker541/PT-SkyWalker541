@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PT SkyWalker541 Shader In Action</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #080810;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    overflow-x: hidden;
+  }
+
+  .title-wrap {
+    text-align: center;
+    margin-bottom: 36px;
+  }
+
+  .title-sub {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 300;
+    font-size: 13px;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: #6a4fc4;
+    margin-bottom: 10px;
+  }
+
+  .title-main {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    font-size: clamp(22px, 5vw, 48px);
+    letter-spacing: 3px;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #c084fc 0%, #a855f7 40%, #7c3aed 70%, #4f46e5 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 24px rgba(168, 85, 247, 0.4));
+  }
+
+  .title-line {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 14px;
+  }
+
+  .line-accent {
+    height: 1px;
+    width: 60px;
+    background: linear-gradient(90deg, transparent, #7c3aed);
+  }
+  .line-accent.right {
+    background: linear-gradient(90deg, #7c3aed, transparent);
+  }
+
+  .title-tag {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 400;
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #4f46e5;
+  }
+
+  .handheld-wrapper {
+    position: relative;
+    display: inline-block;
+    width: clamp(220px, 38vw, 420px);
+    filter: drop-shadow(0 0 40px rgba(124, 58, 237, 0.35));
+  }
+
+  .handheld-wrapper img.device {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .screen-overlay {
+    position: absolute;
+    top:           5.0%;
+    left:          8.9%;
+    width:         82.1%;
+    aspect-ratio:  1240 / 1080;
+    overflow:      hidden;
+    border-radius: 5px;
+    background:    #000;
+  }
+
+  .screen-overlay video {
+    width:      100%;
+    height:     100%;
+    object-fit: cover;
+    display:    block;
+  }
+
+  /* Game selector pills */
+  .game-selector {
+    margin-top: 28px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .game-pill {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 400;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1px solid #2a1f4a;
+    background: transparent;
+    color: #4a3a72;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .game-pill:hover {
+    border-color: #6a4fc4;
+    color: #8a6fe4;
+  }
+  .game-pill.active {
+    border-color: #7c3aed;
+    color: #c084fc;
+    background: rgba(124, 58, 237, 0.1);
+  }
+
+  /* Credit */
+  .credit {
+    margin-top: 28px;
+    text-align: center;
+  }
+  .credit .credit-line {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 10px;
+  }
+  .credit .credit-text {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 300;
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #6a5a9a;
+  }
+  .credit a {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 300;
+    font-size: 13px;
+    letter-spacing: 6px;
+    color: #7a6aaa;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .credit a:hover { color: #9f7fff; }
+</style>
+</head>
+<body>
+
+  <div class="title-wrap">
+    <p class="title-sub">featuring</p>
+    <h1 class="title-main">PT SkyWalker541<br>Shader In Action</h1>
+    <div class="title-line">
+      <div class="line-accent"></div>
+      <span class="title-tag">gameplay showcase</span>
+      <div class="line-accent right"></div>
+    </div>
+  </div>
+
+  <div class="handheld-wrapper">
+    <img class="device" src="Handheld_Generic.png" alt="PT SkyWalker541 handheld console">
+    <div class="screen-overlay">
+      <video id="game-video" autoplay loop muted playsinline src="gameplay.mp4"></video>
+    </div>
+  </div>
+
+  <!-- Game selector pills -->
+  <div class="game-selector">
+    <button class="game-pill active" onclick="selectGame(0, this)">Bark Sequelo</button>
+    <button class="game-pill" onclick="selectGame(1, this)">Black Castle 2</button>
+    <button class="game-pill" onclick="selectGame(2, this)">Entomophobia DX</button>
+  </div>
+
+  <!-- Credit -->
+  <div class="credit">
+    <div class="credit-line">
+      <div class="line-accent"></div>
+      <span class="credit-text">featured game</span>
+      <div class="line-accent right"></div>
+    </div>
+    <a id="credit-link" href="https://polynaut.itch.io/bark-sequelo" target="_blank">Bark Sequelo by Polynaut</a>
+  </div>
+
+<script>
+  const games = [
+    {
+      video:  'gameplay.mp4',
+      label:  'Bark Sequelo by Polynaut',
+      url:    'https://polynaut.itch.io/bark-sequelo'
+    },
+    {
+      video:  'gameplay2.mp4',
+      label:  'Black Castle 2 by User0x7f',
+      url:    'https://user0x7f.itch.io/black-castle-2'
+    },
+    {
+      video:  'gameplay3.mp4',
+      label:  'Entomophobia DX by drgd_retro',
+      url:    'https://drgd-retro.itch.io/entomophobia-dx'
+    }
+  ];
+
+  function selectGame(index, btn) {
+    const g = games[index];
+
+    // Swap video
+    const vid = document.getElementById('game-video');
+    vid.src = g.video;
+    vid.load();
+    vid.play();
+
+    // Update credit
+    const link = document.getElementById('credit-link');
+    link.textContent = g.label;
+    link.href = g.url;
+
+    // Update active pill
+    document.querySelectorAll('.game-pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+  }
+</script>
+
+</body>
+</html>
