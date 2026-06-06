@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'NextUI/**'
+      - 'Standard RetroArch/**'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get version from commit message
+        id: version
+        run: |
+          MSG="${{ github.event.head_commit.message }}"
+          if echo "$MSG" | grep -iE "release v[0-9]+\.[0-9]+\.[0-9]+" > /dev/null; then
+            VERSION=$(echo "$MSG" | grep -ioE "v[0-9]+\.[0-9]+\.[0-9]+" | head -1)
+            echo "is_release=true" >> $GITHUB_OUTPUT
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "is_release=false" >> $GITHUB_OUTPUT
+            echo "version=latest" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create zip
+        run: |
+          zip -r PT-SkyWalker541.zip "NextUI" "Standard RetroArch"
+
+      - name: Delete existing latest release (for updates)
+        if: steps.version.outputs.is_release == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete latest --yes --cleanup-tag 2>/dev/null || true
+
+      - name: Create or update latest release
+        if: steps.version.outputs.is_release == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create latest PT-SkyWalker541.zip \
+            --title "PT SkyWalker541 — Latest" \
+            --notes "Latest shader files. Updated automatically on every push." \
+            --latest
+
+      - name: Create versioned release
+        if: steps.version.outputs.is_release == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          gh release create "$VERSION" PT-SkyWalker541.zip \
+            --title "PT SkyWalker541 $VERSION" \
+            --notes "Release $VERSION" \
+            --latest
