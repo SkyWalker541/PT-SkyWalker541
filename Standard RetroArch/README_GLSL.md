@@ -74,9 +74,9 @@ standard RetroArch installation. No editing of the preset file is needed.
   Place PT_SkyWalker541.glsl in your NextUI Shaders/glsl/ folder
   and PT_SkyWalker541.cfg in your NextUI Shaders/ folder.
 
-  Note: CRT Phosphor mode uses a 9-sample neighbourhood and will
+  Note: CRT Phosphor and LCD dot will
   not run at full speed on low-power devices such as the TrimUI
-  Brick. Grid or LCD Dot are recommended for constrained hardware.
+  Brick. Grid is recommended for constrained hardware.
 
 ───────────────────────────────────────────────────────────────────────────────
 
