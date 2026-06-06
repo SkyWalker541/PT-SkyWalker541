@@ -74,6 +74,8 @@
   }
 
   .handheld-wrapper {
+    opacity: 0;
+    transition: opacity 0.4s ease;
     position: relative;
     display: inline-block;
     width: clamp(220px, 38vw, 420px);
@@ -205,7 +207,7 @@
 <body>
 
   <div class="title-wrap">
-    <h1 class="title-main">PT SkyWalker541<br>Shader</h1>
+    <a href="https://github.com/SkyWalker541/PT-SkyWalker541" target="_blank" style="text-decoration:none;"><h1 class="title-main">PT SkyWalker541<br>Shader</h1></a>
     <div class="title-line">
       <div class="line-accent"></div>
       <span class="title-tag">gameplay showcase</span>
@@ -219,7 +221,7 @@
   </div>
 
   <div class="handheld-wrapper">
-    <img class="device" src="Handheld_Generic.png" alt="PT SkyWalker541 handheld console">
+    <img class="device" src="Handheld_Generic.png" alt="PT SkyWalker541 handheld console" onload="this.closest('.handheld-wrapper').style.opacity='1'">
     <div class="screen-overlay">
       <video id="game-video" autoplay loop muted playsinline src="https://res.cloudinary.com/di0ydhfv8/video/upload/v1780770794/gameplay_tgfjdo.mp4"></video>
     </div>
