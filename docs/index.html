@@ -707,6 +707,7 @@ class ClosecallScene {
     }
 
     for (let i=lasers.length-1;i>=0;i--) if(!lasers[i].update()) lasers.splice(i,1);
+    if (this.timer > 600) this.done = true;
   }
   draw() {
     drawParticles();
@@ -735,6 +736,7 @@ class ChaseScene {
     this.outcome = ['escape','hit','turnabout','lightspeed'][Math.floor(Math.random()*4)];
     this.outcomeFired = false;
     this.ls = null;
+    this.lsLaunched = false;
     this.done = false;
   }
   update() {
@@ -819,13 +821,13 @@ class ChaseScene {
         }
       }
 
-      if (this.outcome === 'lightspeed' && !this.ls && this.timer > this.eDelay+80) {
+      if (this.outcome === 'lightspeed' && !this.lsLaunched && this.timer > this.eDelay+80) {
         this.saucer.speed = 0;
         if (this.timer > this.eDelay + 110) {
           this.ls = new Lightspeed(this.saucer.x, this.saucer.y);
+          this.lsLaunched = true;
+          this.lsEnemyFleeTimer = 0;
           this.saucer.opacity = 0;
-          // Enemy confused — circles then exits
-          setTimeout(() => { this.eFleeing = true; }, 1500);
         } else {
           this.saucer.wobble = Math.sin(this.timer*0.4)*0.08;
         }
@@ -833,10 +835,15 @@ class ChaseScene {
     }
 
     if (this.ls) { this.ls.update(); if (this.ls.done) { this.ls = null; } }
+    if (this.lsLaunched && !this.eFleeing) {
+      this.lsEnemyFleeTimer = (this.lsEnemyFleeTimer||0) + 1;
+      if (this.lsEnemyFleeTimer > 90) { this.eFleeing = true; }
+    }
     for (let i=lasers.length-1;i>=0;i--) if(!lasers[i].update()) lasers.splice(i,1);
 
     if (this.saucer.offScreen() && this.enemy.offScreen()) this.done = true;
     if (this.saucer.offScreen() && this.eFleeing && this.enemy.offScreen()) this.done = true;
+    if (this.timer > 700) this.done = true;
   }
   draw() {
     drawParticles();
@@ -876,15 +883,15 @@ class StandoffScene {
       if (dist < 200) { this.phase = 'circle'; this.circleTimer = 0; }
     } else if (this.phase === 'circle') {
       this.circleTimer++;
-      // Both circle each other
-      this.circleAngle += 0.025 * this.circleDir;
-      const cx = (this.saucer.x+this.enemy.x)/2, cy = (this.saucer.y+this.enemy.y)/2;
-      const r = dist/2;
-      const sa = this.circleAngle; const ea = this.circleAngle+Math.PI;
-      const nsx = cx+Math.cos(sa)*r; const nsy = cy+Math.sin(sa)*r;
-      const nex = cx+Math.cos(ea)*r; const ney = cy+Math.sin(ea)*r;
-      this.saucer.x += (nsx-this.saucer.x)*0.08; this.saucer.y += (nsy-this.saucer.y)*0.08;
-      this.enemy.x += (nex-this.enemy.x)*0.08; this.enemy.y += (ney-this.enemy.y)*0.08;
+      // Organic velocity-based circling — each steers perpendicular to the other
+      const toEnemyA = Math.atan2(this.enemy.y-this.saucer.y, this.enemy.x-this.saucer.x);
+      const toSaucerA = Math.atan2(this.saucer.y-this.enemy.y, this.saucer.x-this.enemy.x);
+      // Strafe perpendicular — adds natural orbit without locking position
+      this.saucer.targetAngle = toEnemyA + Math.PI * 0.45 * this.circleDir;
+      this.enemy.targetAngle = toSaucerA + Math.PI * 0.45 * this.circleDir;
+      this.saucer.move(2); this.enemy.move(2.2);
+      this.saucer.clampY(); this.enemy.clampY();
+      this.saucer.thrustTrail('saucer'); this.enemy.thrustTrail('enemy');
 
       // Fire during standoff
       this.laserTimer++;
@@ -894,9 +901,16 @@ class StandoffScene {
         this.laserTimer = 0;
       }
 
-      if (this.circleTimer > 120 && !this.outcomeFired) {
+      // Hard cap — always break out after 160 frames max, no infinite loop
+      if ((this.circleTimer > 120 || this.circleTimer > 160) && !this.outcomeFired) {
         this.outcomeFired = true;
         this.phase = this.outcome==='saucer_wins'?'saucer_attack':'enemy_attack';
+      }
+      // Safety: if circling for too long with no resolution, force exit
+      if (this.circleTimer > 200 && !this.done) {
+        this.saucer.steerAngle(Math.PI); this.saucer.speed = 5;
+        this.enemy.steerAngle(0); this.enemy.speed = 5;
+        this.phase = 'saucer_attack';
       }
     } else if (this.phase === 'saucer_attack') {
       this.saucer.speed = 4; this.saucer.steerTo(this.enemy.x, this.enemy.y); this.saucer.move();
@@ -915,6 +929,7 @@ class StandoffScene {
     }
 
     for (let i=lasers.length-1;i>=0;i--) if(!lasers[i].update()) lasers.splice(i,1);
+    if (this.timer > 600) this.done = true;
   }
   draw() {
     drawParticles();
@@ -997,6 +1012,7 @@ class AmbushScene {
     }
 
     for(let i=lasers.length-1;i>=0;i--) if(!lasers[i].update()) lasers.splice(i,1);
+    if (this.timer > 600) this.done = true;
   }
   draw() {
     drawParticles();
@@ -1038,6 +1054,7 @@ class VictoryScene {
 
     for(let i=lasers.length-1;i>=0;i--) if(!lasers[i].update()) lasers.splice(i,1);
     if(this.saucer.offScreen()&&this.enemy.offScreen()) this.done=true;
+    if (this.timer > 500) this.done = true;
   }
   draw() {
     drawParticles();
@@ -1070,9 +1087,11 @@ class DogfightScene {
         this.saucer.steerTo(this.enemy.x,this.enemy.y);
         this.enemy.steerTo(this.saucer.x,this.saucer.y);
       } else {
-        // Circle each other at close range
-        this.saucer.targetAngle = Math.atan2(this.enemy.y-this.saucer.y,this.enemy.x-this.saucer.x)+Math.PI*0.45;
-        this.enemy.targetAngle = Math.atan2(this.saucer.y-this.enemy.y,this.saucer.x-this.enemy.x)+Math.PI*0.45;
+        // Strafe sideways — breaks the close-range lock naturally
+        const toE = Math.atan2(this.enemy.y-this.saucer.y,this.enemy.x-this.saucer.x);
+        const toS = Math.atan2(this.saucer.y-this.enemy.y,this.saucer.x-this.enemy.x);
+        this.saucer.targetAngle = toE + Math.PI * (0.3 + Math.sin(this.timer*0.05)*0.2);
+        this.enemy.targetAngle = toS + Math.PI * (0.3 + Math.sin(this.timer*0.05+1)*0.2);
       }
       this.saucer.clampY(30); this.saucer.move();
       this.enemy.clampY(30); this.enemy.move();
@@ -1096,6 +1115,7 @@ class DogfightScene {
     }
 
     for(let i=lasers.length-1;i>=0;i--) if(!lasers[i].update()) lasers.splice(i,1);
+    if(this.timer>600) this.done=true;
   }
   draw() {
     drawParticles();
