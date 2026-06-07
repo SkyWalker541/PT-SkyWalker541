@@ -793,6 +793,7 @@ class Actor {
   }
 
   avoidStructure() {
+    if (isMobile) return false; // handheld takes up too much space on mobile
     const zone = getHandheldZone();
     if (!zone) return false;
     const dx = this.x - zone.cx;
