@@ -425,25 +425,28 @@ canvas.height = window.innerHeight;
 
 // ─── HANDHELD ZONE ───────────────────────────────────────────────────────────
 
-let _zoneCache = null;
-let _zoneCacheTime = 0;
+let _zone = null;
 
-function getHandheldZone() {
-  // Cache for 500ms so we're not querying DOM every frame
-  const now = Date.now();
-  if (_zoneCache && now - _zoneCacheTime < 500) return _zoneCache;
+function updateHandheldZone() {
   const el = document.querySelector('.handheld-wrapper');
-  if (!el) return null;
-  const rect = el.getBoundingClientRect();
-  _zoneCache = {
-    cx: rect.left + rect.width / 2,
-    cy: rect.top + rect.height / 2,
-    w: rect.width * 0.6,   // buffer around the handheld
-    h: rect.height * 0.55,
+  if (!el) return;
+  // Use offsetLeft/offsetTop + scroll — no reflow, scroll-independent
+  let ox = 0, oy = 0, cur = el;
+  while (cur) { ox += cur.offsetLeft; oy += cur.offsetTop; cur = cur.offsetParent; }
+  _zone = {
+    cx: ox + el.offsetWidth / 2,
+    cy: oy + el.offsetHeight / 2,
+    w: el.offsetWidth * 0.65,
+    h: el.offsetHeight * 0.6,
   };
-  _zoneCacheTime = now;
-  return _zoneCache;
 }
+
+function getHandheldZone() { return _zone; }
+
+// Update zone on load and resize only — never during scroll or animation
+window.addEventListener('load', updateHandheldZone);
+window.addEventListener('resize', updateHandheldZone);
+setTimeout(updateHandheldZone, 500); // fallback after fonts/images load
 
 // ─── PIXEL SHIPS ─────────────────────────────────────────────────────────────
 
@@ -615,14 +618,21 @@ class Actor {
     const nx = dx / zone.w;
     const ny = dy / zone.h;
     const dist = Math.sqrt(nx*nx + ny*ny);
-    if (dist < 1.2) {
-      const pushStrength = Math.max(0, (1.2 - dist) / 1.2);
+    if (dist < 1.4) {
+      // Stronger push the closer they get
+      const pushStrength = Math.max(0, (1.4 - dist) / 1.4);
       const pushAngle = Math.atan2(dy, dx);
       let diff = pushAngle - this.targetAngle;
       while (diff > Math.PI) diff -= Math.PI*2;
       while (diff < -Math.PI) diff += Math.PI*2;
-      this.targetAngle += diff * pushStrength * 0.15;
-      this.speed = Math.min(this.speed * 1.01, 6);
+      // Much stronger steering rate when close
+      this.targetAngle += diff * pushStrength * 0.4;
+      // Also directly nudge position away if very close
+      if (dist < 0.8) {
+        this.x += Math.cos(pushAngle) * (0.8 - dist) * zone.w * 0.08;
+        this.y += Math.sin(pushAngle) * (0.8 - dist) * zone.h * 0.08;
+      }
+      this.speed = Math.min(this.speed * 1.02, 6);
       return true;
     }
     return false;
