@@ -578,6 +578,13 @@ class Actor {
     return this.x < -pad || this.x > canvas.width + pad || this.y < -pad || this.y > canvas.height + pad;
   }
 
+  exitToward(angle, spd) {
+    this.angle = angle;
+    this.targetAngle = angle;
+    this.speed = spd || 5;
+    this.steerRate = 0.15;
+  }
+
   clampY(margin) {
     margin = margin || 30;
     if (this.y < margin) this.targetAngle = Math.abs(this.angle);
@@ -707,7 +714,7 @@ class ClosecallScene {
     }
 
     for (let i=lasers.length-1;i>=0;i--) if(!lasers[i].update()) lasers.splice(i,1);
-    if (this.timer > 600) this.done = true;
+    if (this.timer > 800) this.done = true;
   }
   draw() {
     drawParticles();
@@ -849,14 +856,22 @@ class ChaseScene {
 
     if (this.saucer.offScreen() && this.enemy.offScreen()) this.done = true;
     if (this.saucer.offScreen() && this.eFleeing && this.enemy.offScreen()) this.done = true;
-    // Lightspeed: saucer is gone, just wait for enemy to exit
     if (this.lsComplete && this.enemy.offScreen()) this.done = true;
-    // Lightspeed: force done shortly after flash completes regardless
-    if (this.lsComplete) {
-      this.lsExitTimer = (this.lsExitTimer||0) + 1;
-      if (this.lsExitTimer > 120) this.done = true;
+    if (this.lsComplete) { this.lsExitTimer = (this.lsExitTimer||0)+1; if (this.lsExitTimer>150) this.done=true; }
+    // Start exit phase after action — give ships time to leave
+    if (!this.exitStarted && (this.sFleeing || this.eFleeing || this.lsLaunched) && this.outcomeFired) {
+      this.exitStarted = true; this.exitTimer = 0;
     }
-    if (this.timer > 700) this.done = true;
+    if (this.exitStarted) {
+      this.exitTimer = (this.exitTimer||0)+1;
+      // After 300 frames of exit phase, force ships off screen
+      if (this.exitTimer > 300) {
+        if (!this.saucer.offScreen()) this.saucer.exitToward(Math.PI, 6);
+        if (!this.enemy.offScreen()) this.enemy.exitToward(0, 6);
+      }
+      if (this.exitTimer > 450) this.done = true;
+    }
+    if (this.timer > 900) this.done = true;
   }
   draw() {
     drawParticles();
@@ -975,7 +990,17 @@ class StandoffScene {
     }
 
     for (let i=lasers.length-1;i>=0;i--) if(!lasers[i].update()) lasers.splice(i,1);
-    if (this.timer > 600) this.done = true;
+    if (this.saucer.offScreen() && this.enemy.offScreen()) this.done = true;
+    // Once attack phase starts give ships plenty of exit time
+    if (this.phase === 'saucer_attack' || this.phase === 'enemy_attack') {
+      this.exitTimer = (this.exitTimer||0)+1;
+      if (this.exitTimer > 300 && !this.saucer.offScreen()) this.saucer.exitToward(
+        Math.atan2(this.saucer.y-canvas.height/2, this.saucer.x-canvas.width/2), 6);
+      if (this.exitTimer > 300 && !this.enemy.offScreen()) this.enemy.exitToward(
+        Math.atan2(this.enemy.y-canvas.height/2, this.enemy.x-canvas.width/2), 6);
+      if (this.exitTimer > 450) this.done = true;
+    }
+    if (this.timer > 1000) this.done = true;
   }
   draw() {
     drawParticles();
@@ -1058,7 +1083,16 @@ class AmbushScene {
     }
 
     for(let i=lasers.length-1;i>=0;i--) if(!lasers[i].update()) lasers.splice(i,1);
-    if (this.timer > 600) this.done = true;
+    if (this.saucer.offScreen() && this.enemy.offScreen()) this.done = true;
+    if (this.phase === 'flee' || this.phase === 'counter') {
+      this.exitTimer = (this.exitTimer||0)+1;
+      if (this.exitTimer > 300 && !this.saucer.offScreen()) this.saucer.exitToward(
+        Math.atan2(this.saucer.y-canvas.height/2, this.saucer.x-canvas.width/2), 6);
+      if (this.exitTimer > 300 && !this.enemy.offScreen()) this.enemy.exitToward(
+        Math.atan2(this.enemy.y-canvas.height/2, this.enemy.x-canvas.width/2), 6);
+      if (this.exitTimer > 450) this.done = true;
+    }
+    if (this.timer > 900) this.done = true;
   }
   draw() {
     drawParticles();
@@ -1100,7 +1134,11 @@ class VictoryScene {
 
     for(let i=lasers.length-1;i>=0;i--) if(!lasers[i].update()) lasers.splice(i,1);
     if(this.saucer.offScreen()&&this.enemy.offScreen()) this.done=true;
-    if (this.timer > 500) this.done = true;
+    // Force exit if taking too long
+    this.exitTimer = (this.exitTimer||0)+1;
+    if (this.exitTimer > 400 && !this.saucer.offScreen()) this.saucer.exitToward(0, 6);
+    if (this.exitTimer > 400 && !this.enemy.offScreen()) this.enemy.exitToward(0, 7);
+    if (this.exitTimer > 550) this.done = true;
   }
   draw() {
     drawParticles();
