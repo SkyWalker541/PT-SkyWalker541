@@ -585,6 +585,29 @@ class Actor {
     this.steerRate = 0.15;
   }
 
+  avoidStructure() {
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const zoneW = Math.min(canvas.width * 0.38, 420) * 0.7;
+    const zoneH = zoneW * 1.8;
+    const dx = this.x - cx;
+    const dy = this.y - cy;
+    const nx = dx / zoneW;
+    const ny = dy / zoneH;
+    const dist = Math.sqrt(nx*nx + ny*ny);
+    if (dist < 1.2) {
+      const pushStrength = Math.max(0, (1.2 - dist) / 1.2);
+      const pushAngle = Math.atan2(dy, dx);
+      let diff = pushAngle - this.targetAngle;
+      while (diff > Math.PI) diff -= Math.PI*2;
+      while (diff < -Math.PI) diff += Math.PI*2;
+      this.targetAngle += diff * pushStrength * 0.15;
+      this.speed = Math.min(this.speed * 1.01, 6);
+      return true;
+    }
+    return false;
+  }
+
   clampY(margin) {
     margin = margin || 30;
     if (this.y < margin) this.targetAngle = Math.abs(this.angle);
@@ -690,6 +713,7 @@ class ClosecallScene {
       const cy = canvas.height/2 + (Math.random()-0.5)*80;
       this.saucer.steerTo(cx, cy); this.saucer.clampY();
       this.enemy.steerTo(cx, cy); this.enemy.clampY();
+      this.saucer.avoidStructure(); this.enemy.avoidStructure();
       this.saucer.move(); this.enemy.move();
       this.saucer.thrustTrail('saucer'); this.enemy.thrustTrail('enemy');
 
@@ -759,6 +783,7 @@ class ChaseScene {
       } else {
         this.saucer.speed = Math.min(this.saucer.speed+0.06, 6);
       }
+      this.saucer.avoidStructure();
       this.saucer.move();
       this.saucer.thrustTrail('saucer');
     }
@@ -775,6 +800,7 @@ class ChaseScene {
           this.enemy.targetAngle = Math.atan2(this.saucer.y-this.enemy.y, this.saucer.x-this.enemy.x) + Math.PI*0.4;
         }
         this.enemy.clampY(40);
+        this.enemy.avoidStructure();
         this.enemy.move();
       } else {
         this.enemy.steerAngle(0); // flee right
@@ -917,6 +943,7 @@ class StandoffScene {
       // Strafe perpendicular — adds natural orbit without locking position
       this.saucer.targetAngle = toEnemyA + Math.PI * 0.45 * this.circleDir;
       this.enemy.targetAngle = toSaucerA + Math.PI * 0.45 * this.circleDir;
+      this.saucer.avoidStructure(); this.enemy.avoidStructure();
       this.saucer.move(2); this.enemy.move(2.2);
       this.saucer.clampY(); this.enemy.clampY();
       this.saucer.thrustTrail('saucer'); this.enemy.thrustTrail('enemy');
@@ -1123,6 +1150,7 @@ class VictoryScene {
     this.enemy.thrustTrail('enemy');
 
     // Saucer chases confidently
+    this.saucer.avoidStructure(); this.enemy.avoidStructure();
     this.saucer.steerTo(this.enemy.x,this.enemy.y); this.saucer.clampY(); this.saucer.move();
     this.saucer.thrustTrail('saucer');
 
@@ -1177,6 +1205,7 @@ class DogfightScene {
         this.saucer.targetAngle = toE + Math.PI * (0.3 + Math.sin(this.timer*0.05)*0.2);
         this.enemy.targetAngle = toS + Math.PI * (0.3 + Math.sin(this.timer*0.05+1)*0.2);
       }
+      this.saucer.avoidStructure(); this.enemy.avoidStructure();
       this.saucer.clampY(30); this.saucer.move();
       this.enemy.clampY(30); this.enemy.move();
       this.laserTimer++;
