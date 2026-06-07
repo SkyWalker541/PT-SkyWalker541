@@ -563,13 +563,30 @@
   initStars();
   animate();
   window.addEventListener('resize', () => { resize(); initStars(); });
+  window.addEventListener('orientationchange', () => {
+    setTimeout(() => { resize(); initStars(); }, 300);
+  });
 </script>
 <script>
 (function() {
 const canvas = document.getElementById('ship');
 const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth < 768;
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  updateHandheldZone();
+});
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    updateHandheldZone();
+  }, 300);
+});
 
 // ─── HANDHELD ZONE ───────────────────────────────────────────────────────────
 
@@ -660,7 +677,7 @@ class Particle {
     this.size = 0.5 + Math.random(); this.type = type;
   }
 }
-const pool = Array.from({length: 300}, () => new Particle());
+const pool = Array.from({length: isMobile ? 80 : 300}, () => new Particle());
 
 function emit(x, y, angle, type, n) {
   let s = 0;
@@ -1456,21 +1473,29 @@ class DogfightScene {
 
 // ─── MAIN LOOP ───────────────────────────────────────────────────────────────
 
-const SCENES = [ClosecallScene, ChaseScene, StandoffScene, AmbushScene, VictoryScene, DogfightScene];
+const SCENES = isMobile
+  ? [ClosecallScene, ChaseScene, AmbushScene, VictoryScene]
+  : [ClosecallScene, ChaseScene, AmbushScene, VictoryScene, DogfightScene];
 
 let scene = null;
 let nextScene = 6000;
 let lastTime = 0;
 
 function animate(ts) {
-  const dt = Math.min(ts-lastTime, 50); lastTime = ts;
+  // Pause ship scenes during game mode
+  if (document.body.classList.contains('game-mode')) {
+    lastTime = ts;
+    requestAnimationFrame(animate);
+    return;
+  }
+  const dt = Math.min(ts-lastTime, isMobile ? 33 : 50); lastTime = ts;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   nextScene -= dt;
   if (nextScene <= 0 && !scene) {
     const S = SCENES[Math.floor(Math.random()*SCENES.length)];
     scene = new S();
-    nextScene = 20000 + Math.random()*30000;
+    nextScene = (isMobile ? 35000 : 20000) + Math.random()*30000;
   }
 
   if (scene) {
