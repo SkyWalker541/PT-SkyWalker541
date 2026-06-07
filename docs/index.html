@@ -8,6 +8,16 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
+  #stars {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body > *:not(#stars) { position: relative; z-index: 1; }
+
   body {
     background: #080810;
     min-height: 100vh;
@@ -223,6 +233,7 @@
 </style>
 </head>
 <body>
+<canvas id="stars"></canvas>
 
   <div class="title-wrap">
     <a href="https://github.com/SkyWalker541/PT-SkyWalker541" target="_blank" style="text-decoration:none;"><h1 class="title-main">PT SkyWalker541<br>Shader</h1></a>
@@ -314,5 +325,87 @@
     <a href="https://github.com/SkyWalker541/Retroid-Pocket-Classic-Overlays" target="_blank">Retroid Pocket Classic Overlays</a>
   </div>
 
+
+<script>
+  const canvas = document.getElementById('stars');
+  const ctx = canvas.getContext('2d');
+  let stars = [];
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  function seededRandom(seed) {
+    let s = seed;
+    return function() {
+      s = (s * 16807) % 2147483647;
+      return (s - 1) / 2147483646;
+    };
+  }
+
+  function initStars() {
+    const rng = seededRandom(42);
+    stars = [];
+    const count = Math.floor((canvas.width * canvas.height) / 8000);
+    for (let i = 0; i < count; i++) {
+      const twinkles = rng() > 0.65;
+      const dimA = 0.04 + rng() * 0.08;
+      stars.push({
+        x: rng() * canvas.width,
+        y: rng() * canvas.height,
+        baseAlpha: twinkles ? dimA : 0.05 + rng() * 0.08,
+        dimAlpha: dimA,
+        currentAlpha: dimA,
+        targetAlpha: dimA,
+        size: rng() > 0.8 ? 2 : 1,
+        twinkles: twinkles,
+        bright: false,
+        offset: rng() * Math.PI * 2,
+      });
+    }
+  }
+
+  function drawPlus(x, y, size, alpha, bright) {
+    const s = size === 2 ? 3 : 2;
+    if (bright && alpha > 0.2) {
+      ctx.shadowColor = `rgba(168,85,247,${alpha * 0.8})`;
+      ctx.shadowBlur = 6;
+    }
+    ctx.fillStyle = `rgba(200,150,255,${alpha})`;
+    ctx.fillRect(x, y - s, 1, s * 2 + 1);
+    ctx.fillRect(x - s, y, s * 2 + 1, 1);
+    ctx.shadowBlur = 0;
+  }
+
+  let t = 0;
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    t += 0.016;
+
+    for (const star of stars) {
+      if (star.twinkles) {
+        star.currentAlpha += (star.targetAlpha - star.currentAlpha) * 0.018;
+        const atBottom = star.currentAlpha < star.dimAlpha * 1.1;
+        if (atBottom && Math.random() < 0.001) {
+          star.targetAlpha = 0.25 + Math.random() * 0.45;
+          star.bright = true;
+        } else if (star.currentAlpha > star.targetAlpha * 0.95 && star.bright) {
+          star.targetAlpha = star.dimAlpha;
+          star.bright = false;
+        }
+      }
+      const alpha = star.twinkles ? star.currentAlpha : star.baseAlpha;
+      drawPlus(Math.floor(star.x), Math.floor(star.y), star.size, alpha, star.bright);
+    }
+
+    requestAnimationFrame(animate);
+  }
+
+  resize();
+  initStars();
+  animate();
+  window.addEventListener('resize', () => { resize(); initStars(); });
+</script>
 </body>
 </html>
