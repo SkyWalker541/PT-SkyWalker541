@@ -834,7 +834,13 @@ class ChaseScene {
       }
     }
 
-    if (this.ls) { this.ls.update(); if (this.ls.done) { this.ls = null; } }
+    if (this.ls) {
+      this.ls.update();
+      if (this.ls.done) {
+        this.ls = null;
+        this.lsComplete = true; // flash is done, saucer is gone for good
+      }
+    }
     if (this.lsLaunched && !this.eFleeing) {
       this.lsEnemyFleeTimer = (this.lsEnemyFleeTimer||0) + 1;
       if (this.lsEnemyFleeTimer > 90) { this.eFleeing = true; }
@@ -843,13 +849,20 @@ class ChaseScene {
 
     if (this.saucer.offScreen() && this.enemy.offScreen()) this.done = true;
     if (this.saucer.offScreen() && this.eFleeing && this.enemy.offScreen()) this.done = true;
+    // Lightspeed: saucer is gone, just wait for enemy to exit
+    if (this.lsComplete && this.enemy.offScreen()) this.done = true;
+    // Lightspeed: force done shortly after flash completes regardless
+    if (this.lsComplete) {
+      this.lsExitTimer = (this.lsExitTimer||0) + 1;
+      if (this.lsExitTimer > 120) this.done = true;
+    }
     if (this.timer > 700) this.done = true;
   }
   draw() {
     drawParticles();
     for (const l of lasers) l.draw();
     if (this.ls) this.ls.draw(1);
-    else if (this.saucer.opacity > 0)
+    else if (this.saucer.opacity > 0 && !this.lsComplete)
       drawSprite(saucerPixels, saucerColors, SW, SH, this.saucer.x, this.saucer.y, this.saucer.opacity, false, 1);
     if (this.timer > this.eDelay)
       drawSprite(enemyPixels, enemyColors, EW, EH, this.enemy.x, this.enemy.y, this.enemy.opacity, true, 1);
@@ -902,30 +915,63 @@ class StandoffScene {
       }
 
       // Hard cap — always break out after 160 frames max, no infinite loop
-      if ((this.circleTimer > 120 || this.circleTimer > 160) && !this.outcomeFired) {
+      if (this.circleTimer > 120 && !this.outcomeFired) {
         this.outcomeFired = true;
         this.phase = this.outcome==='saucer_wins'?'saucer_attack':'enemy_attack';
+        // Give enemy a strong flee angle away from center on transition
+        if (this.phase === 'saucer_attack') {
+          const fleeAngle = Math.atan2(this.enemy.y-canvas.height/2, this.enemy.x-canvas.width/2);
+          this.enemy.angle = fleeAngle;
+          this.enemy.targetAngle = fleeAngle;
+          this.enemy.speed = 3;
+        } else {
+          const fleeAngle = Math.atan2(this.saucer.y-canvas.height/2, this.saucer.x-canvas.width/2);
+          this.saucer.angle = fleeAngle;
+          this.saucer.targetAngle = fleeAngle;
+          this.saucer.speed = 3;
+        }
       }
-      // Safety: if circling for too long with no resolution, force exit
-      if (this.circleTimer > 200 && !this.done) {
-        this.saucer.steerAngle(Math.PI); this.saucer.speed = 5;
-        this.enemy.steerAngle(0); this.enemy.speed = 5;
+      // Safety: force exit if circling too long
+      if (this.circleTimer > 220 && !this.done) {
+        this.saucer.angle = Math.PI; this.saucer.targetAngle = Math.PI; this.saucer.speed = 5;
+        this.enemy.angle = 0; this.enemy.targetAngle = 0; this.enemy.speed = 5;
         this.phase = 'saucer_attack';
       }
     } else if (this.phase === 'saucer_attack') {
-      this.saucer.speed = 4; this.saucer.steerTo(this.enemy.x, this.enemy.y); this.saucer.move();
-      this.enemy.speed = Math.min(this.enemy.speed+0.08,6); this.enemy.steerAngle(0); this.enemy.move();
+      // Saucer chases, enemy flees — both accelerate steadily off screen
+      this.saucer.steerTo(this.enemy.x, this.enemy.y);
+      this.saucer.speed = Math.min(this.saucer.speed + 0.1, 6);
+      this.saucer.move();
+      this.enemy.speed = Math.min(this.enemy.speed + 0.1, 7);
+      this.enemy.steerAngle(this.enemy.angle); // keep current flee angle
+      this.enemy.move();
       this.laserTimer++;
-      if (this.laserTimer>20) { this.saucer.fireLaser(this.enemy.x,this.enemy.y,true); this.laserTimer=0; }
+      if (this.laserTimer > 20) { this.saucer.fireLaser(this.enemy.x, this.enemy.y, true); this.laserTimer = 0; }
       this.saucer.thrustTrail('saucer'); this.enemy.thrustTrail('enemy');
-      if (this.saucer.offScreen()&&this.enemy.offScreen()) this.done=true;
+      // Fade out before disappearing
+      const sdist = Math.min(this.enemy.x, canvas.width-this.enemy.x, this.enemy.y, canvas.height-this.enemy.y);
+      if (sdist < 60) this.enemy.opacity = Math.max(0, sdist/60);
+      const ssdist = Math.min(this.saucer.x, canvas.width-this.saucer.x, this.saucer.y, canvas.height-this.saucer.y);
+      if (ssdist < 60) this.saucer.opacity = Math.max(0, ssdist/60);
+      if (this.saucer.offScreen() && this.enemy.offScreen()) this.done = true;
+
     } else if (this.phase === 'enemy_attack') {
-      this.enemy.speed=4; this.enemy.steerTo(this.saucer.x,this.saucer.y); this.enemy.move();
-      this.saucer.speed=Math.min(this.saucer.speed+0.08,6); this.saucer.steerAngle(Math.PI); this.saucer.move();
+      // Enemy chases, saucer flees — both accelerate steadily off screen
+      this.enemy.steerTo(this.saucer.x, this.saucer.y);
+      this.enemy.speed = Math.min(this.enemy.speed + 0.1, 6);
+      this.enemy.move();
+      this.saucer.speed = Math.min(this.saucer.speed + 0.1, 7);
+      this.saucer.steerAngle(this.saucer.angle); // keep current flee angle
+      this.saucer.move();
       this.laserTimer++;
-      if (this.laserTimer>20) { this.enemy.fireLaser(this.saucer.x,this.saucer.y,false); this.laserTimer=0; }
+      if (this.laserTimer > 20) { this.enemy.fireLaser(this.saucer.x, this.saucer.y, false); this.laserTimer = 0; }
       this.saucer.thrustTrail('saucer'); this.enemy.thrustTrail('enemy');
-      if (this.saucer.offScreen()&&this.enemy.offScreen()) this.done=true;
+      // Fade out before disappearing
+      const edist = Math.min(this.saucer.x, canvas.width-this.saucer.x, this.saucer.y, canvas.height-this.saucer.y);
+      if (edist < 60) this.saucer.opacity = Math.max(0, edist/60);
+      const eedist = Math.min(this.enemy.x, canvas.width-this.enemy.x, this.enemy.y, canvas.height-this.enemy.y);
+      if (eedist < 60) this.enemy.opacity = Math.max(0, eedist/60);
+      if (this.saucer.offScreen() && this.enemy.offScreen()) this.done = true;
     }
 
     for (let i=lasers.length-1;i>=0;i--) if(!lasers[i].update()) lasers.splice(i,1);
