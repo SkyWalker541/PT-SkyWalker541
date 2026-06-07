@@ -328,16 +328,17 @@
   .ctrl-row span:first-child { color:#5a4a8a; }
   #dpad-zone {
     position:absolute; left:8.4%; top:58.8%; width:24.5%; aspect-ratio:1;
+    touch-action:none; user-select:none;
     display:none; grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr;
     z-index:13; border-radius:4px;
   }
-  .dpad-btn { cursor:pointer; -webkit-tap-highlight-color:transparent; display:flex; align-items:center; justify-content:center; font-size:clamp(5px,1.5vw,10px); color:transparent; border-radius:4px; transition:background 0.05s; }
+  .dpad-btn { cursor:pointer; -webkit-tap-highlight-color:transparent; display:flex; align-items:center; justify-content:center; font-size:clamp(5px,1.5vw,10px); color:transparent; border-radius:4px; transition:background 0.05s; touch-action:none; user-select:none; }
   .dpad-btn.pressed { background:rgba(168,85,247,0.35); box-shadow:0 0 8px rgba(168,85,247,0.6); }
-  #btn-a { position:absolute; left:60.6%; top:60.8%; width:12.2%; aspect-ratio:1; border-radius:50%; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background 0.05s,box-shadow 0.05s; display:none; z-index:13; }
-  #btn-b { position:absolute; left:78.5%; top:57.8%; width:12.2%; aspect-ratio:1; border-radius:50%; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background 0.05s,box-shadow 0.05s; display:none; z-index:13; }
+  #btn-a { position:absolute; left:60.6%; top:60.8%; width:12.2%; aspect-ratio:1; border-radius:50%; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background 0.05s,box-shadow 0.05s; display:none; z-index:13; touch-action:none; user-select:none; }
+  #btn-b { position:absolute; left:78.5%; top:57.8%; width:12.2%; aspect-ratio:1; border-radius:50%; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background 0.05s,box-shadow 0.05s; display:none; z-index:13; touch-action:none; user-select:none; }
   #btn-a.pressed, #btn-b.pressed { background:rgba(168,85,247,0.4); box-shadow:0 0 12px rgba(168,85,247,0.8); }
-  #btn-select { position:absolute; left:40.1%; top:81.5%; width:12%; height:3%; border-radius:4px; cursor:pointer; z-index:13; -webkit-tap-highlight-color:transparent; transition:background 0.05s; }
-  #btn-start  { position:absolute; left:51.8%; top:81.5%; width:12%; height:3%; border-radius:4px; cursor:pointer; z-index:13; -webkit-tap-highlight-color:transparent; transition:background 0.05s; }
+  #btn-select { position:absolute; left:40.1%; top:81.5%; width:12%; height:3%; border-radius:4px; cursor:pointer; z-index:13; -webkit-tap-highlight-color:transparent; transition:background 0.05s; touch-action:none; user-select:none; }
+  #btn-start  { position:absolute; left:51.8%; top:81.5%; width:12%; height:3%; border-radius:4px; cursor:pointer; z-index:13; -webkit-tap-highlight-color:transparent; transition:background 0.05s; touch-action:none; user-select:none; }
   #btn-select.pressed, #btn-start.pressed { background:rgba(168,85,247,0.3); box-shadow:0 0 8px rgba(168,85,247,0.6); }
   /* game-mode */
   body.game-mode::before { content:''; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(8,8,16,0.9); z-index:50; pointer-events:none; }
@@ -347,6 +348,8 @@
   body.game-mode #dpad-zone { display:grid; }
   body.game-mode #btn-a, body.game-mode #btn-b { display:block; }
   body.game-mode .screen-overlay { visibility:hidden; }
+  body.game-mode { touch-action: none; }
+  body.game-mode .handheld-wrapper { touch-action: none; }
 </style>
 </head>
 <body>
@@ -1629,9 +1632,21 @@ window.addEventListener('keyup',e=>{keys[e.key]=false;});
 const dpad={up:false,down:false,left:false,right:false,fire:false};
 
 function setupTouch(){
+  // Block touchmove on handheld wrapper during game to prevent scroll
+  const hw = document.querySelector('.handheld-wrapper');
+  if(hw){
+    hw.addEventListener('touchmove', e=>{
+      if(document.body.classList.contains('game-mode')) e.preventDefault();
+    }, {passive:false});
+  }
+  // Also block document touchmove in game mode
+  document.addEventListener('touchmove', e=>{
+    if(document.body.classList.contains('game-mode')) e.preventDefault();
+  }, {passive:false});
+
   function press(dir,el){
-    el.addEventListener('touchstart',e=>{e.preventDefault();dpad[dir]=true;el.classList.add('pressed');},{passive:false});
-    el.addEventListener('touchend',e=>{e.preventDefault();dpad[dir]=false;el.classList.remove('pressed');},{passive:false});
+    el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();dpad[dir]=true;el.classList.add('pressed');},{passive:false});
+    el.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();dpad[dir]=false;el.classList.remove('pressed');},{passive:false});
     el.addEventListener('touchcancel',()=>{dpad[dir]=false;el.classList.remove('pressed');});
     el.addEventListener('mousedown',()=>{dpad[dir]=true;el.classList.add('pressed');});
     el.addEventListener('mouseup',()=>{dpad[dir]=false;el.classList.remove('pressed');});
@@ -1643,8 +1658,8 @@ function setupTouch(){
   press('right',document.getElementById('dpad-right'));
   ['btn-a','btn-b'].forEach(id=>{
     const el=document.getElementById(id);
-    el.addEventListener('touchstart',e=>{e.preventDefault();dpad.fire=true;el.classList.add('pressed');},{passive:false});
-    el.addEventListener('touchend',e=>{e.preventDefault();dpad.fire=false;el.classList.remove('pressed');},{passive:false});
+    el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();dpad.fire=true;el.classList.add('pressed');},{passive:false});
+    el.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();dpad.fire=false;el.classList.remove('pressed');},{passive:false});
     el.addEventListener('touchcancel',()=>{dpad.fire=false;el.classList.remove('pressed');});
     el.addEventListener('mousedown',()=>{dpad.fire=true;el.classList.add('pressed');});
     el.addEventListener('mouseup',()=>{dpad.fire=false;el.classList.remove('pressed');});
@@ -1834,8 +1849,8 @@ function handleSelect(){
 
 function addBtn(el,fn){
   el.addEventListener('click',fn);
-  el.addEventListener('touchstart',e=>{e.preventDefault();el.classList.add('pressed');},{passive:false});
-  el.addEventListener('touchend',e=>{e.preventDefault();el.classList.remove('pressed');fn();},{passive:false});
+  el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();el.classList.add('pressed');},{passive:false});
+  el.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();el.classList.remove('pressed');fn();},{passive:false});
   el.addEventListener('mousedown',()=>el.classList.add('pressed'));
   el.addEventListener('mouseup',()=>el.classList.remove('pressed'));
   el.addEventListener('mouseleave',()=>el.classList.remove('pressed'));
@@ -1902,6 +1917,14 @@ function _launchGame(){
 
   document.body.classList.add('game-mode');
 
+  // Lock scroll position - save current and restore on any scroll attempt
+  const _scrollY = window.scrollY;
+  const _lockScroll = ()=>{ if(document.body.classList.contains('game-mode')) window.scrollTo(0,_scrollY); };
+  window.addEventListener('scroll', _lockScroll, {passive:true});
+  // Store so we can remove on exit
+  window._scrollLock = _lockScroll;
+  window._scrollLockY = _scrollY;
+
   // Wait for zoom + CSS transition then start game
   setTimeout(()=>{
     resizeGameCanvas();
@@ -1918,6 +1941,7 @@ function _exitGame(){
     setTimeout(()=>{ hw.style.transition=''; }, 400);
   }
   document.body.classList.remove('game-mode');
+
 }
 window.launchGame=_launchGame;
 
