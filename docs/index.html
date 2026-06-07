@@ -1707,8 +1707,9 @@ function playerDie(){
 }
 
 function gameLoop(ts){
-  if(menuOpen){requestAnimationFrame(gameLoop);return;}
-  const dt=Math.min(ts-lastTime,50);lastTime=ts;const t=ts*0.001;
+  if(menuOpen){lastTime=ts;requestAnimationFrame(gameLoop);return;}
+  if(lastTime===0) lastTime=ts;
+  const dt=Math.min(ts-lastTime,33);lastTime=ts;const t=ts*0.001;
   ctx.fillStyle='#000';ctx.fillRect(0,0,gameCanvas.width,gameCanvas.height);
   drawGameStars(t);
   if(gameState==='playing'){
@@ -1884,6 +1885,13 @@ window.addEventListener('keydown',e=>{
 window.addEventListener('keyup',e=>{delete keys[e.key];});
 
 // ── LAUNCH ────────────────────────────────────────────────────────────────────
+// Reset timing when tab regains focus to prevent speed burst
+document.addEventListener('visibilitychange', ()=>{
+  if(!document.hidden) lastTime = 0;
+});
+window.addEventListener('focus', ()=>{ lastTime = 0; });
+window.addEventListener('blur',  ()=>{ lastTime = 0; });
+
 function _launchGame(){
   if(document.body.classList.contains('game-mode')){
     startGame();
