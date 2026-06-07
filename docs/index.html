@@ -443,10 +443,12 @@ function updateHandheldZone() {
 
 function getHandheldZone() { return _zone; }
 
-// Update zone on load and resize only — never during scroll or animation
-window.addEventListener('load', updateHandheldZone);
+// Update zone on resize
 window.addEventListener('resize', updateHandheldZone);
-setTimeout(updateHandheldZone, 500); // fallback after fonts/images load
+// Call immediately and again after page fully renders
+updateHandheldZone();
+setTimeout(updateHandheldZone, 200);
+setTimeout(updateHandheldZone, 1000);
 
 // ─── PIXEL SHIPS ─────────────────────────────────────────────────────────────
 
@@ -967,12 +969,16 @@ class StandoffScene {
       if (dist < 200) { this.phase = 'circle'; this.circleTimer = 0; }
     } else if (this.phase === 'circle') {
       this.circleTimer++;
-      // Organic velocity-based circling — each steers perpendicular to the other
+      // Orbit that naturally drifts — escalating offset breaks stable loops
       const toEnemyA = Math.atan2(this.enemy.y-this.saucer.y, this.enemy.x-this.saucer.x);
       const toSaucerA = Math.atan2(this.saucer.y-this.enemy.y, this.saucer.x-this.enemy.x);
-      // Strafe perpendicular — adds natural orbit without locking position
-      this.saucer.targetAngle = toEnemyA + Math.PI * 0.45 * this.circleDir;
-      this.enemy.targetAngle = toSaucerA + Math.PI * 0.45 * this.circleDir;
+      // Offset increases slightly each frame so orbit never locks perfectly
+      const orbitOffset = Math.PI * (0.38 + Math.min(0.25, this.circleTimer * 0.0015));
+      this.saucer.targetAngle = toEnemyA + orbitOffset * this.circleDir;
+      this.enemy.targetAngle = toSaucerA + orbitOffset * this.circleDir;
+      // Add small random jitter so each orbit looks slightly different
+      this.saucer.targetAngle += (Math.random()-0.5) * 0.04;
+      this.enemy.targetAngle += (Math.random()-0.5) * 0.04;
       this.saucer.avoidStructure(); this.enemy.avoidStructure();
       this.saucer.move(2); this.enemy.move(2.2);
       this.saucer.clampY(); this.enemy.clampY();
@@ -1092,6 +1098,7 @@ class AmbushScene {
     if (this.phase==='peaceful') {
       // Saucer cruises along
       this.saucer.targetAngle = Math.sin(this.timer*0.03)*0.2;
+      this.saucer.avoidStructure();
       this.saucer.clampY(); this.saucer.move();
       this.saucer.thrustTrail('saucer');
       // Trigger ambush when saucer is on screen
@@ -1101,6 +1108,7 @@ class AmbushScene {
       }
     } else if (this.phase==='ambush') {
       this.enemy.opacity = Math.min(1, this.enemy.opacity+0.05);
+      this.enemy.avoidStructure();
       this.enemy.steerTo(this.saucer.x, this.saucer.y);
       this.enemy.move(); this.enemy.thrustTrail('enemy');
 
@@ -1113,6 +1121,7 @@ class AmbushScene {
       // Saucer reacts — dodges
       const dy = this.enemy.y - this.saucer.y;
       this.saucer.targetAngle = Math.PI*0.05 - Math.sign(dy)*0.3;
+      this.saucer.avoidStructure();
       this.saucer.clampY(); this.saucer.move();
       this.saucer.thrustTrail('saucer');
 
@@ -1197,6 +1206,7 @@ class VictoryScene {
     if (this.exitTimer > 400 && !this.saucer.offScreen()) this.saucer.exitToward(0, 6);
     if (this.exitTimer > 400 && !this.enemy.offScreen()) this.enemy.exitToward(0, 7);
     if (this.exitTimer > 550) this.done = true;
+    if (this.timer > 800) this.done = true;
   }
   draw() {
     drawParticles();
@@ -1229,11 +1239,23 @@ class DogfightScene {
         this.saucer.steerTo(this.enemy.x,this.enemy.y);
         this.enemy.steerTo(this.saucer.x,this.saucer.y);
       } else {
-        // Strafe sideways — breaks the close-range lock naturally
+        // Strafe with escalating offset — orbit naturally destabilises and breaks
         const toE = Math.atan2(this.enemy.y-this.saucer.y,this.enemy.x-this.saucer.x);
         const toS = Math.atan2(this.saucer.y-this.enemy.y,this.saucer.x-this.enemy.x);
-        this.saucer.targetAngle = toE + Math.PI * (0.3 + Math.sin(this.timer*0.05)*0.2);
-        this.enemy.targetAngle = toS + Math.PI * (0.3 + Math.sin(this.timer*0.05+1)*0.2);
+        const offset = Math.PI * (0.35 + Math.min(0.4, this.timer * 0.001));
+        this.saucer.targetAngle = toE + offset;
+        this.enemy.targetAngle = toS + offset;
+        // If stuck close for too long, break out forcefully
+        if (fdist < 100 && this.closeTimer === undefined) this.closeTimer = 0;
+        if (this.closeTimer !== undefined) {
+          this.closeTimer++;
+          if (this.closeTimer > 80) {
+            this.saucer.exitToward(Math.atan2(this.saucer.y-canvas.height/2, this.saucer.x-canvas.width/2), 5);
+            this.enemy.exitToward(Math.atan2(this.enemy.y-canvas.height/2, this.enemy.x-canvas.width/2), 5);
+            this.phase = 'breakoff';
+            this.closeTimer = undefined;
+          }
+        }
       }
       this.saucer.avoidStructure(); this.enemy.avoidStructure();
       this.saucer.clampY(30); this.saucer.move();
@@ -1274,12 +1296,13 @@ class DogfightScene {
 const SCENES = [ClosecallScene, ChaseScene, StandoffScene, AmbushScene, VictoryScene, DogfightScene];
 
 let scene = null;
-let nextScene = 4000;
+let nextScene = 6000;
 let lastTime = 0;
 
 function animate(ts) {
   const dt = Math.min(ts-lastTime, 50); lastTime = ts;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (!_zone) updateHandheldZone();
 
   nextScene -= dt;
   if (nextScene <= 0 && !scene) {
