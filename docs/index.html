@@ -430,25 +430,40 @@ let _zone = null;
 function updateHandheldZone() {
   const el = document.querySelector('.handheld-wrapper');
   if (!el) return;
-  // Use offsetLeft/offsetTop + scroll — no reflow, scroll-independent
-  let ox = 0, oy = 0, cur = el;
-  while (cur) { ox += cur.offsetLeft; oy += cur.offsetTop; cur = cur.offsetParent; }
+  // getBoundingClientRect is accurate for flexbox layouts
+  // We call it only on load/resize — never during scroll or every frame
+  const rect = el.getBoundingClientRect();
+  // Convert viewport coords to page coords (add scroll offset)
+  const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+  const scrollY = window.pageYOffset || document.documentElement.scrollTop;
   _zone = {
-    cx: ox + el.offsetWidth / 2,
-    cy: oy + el.offsetHeight / 2,
-    w: el.offsetWidth * 0.65,
-    h: el.offsetHeight * 0.6,
+    cx: rect.left + scrollX + rect.width / 2,
+    cy: rect.top + scrollY + rect.height / 2,
+    w: rect.width * 0.65,
+    h: rect.height * 0.6,
   };
 }
 
-function getHandheldZone() { return _zone; }
+function getHandheldZone() {
+  // Adjust for current scroll position in real time — cheap, no reflow
+  if (!_zone) return null;
+  const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+  const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+  // _zone.cx/cy are page coords — ships use viewport coords via canvas
+  // So subtract scroll to get current viewport position
+  return {
+    cx: _zone.cx - scrollX,
+    cy: _zone.cy - scrollY,
+    w: _zone.w,
+    h: _zone.h,
+  };
+}
 
-// Update zone on resize
+// Update on resize and load only
 window.addEventListener('resize', updateHandheldZone);
-// Call immediately and again after page fully renders
-updateHandheldZone();
-setTimeout(updateHandheldZone, 200);
-setTimeout(updateHandheldZone, 1000);
+setTimeout(updateHandheldZone, 100);
+setTimeout(updateHandheldZone, 500);
+setTimeout(updateHandheldZone, 1500);
 
 // ─── PIXEL SHIPS ─────────────────────────────────────────────────────────────
 
@@ -1302,7 +1317,6 @@ let lastTime = 0;
 function animate(ts) {
   const dt = Math.min(ts-lastTime, 50); lastTime = ts;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (!_zone) updateHandheldZone();
 
   nextScene -= dt;
   if (nextScene <= 0 && !scene) {
