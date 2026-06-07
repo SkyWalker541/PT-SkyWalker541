@@ -16,7 +16,15 @@
     z-index: 0;
   }
 
-  body > *:not(#stars) { position: relative; z-index: 1; }
+  #ship {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  body > *:not(#stars):not(#ship) { position: relative; z-index: 2; }
 
   body {
     background: #080810;
@@ -233,6 +241,7 @@
 </style>
 </head>
 <body>
+<canvas id="ship"></canvas>
 <canvas id="stars"></canvas>
 
   <div class="title-wrap">
@@ -406,6 +415,727 @@
   initStars();
   animate();
   window.addEventListener('resize', () => { resize(); initStars(); });
+</script>
+<script>
+(function() {
+const canvas = document.getElementById('ship');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+// ─── PIXEL SHIPS ────────────────────────────────────────────────────────────
+
+const saucerPixels = [
+  [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,1,1,1,2,2,2,2,2,2,1,1,1,0,0,0,0,0,0],
+  [0,0,0,0,0,1,1,1,2,2,2,2,2,2,2,2,1,1,1,0,0,0,0,0],
+  [0,0,0,0,0,1,1,2,2,2,2,2,2,2,2,2,2,1,1,0,0,0,0,0],
+  [0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0],
+  [0,0,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0],
+  [3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,3,3,3],
+  [3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,3,3,3],
+  [0,0,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0],
+  [0,0,0,0,5,5,0,0,5,5,0,0,5,5,0,0,5,5,0,0,0,0,0,0],
+  [0,0,0,0,5,5,0,0,5,5,0,0,5,5,0,0,5,5,0,0,0,0,0,0],
+];
+const saucerColors = { 1:'#6b21a8', 2:'#a78bfa', 3:'#3a1a5a', 4:'#5a2a8a', 5:'#ff8c42' };
+const SW = 24, SH = 11;
+
+const enemyPixels = [
+  [0,0,0,0,0,0,1,0,0,0,0,0,0],
+  [0,0,0,0,0,1,2,1,0,0,0,0,0],
+  [0,0,1,0,1,2,2,2,1,0,1,0,0],
+  [0,1,2,1,2,2,4,2,2,1,2,1,0],
+  [1,2,2,2,2,2,4,2,2,2,2,2,1],
+  [1,2,2,2,2,2,4,2,2,2,2,2,1],
+  [0,1,2,1,2,2,1,2,2,1,2,1,0],
+  [0,0,1,0,1,2,2,2,1,0,1,0,0],
+  [0,0,0,0,0,1,2,1,0,0,0,0,0],
+  [0,0,0,0,0,0,1,0,0,0,0,0,0],
+];
+const enemyColors = { 1:'#3a0808', 2:'#7a1515', 3:'#1a0303', 4:'#ff2222' };
+const EW = 13, EH = 10;
+
+// ─── PARTICLES ───────────────────────────────────────────────────────────────
+
+class Particle {
+  constructor() { this.life = 0; }
+  spawn(x, y, angle, type) {
+    this.x = x; this.y = y;
+    const spd = 0.4 + Math.random() * 2;
+    const da = (Math.random() - 0.5) * 0.7;
+    this.vx = Math.cos(angle + Math.PI + da) * spd;
+    this.vy = Math.sin(angle + Math.PI + da) * spd;
+    this.life = 1; this.decay = 0.025 + Math.random() * 0.05;
+    this.size = 0.5 + Math.random(); this.type = type;
+  }
+}
+const pool = Array.from({length: 300}, () => new Particle());
+
+function emit(x, y, angle, type, n) {
+  let s = 0;
+  for (const p of pool) { if (p.life <= 0) { p.spawn(x, y, angle, type); if (++s >= n) break; } }
+}
+
+function drawParticles() {
+  for (const p of pool) {
+    if (p.life <= 0) continue;
+    p.life -= p.decay; p.x += p.vx; p.y += p.vy;
+    const a = Math.max(0, p.life * 0.9);
+    if (p.type === 'thruster') ctx.fillStyle = `rgba(255,${100 + Math.floor(p.life*120)},30,${a})`;
+    else if (p.type === 'purple') ctx.fillStyle = `rgba(168,85,247,${a*0.7})`;
+    else if (p.type === 'enemy_thruster') ctx.fillStyle = `rgba(200,50,50,${a})`;
+    else if (p.type === 'spark') ctx.fillStyle = `rgba(255,220,50,${a})`;
+    else if (p.type === 'debris') ctx.fillStyle = `rgba(180,80,80,${a})`;
+    ctx.fillRect(Math.floor(p.x), Math.floor(p.y), Math.ceil(p.size), Math.ceil(p.size));
+  }
+}
+
+// ─── LASERS ──────────────────────────────────────────────────────────────────
+
+class Laser {
+  constructor(x, y, angle, friendly) {
+    this.x = x; this.y = y;
+    this.vx = Math.cos(angle) * 9; this.vy = Math.sin(angle) * 9;
+    this.life = 1; this.friendly = friendly;
+  }
+  update() { this.x += this.vx; this.y += this.vy; this.life -= 0.018; return this.life > 0; }
+  draw() {
+    ctx.save(); ctx.globalAlpha = Math.min(1, this.life * 2);
+    ctx.translate(this.x, this.y); ctx.rotate(Math.atan2(this.vy, this.vx));
+    const g = ctx.createLinearGradient(-6, 0, 6, 0);
+    const c = this.friendly ? '200,150,255' : '255,80,50';
+    g.addColorStop(0, `rgba(${c},0)`); g.addColorStop(0.5, `rgba(${c},1)`); g.addColorStop(1, `rgba(${c},0)`);
+    ctx.fillStyle = g; ctx.fillRect(-6, -1, 12, 2);
+    ctx.restore();
+  }
+}
+const lasers = [];
+
+// ─── SPRITE HELPER ───────────────────────────────────────────────────────────
+
+function drawSprite(pixels, colors, W, H, x, y, opacity, flipX, scale) {
+  ctx.save(); ctx.globalAlpha = opacity;
+  ctx.translate(x, y);
+  if (scale && scale !== 1) ctx.scale(scale, scale);
+  if (flipX) ctx.scale(-1, 1);
+  ctx.translate(-W / 2, -H / 2);
+  for (let r = 0; r < pixels.length; r++)
+    for (let c = 0; c < pixels[r].length; c++) {
+      const v = pixels[r][c]; if (!v) continue;
+      ctx.fillStyle = colors[v];
+      ctx.fillRect(c, r, 1, 1);
+    }
+  ctx.restore();
+}
+
+// ─── ACTOR: smooth steerable ship ────────────────────────────────────────────
+
+class Actor {
+  constructor(x, y, angle, speed) {
+    this.x = x; this.y = y; this.angle = angle; this.speed = speed;
+    this.targetAngle = angle; this.steerRate = 0.06;
+    this.opacity = 0; this.wobble = 0;
+    this.laserTimer = 0;
+  }
+
+  steerTo(tx, ty) {
+    this.targetAngle = Math.atan2(ty - this.y, tx - this.x);
+  }
+
+  steerAngle(a) { this.targetAngle = a; }
+
+  applySteer() {
+    let diff = this.targetAngle - this.angle;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    this.angle += diff * this.steerRate;
+  }
+
+  move(spd) {
+    this.applySteer();
+    const s = spd !== undefined ? spd : this.speed;
+    this.x += Math.cos(this.angle) * s;
+    this.y += Math.sin(this.angle) * s;
+  }
+
+  fireLaser(tx, ty, friendly) {
+    const a = Math.atan2(ty - this.y, tx - this.x);
+    // Offset laser from front of ship
+    const ox = this.x + Math.cos(a) * (friendly ? SW*0.4 : EW*0.4);
+    const oy = this.y + Math.sin(a) * (friendly ? SH*0.3 : EH*0.3);
+    lasers.push(new Laser(ox, oy, a, friendly));
+  }
+
+  thrustTrail(type) {
+    const bx = this.x - Math.cos(this.angle) * (type === 'saucer' ? SW*0.4 : EW*0.35);
+    const by = this.y - Math.sin(this.angle) * 0.5 + (type === 'saucer' ? SH*0.4 : EH*0.3);
+    emit(bx, by, this.angle, type === 'saucer' ? 'thruster' : 'enemy_thruster', 1);
+  }
+
+  offScreen(pad) {
+    pad = pad || 80;
+    return this.x < -pad || this.x > canvas.width + pad || this.y < -pad || this.y > canvas.height + pad;
+  }
+
+  clampY(margin) {
+    margin = margin || 30;
+    if (this.y < margin) this.targetAngle = Math.abs(this.angle);
+    if (this.y > canvas.height - margin) this.targetAngle = -Math.abs(this.angle);
+  }
+}
+
+// ─── LIGHTSPEED HELPER ───────────────────────────────────────────────────────
+
+class Lightspeed {
+  constructor(x, y, angle) {
+    this.x = x; this.y = y; this.angle = angle || -0.35 + (Math.random()-0.5)*0.3;
+    this.phase = 'shrink'; this.timer = 0;
+    this.cx = x; this.cy = y;
+    this.scale = 1; this.flashAlpha = 0;
+    this.flashX = x; this.flashY = y;
+    this.done = false;
+  }
+  update() {
+    this.timer++;
+    if (this.phase === 'shrink') {
+      this.cx += Math.cos(this.angle) * this.timer * 0.9;
+      this.cy += Math.sin(this.angle) * this.timer * 0.9;
+      this.scale = Math.max(0.02, 1 - this.timer * 0.04);
+      if (this.timer > 23) { this.flashX = this.cx; this.flashY = this.cy; this.phase = 'flash'; this.timer = 0; }
+    } else {
+      this.flashAlpha = this.timer < 4 ? this.timer/4 : Math.max(0, 1-(this.timer-4)/16);
+      if (this.timer > 22) this.done = true;
+    }
+  }
+  draw(opacity) {
+    if (this.phase === 'shrink') {
+      drawSprite(saucerPixels, saucerColors, SW, SH, this.cx, this.cy, opacity, false, this.scale);
+      const sc = this.scale;
+      for (let i = 0; i < 10; i++) {
+        const a = (i/10)*Math.PI*2;
+        const len = (1-sc)*18;
+        ctx.beginPath();
+        ctx.moveTo(this.cx + Math.cos(a)*SW*0.3*sc, this.cy + Math.sin(a)*SH*0.3*sc);
+        ctx.lineTo(this.cx + Math.cos(a)*(SW*0.3*sc+len), this.cy + Math.sin(a)*(SH*0.3*sc+len));
+        ctx.strokeStyle = `rgba(200,150,255,${opacity*(1-sc)*0.9})`; ctx.lineWidth = 0.5; ctx.stroke();
+      }
+    } else {
+      const r = this.timer * 2.5;
+      ctx.beginPath(); ctx.arc(this.flashX, this.flashY, r, 0, Math.PI*2);
+      ctx.strokeStyle = `rgba(255,255,255,${this.flashAlpha*0.9})`; ctx.lineWidth = 1; ctx.stroke();
+      ctx.beginPath(); ctx.arc(this.flashX, this.flashY, r*0.5, 0, Math.PI*2);
+      ctx.strokeStyle = `rgba(200,150,255,${this.flashAlpha*0.6})`; ctx.lineWidth = 0.5; ctx.stroke();
+      ctx.beginPath(); ctx.arc(this.flashX, this.flashY, 2*this.flashAlpha, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,255,255,${this.flashAlpha})`; ctx.fill();
+    }
+  }
+}
+
+// ─── SCENES ──────────────────────────────────────────────────────────────────
+
+function spawnEdge(margin) {
+  margin = margin || 40;
+  const edge = Math.floor(Math.random() * 4);
+  let x, y, angle;
+  if (edge===0) { x=canvas.width+margin; y=margin+Math.random()*(canvas.height-margin*2); angle=Math.PI+(Math.random()-0.5)*0.8; }
+  else if (edge===1) { x=-margin; y=margin+Math.random()*(canvas.height-margin*2); angle=(Math.random()-0.5)*0.8; }
+  else if (edge===2) { x=margin+Math.random()*(canvas.width-margin*2); y=-margin; angle=Math.PI/2+(Math.random()-0.5)*0.8; }
+  else { x=margin+Math.random()*(canvas.width-margin*2); y=canvas.height+margin; angle=-Math.PI/2+(Math.random()-0.5)*0.8; }
+  return {x,y,angle,edge};
+}
+
+function oppositeEdge(edge) {
+  // Returns an exit angle roughly opposite to entry edge
+  if (edge===0) return (Math.random()-0.5)*0.8;
+  if (edge===1) return Math.PI+(Math.random()-0.5)*0.8;
+  if (edge===2) return -Math.PI/2+(Math.random()-0.5)*0.8;
+  return Math.PI/2+(Math.random()-0.5)*0.8;
+}
+
+// ── Scene: CLOSE CALL ────────────────────────────────────────────────────────
+class ClosecallScene {
+  constructor() {
+    const sa = spawnEdge();
+    this.saucer = new Actor(sa.x, sa.y, sa.angle, 2.5+Math.random());
+    this.saucer.steerRate = 0.05;
+
+    // Enemy from different edge
+    let ee; do { ee = spawnEdge(); } while (ee.edge === sa.edge);
+    this.enemy = new Actor(ee.x, ee.y, ee.angle, 3+Math.random());
+    this.enemy.steerRate = 0.07;
+
+    this.sEdge = sa.edge; this.eEdge = ee.edge;
+    this.phase = 'approach'; this.timer = 0;
+    this.closeCallDone = false;
+    this.sExitAngle = oppositeEdge(sa.edge);
+    this.eExitAngle = oppositeEdge(ee.edge);
+    this.done = false;
+  }
+  update() {
+    this.timer++;
+    this.saucer.opacity = Math.min(1, this.saucer.opacity + 0.04);
+    this.enemy.opacity = Math.min(1, this.enemy.opacity + 0.04);
+
+    if (this.phase === 'approach') {
+      // Both fly toward center
+      const cx = canvas.width/2 + (Math.random()-0.5)*80;
+      const cy = canvas.height/2 + (Math.random()-0.5)*80;
+      this.saucer.steerTo(cx, cy); this.saucer.clampY();
+      this.enemy.steerTo(cx, cy); this.enemy.clampY();
+      this.saucer.move(); this.enemy.move();
+      this.saucer.thrustTrail('saucer'); this.enemy.thrustTrail('enemy');
+
+      // When they get close, scatter
+      const dist = Math.hypot(this.saucer.x-this.enemy.x, this.saucer.y-this.enemy.y);
+      if (dist < 100) {
+        this.phase = 'scatter';
+        // Saucer dodges perpendicular, enemy continues
+        this.saucer.steerRate = 0.12;
+        this.enemy.steerRate = 0.08;
+        // Small sparks at near miss
+        for (let i=0;i<8;i++) emit(this.saucer.x,this.saucer.y,Math.random()*Math.PI*2,'spark',1);
+      }
+    } else if (this.phase === 'scatter') {
+      this.saucer.steerAngle(this.sExitAngle + Math.PI*(0.3+Math.random()*0.4)*(Math.random()>0.5?1:-1));
+      this.enemy.steerAngle(this.eExitAngle + Math.PI*(0.3+Math.random()*0.4)*(Math.random()>0.5?1:-1));
+      this.saucer.speed = Math.min(this.saucer.speed + 0.05, 5);
+      this.enemy.speed = Math.min(this.enemy.speed + 0.05, 5);
+      this.saucer.move(); this.enemy.move();
+      this.saucer.thrustTrail('saucer'); this.enemy.thrustTrail('enemy');
+      if (this.saucer.offScreen() && this.enemy.offScreen()) this.done = true;
+    }
+
+    for (let i=lasers.length-1;i>=0;i--) if(!lasers[i].update()) lasers.splice(i,1);
+  }
+  draw() {
+    drawParticles();
+    for (const l of lasers) l.draw();
+    drawSprite(saucerPixels, saucerColors, SW, SH, this.saucer.x, this.saucer.y, this.saucer.opacity, false, 1);
+    drawSprite(enemyPixels, enemyColors, EW, EH, this.enemy.x, this.enemy.y, this.enemy.opacity,
+      this.enemy.vx !== undefined ? this.enemy.vx < 0 : true, 1);
+  }
+}
+
+// ── Scene: CHASE ─────────────────────────────────────────────────────────────
+class ChaseScene {
+  constructor() {
+    // Saucer enters first from right
+    this.saucer = new Actor(canvas.width+40, canvas.height*0.3+Math.random()*canvas.height*0.4, Math.PI+(Math.random()-0.5)*0.5, 2.5);
+    this.saucer.steerRate = 0.04;
+    // Enemy enters from same side, faster
+    this.enemy = new Actor(canvas.width+40, this.saucer.y+(Math.random()-0.5)*50, Math.PI+(Math.random()-0.5)*0.3, 3.5);
+    this.enemy.steerRate = 0.06;
+
+    this.phase = 'enter'; this.timer = 0;
+    this.eDelay = 70; // enemy enters after saucer
+    this.eLaserTimer = 0; this.sLaserTimer = 0;
+    this.sHit = false; this.sHitTimer = 0;
+    this.sFleeing = false; this.eFleeing = false;
+    this.outcome = ['escape','hit','turnabout','lightspeed'][Math.floor(Math.random()*4)];
+    this.outcomeFired = false;
+    this.ls = null;
+    this.done = false;
+  }
+  update() {
+    this.timer++;
+    this.saucer.opacity = Math.min(1, this.saucer.opacity + 0.03);
+    if (this.timer > this.eDelay) this.enemy.opacity = Math.min(1, this.enemy.opacity + 0.03);
+
+    // Move saucer — flee left with organic vertical drift
+    if (!this.ls) {
+      if (!this.sFleeing) {
+        this.saucer.targetAngle = Math.PI + Math.sin(this.timer*0.04)*0.35;
+        this.saucer.clampY(40);
+      } else {
+        this.saucer.speed = Math.min(this.saucer.speed+0.06, 6);
+      }
+      this.saucer.move();
+      this.saucer.thrustTrail('saucer');
+    }
+
+    // Move enemy — chase saucer
+    if (this.timer > this.eDelay) {
+      if (!this.eFleeing) {
+        // Maintain fighting distance — not too close
+        const edist = Math.hypot(this.saucer.x-this.enemy.x, this.saucer.y-this.enemy.y);
+        if (edist > 90) {
+          this.enemy.steerTo(this.saucer.x, this.saucer.y);
+        } else {
+          // Hold position, strafe slightly
+          this.enemy.targetAngle = Math.atan2(this.saucer.y-this.enemy.y, this.saucer.x-this.enemy.x) + Math.PI*0.4;
+        }
+        this.enemy.clampY(40);
+        this.enemy.move();
+      } else {
+        this.enemy.steerAngle(0); // flee right
+        this.enemy.speed = Math.min(this.enemy.speed+0.06, 6);
+        this.enemy.move();
+      }
+      this.enemy.thrustTrail('enemy');
+
+      // Enemy fires
+      if (!this.eFleeing) {
+        this.eLaserTimer++;
+        if (this.eLaserTimer > 30) {
+          this.enemy.fireLaser(this.saucer.x, this.saucer.y, false);
+          this.eLaserTimer = 0;
+        }
+      }
+    }
+
+    // Outcome logic
+    const sOnScreen = this.saucer.x < canvas.width * 0.7;
+    if (sOnScreen && !this.outcomeFired && this.timer > this.eDelay + 60) {
+      this.outcomeFired = true;
+    }
+
+    if (this.outcomeFired) {
+      if (this.outcome === 'hit' && !this.sHit && this.timer > this.eDelay + 80) {
+        this.sHit = true;
+        for (let i=0;i<18;i++) emit(this.saucer.x, this.saucer.y, Math.random()*Math.PI*2, i%2===0?'spark':'debris', 1);
+      }
+      if (this.sHit) {
+        this.sHitTimer++;
+        this.saucer.wobble = Math.sin(this.sHitTimer*0.4)*0.12;
+        this.saucer.speed = Math.max(1, this.saucer.speed - 0.01);
+        if (this.sHitTimer > 100) { this.saucer.wobble=0; this.saucer.speed=4; this.sFleeing=true; }
+      }
+
+      if (this.outcome === 'turnabout' && !this.eFleeing && this.timer > this.eDelay+90) {
+        // Saucer loops back
+        this.saucer.targetAngle = 0;
+        this.saucer.steerRate = 0.1;
+        this.saucer.speed = 3.5;
+        if (this.saucer.x > this.enemy.x) {
+          // Now saucer fires back
+          this.sLaserTimer++;
+          if (this.sLaserTimer > 25) {
+            this.saucer.fireLaser(this.enemy.x, this.enemy.y, true);
+            this.sLaserTimer = 0;
+          }
+          // Enemy flees
+          if (this.timer > this.eDelay + 150) { this.eFleeing = true; }
+        }
+      }
+
+      if (this.outcome === 'lightspeed' && !this.ls && this.timer > this.eDelay+80) {
+        this.saucer.speed = 0;
+        if (this.timer > this.eDelay + 110) {
+          this.ls = new Lightspeed(this.saucer.x, this.saucer.y);
+          this.saucer.opacity = 0;
+          // Enemy confused — circles then exits
+          setTimeout(() => { this.eFleeing = true; }, 1500);
+        } else {
+          this.saucer.wobble = Math.sin(this.timer*0.4)*0.08;
+        }
+      }
+    }
+
+    if (this.ls) { this.ls.update(); if (this.ls.done) { this.ls = null; } }
+    for (let i=lasers.length-1;i>=0;i--) if(!lasers[i].update()) lasers.splice(i,1);
+
+    if (this.saucer.offScreen() && this.enemy.offScreen()) this.done = true;
+    if (this.saucer.offScreen() && this.eFleeing && this.enemy.offScreen()) this.done = true;
+  }
+  draw() {
+    drawParticles();
+    for (const l of lasers) l.draw();
+    if (this.ls) this.ls.draw(1);
+    else if (this.saucer.opacity > 0)
+      drawSprite(saucerPixels, saucerColors, SW, SH, this.saucer.x, this.saucer.y, this.saucer.opacity, false, 1);
+    if (this.timer > this.eDelay)
+      drawSprite(enemyPixels, enemyColors, EW, EH, this.enemy.x, this.enemy.y, this.enemy.opacity, true, 1);
+  }
+}
+
+// ── Scene: STANDOFF ──────────────────────────────────────────────────────────
+class StandoffScene {
+  constructor() {
+    this.saucer = new Actor(-40, canvas.height*0.3+Math.random()*canvas.height*0.4, 0, 2.5);
+    this.enemy = new Actor(canvas.width+40, this.saucer.y+(Math.random()-0.5)*40, Math.PI, 3);
+    this.saucer.steerRate = 0.05; this.enemy.steerRate = 0.05;
+    this.phase = 'approach'; this.timer = 0;
+    this.circleAngle = 0; this.circleDir = Math.random()>0.5?1:-1;
+    this.outcome = Math.random()>0.5?'saucer_wins':'enemy_wins';
+    this.outcomeFired = false; this.laserTimer = 0;
+    this.done = false;
+  }
+  update() {
+    this.timer++;
+    this.saucer.opacity = Math.min(1, this.saucer.opacity+0.04);
+    this.enemy.opacity = Math.min(1, this.enemy.opacity+0.04);
+
+    const dist = Math.hypot(this.saucer.x-this.enemy.x, this.saucer.y-this.enemy.y);
+
+    if (this.phase === 'approach') {
+      this.saucer.steerTo(canvas.width*0.35, canvas.height/2); this.saucer.clampY();
+      this.enemy.steerTo(canvas.width*0.65, canvas.height/2); this.enemy.clampY();
+      this.saucer.move(); this.enemy.move();
+      this.saucer.thrustTrail('saucer'); this.enemy.thrustTrail('enemy');
+      if (dist < 200) { this.phase = 'circle'; this.circleTimer = 0; }
+    } else if (this.phase === 'circle') {
+      this.circleTimer++;
+      // Both circle each other
+      this.circleAngle += 0.025 * this.circleDir;
+      const cx = (this.saucer.x+this.enemy.x)/2, cy = (this.saucer.y+this.enemy.y)/2;
+      const r = dist/2;
+      const sa = this.circleAngle; const ea = this.circleAngle+Math.PI;
+      const nsx = cx+Math.cos(sa)*r; const nsy = cy+Math.sin(sa)*r;
+      const nex = cx+Math.cos(ea)*r; const ney = cy+Math.sin(ea)*r;
+      this.saucer.x += (nsx-this.saucer.x)*0.08; this.saucer.y += (nsy-this.saucer.y)*0.08;
+      this.enemy.x += (nex-this.enemy.x)*0.08; this.enemy.y += (ney-this.enemy.y)*0.08;
+
+      // Fire during standoff
+      this.laserTimer++;
+      if (this.laserTimer > 35) {
+        this.saucer.fireLaser(this.enemy.x, this.enemy.y, true);
+        this.enemy.fireLaser(this.saucer.x, this.saucer.y, false);
+        this.laserTimer = 0;
+      }
+
+      if (this.circleTimer > 120 && !this.outcomeFired) {
+        this.outcomeFired = true;
+        this.phase = this.outcome==='saucer_wins'?'saucer_attack':'enemy_attack';
+      }
+    } else if (this.phase === 'saucer_attack') {
+      this.saucer.speed = 4; this.saucer.steerTo(this.enemy.x, this.enemy.y); this.saucer.move();
+      this.enemy.speed = Math.min(this.enemy.speed+0.08,6); this.enemy.steerAngle(0); this.enemy.move();
+      this.laserTimer++;
+      if (this.laserTimer>20) { this.saucer.fireLaser(this.enemy.x,this.enemy.y,true); this.laserTimer=0; }
+      this.saucer.thrustTrail('saucer'); this.enemy.thrustTrail('enemy');
+      if (this.saucer.offScreen()&&this.enemy.offScreen()) this.done=true;
+    } else if (this.phase === 'enemy_attack') {
+      this.enemy.speed=4; this.enemy.steerTo(this.saucer.x,this.saucer.y); this.enemy.move();
+      this.saucer.speed=Math.min(this.saucer.speed+0.08,6); this.saucer.steerAngle(Math.PI); this.saucer.move();
+      this.laserTimer++;
+      if (this.laserTimer>20) { this.enemy.fireLaser(this.saucer.x,this.saucer.y,false); this.laserTimer=0; }
+      this.saucer.thrustTrail('saucer'); this.enemy.thrustTrail('enemy');
+      if (this.saucer.offScreen()&&this.enemy.offScreen()) this.done=true;
+    }
+
+    for (let i=lasers.length-1;i>=0;i--) if(!lasers[i].update()) lasers.splice(i,1);
+  }
+  draw() {
+    drawParticles();
+    for (const l of lasers) l.draw();
+    drawSprite(saucerPixels,saucerColors,SW,SH,this.saucer.x,this.saucer.y,this.saucer.opacity,false,1);
+    drawSprite(enemyPixels,enemyColors,EW,EH,this.enemy.x,this.enemy.y,this.enemy.opacity,true,1);
+  }
+}
+
+// ── Scene: AMBUSH ────────────────────────────────────────────────────────────
+class AmbushScene {
+  constructor() {
+    // Saucer enters peacefully from left
+    this.saucer = new Actor(-40, canvas.height*0.3+Math.random()*canvas.height*0.4, 0, 2.2);
+    this.saucer.steerRate = 0.04;
+    // Enemy hides above or below, drops in
+    this.ambushDir = Math.random()>0.5?1:-1;
+    this.enemy = new Actor(canvas.width*0.4+Math.random()*0.2*canvas.width,
+      this.ambushDir>0 ? -40 : canvas.height+40,
+      this.ambushDir>0 ? Math.PI/2 : -Math.PI/2, 0);
+    this.enemy.steerRate = 0.08;
+    this.phase = 'peaceful'; this.timer = 0;
+    this.ambushFired = false;
+    this.outcome = Math.random()>0.5?'escape':'counterattack';
+    this.laserTimer = 0; this.sLaserTimer = 0;
+    this.done = false;
+  }
+  update() {
+    this.timer++;
+    this.saucer.opacity = Math.min(1, this.saucer.opacity+0.04);
+
+    if (this.phase==='peaceful') {
+      // Saucer cruises along
+      this.saucer.targetAngle = Math.sin(this.timer*0.03)*0.2;
+      this.saucer.clampY(); this.saucer.move();
+      this.saucer.thrustTrail('saucer');
+      // Trigger ambush when saucer is on screen
+      if (this.saucer.x > canvas.width*0.25 && !this.ambushFired) {
+        this.ambushFired = true; this.enemy.speed = 4;
+        this.phase = 'ambush';
+      }
+    } else if (this.phase==='ambush') {
+      this.enemy.opacity = Math.min(1, this.enemy.opacity+0.05);
+      this.enemy.steerTo(this.saucer.x, this.saucer.y);
+      this.enemy.move(); this.enemy.thrustTrail('enemy');
+
+      this.laserTimer++;
+      if (this.laserTimer>25) {
+        this.enemy.fireLaser(this.saucer.x, this.saucer.y, false);
+        this.laserTimer=0;
+      }
+
+      // Saucer reacts — dodges
+      const dy = this.enemy.y - this.saucer.y;
+      this.saucer.targetAngle = Math.PI*0.05 - Math.sign(dy)*0.3;
+      this.saucer.clampY(); this.saucer.move();
+      this.saucer.thrustTrail('saucer');
+
+      const dist = Math.hypot(this.saucer.x-this.enemy.x, this.saucer.y-this.enemy.y);
+      if (dist < 80) {
+        for(let i=0;i<10;i++) emit(this.saucer.x,this.saucer.y,Math.random()*Math.PI*2,'spark',1);
+        this.phase = this.outcome==='counterattack'?'counter':'flee';
+      }
+    } else if (this.phase==='flee') {
+      this.saucer.speed=Math.min(this.saucer.speed+0.08,6); this.saucer.steerAngle(0); this.saucer.move();
+      this.enemy.steerTo(this.saucer.x,this.saucer.y); this.enemy.move();
+      this.laserTimer++;
+      if(this.laserTimer>20){this.enemy.fireLaser(this.saucer.x,this.saucer.y,false);this.laserTimer=0;}
+      this.saucer.thrustTrail('saucer'); this.enemy.thrustTrail('enemy');
+      if(this.saucer.offScreen()&&this.enemy.offScreen()) this.done=true;
+    } else if (this.phase==='counter') {
+      // Saucer spins to face enemy
+      this.saucer.steerTo(this.enemy.x,this.enemy.y); this.saucer.steerRate=0.1;
+      this.saucer.move(1); this.enemy.speed=Math.min(this.enemy.speed+0.04,4.5);
+      this.enemy.steerTo(this.saucer.x,this.saucer.y); this.enemy.move();
+      this.sLaserTimer++;
+      if(this.sLaserTimer>20){this.saucer.fireLaser(this.enemy.x,this.enemy.y,true);this.sLaserTimer=0;}
+      this.saucer.thrustTrail('saucer'); this.enemy.thrustTrail('enemy');
+      if(this.timer>300&&this.enemy.offScreen()) this.done=true;
+    }
+
+    for(let i=lasers.length-1;i>=0;i--) if(!lasers[i].update()) lasers.splice(i,1);
+  }
+  draw() {
+    drawParticles();
+    for(const l of lasers) l.draw();
+    drawSprite(saucerPixels,saucerColors,SW,SH,this.saucer.x,this.saucer.y,this.saucer.opacity,false,1);
+    if(this.ambushFired)
+      drawSprite(enemyPixels,enemyColors,EW,EH,this.enemy.x,this.enemy.y,this.enemy.opacity,this.enemy.x>this.saucer.x,1);
+  }
+}
+
+// ── Scene: VICTORY LAP ───────────────────────────────────────────────────────
+class VictoryScene {
+  constructor() {
+    // Enemy flees first, saucer chases
+    this.enemy = new Actor(-40, canvas.height*0.3+Math.random()*canvas.height*0.4, 0, 3);
+    this.saucer = new Actor(-80, this.enemy.y+(Math.random()-0.5)*30, 0, 3.8);
+    this.saucer.steerRate=0.05; this.enemy.steerRate=0.04;
+    this.laserTimer=0; this.timer=0; this.done=false;
+  }
+  update() {
+    this.timer++;
+    this.saucer.opacity=Math.min(1,this.saucer.opacity+0.04);
+    this.enemy.opacity=Math.min(1,this.enemy.opacity+0.04);
+
+    // Enemy panics — erratic fleeing
+    if(this.timer%30===0) this.enemy.targetAngle=(Math.random()-0.5)*0.6;
+    this.enemy.clampY(); this.enemy.move();
+    this.enemy.thrustTrail('enemy');
+
+    // Saucer chases confidently
+    this.saucer.steerTo(this.enemy.x,this.enemy.y); this.saucer.clampY(); this.saucer.move();
+    this.saucer.thrustTrail('saucer');
+
+    this.laserTimer++;
+    if(this.laserTimer>25){
+      this.saucer.fireLaser(this.enemy.x,this.enemy.y,true);
+      this.laserTimer=0;
+    }
+
+    for(let i=lasers.length-1;i>=0;i--) if(!lasers[i].update()) lasers.splice(i,1);
+    if(this.saucer.offScreen()&&this.enemy.offScreen()) this.done=true;
+  }
+  draw() {
+    drawParticles();
+    for(const l of lasers) l.draw();
+    drawSprite(saucerPixels,saucerColors,SW,SH,this.saucer.x,this.saucer.y,this.saucer.opacity,false,1);
+    drawSprite(enemyPixels,enemyColors,EW,EH,this.enemy.x,this.enemy.y,this.enemy.opacity,false,1);
+  }
+}
+
+// ── Scene: DOGFIGHT ──────────────────────────────────────────────────────────
+class DogfightScene {
+  constructor() {
+    const sa=spawnEdge();
+    this.saucer=new Actor(sa.x,sa.y,sa.angle,2.8); this.saucer.steerRate=0.07;
+    let ee; do{ee=spawnEdge();}while(ee.edge===sa.edge);
+    this.enemy=new Actor(ee.x,ee.y,ee.angle,3); this.enemy.steerRate=0.07;
+    this.timer=0; this.laserTimer=0; this.phase='fight'; this.done=false;
+    this.fightDuration=180+Math.random()*80;
+    this.outcome=Math.random()>0.5?'saucer_wins':'draw';
+  }
+  update() {
+    this.timer++;
+    this.saucer.opacity=Math.min(1,this.saucer.opacity+0.04);
+    this.enemy.opacity=Math.min(1,this.enemy.opacity+0.04);
+
+    if(this.phase==='fight') {
+      // Both chase but maintain fighting distance
+      const fdist = Math.hypot(this.saucer.x-this.enemy.x, this.saucer.y-this.enemy.y);
+      if (fdist > 100) {
+        this.saucer.steerTo(this.enemy.x,this.enemy.y);
+        this.enemy.steerTo(this.saucer.x,this.saucer.y);
+      } else {
+        // Circle each other at close range
+        this.saucer.targetAngle = Math.atan2(this.enemy.y-this.saucer.y,this.enemy.x-this.saucer.x)+Math.PI*0.45;
+        this.enemy.targetAngle = Math.atan2(this.saucer.y-this.enemy.y,this.saucer.x-this.enemy.x)+Math.PI*0.45;
+      }
+      this.saucer.clampY(30); this.saucer.move();
+      this.enemy.clampY(30); this.enemy.move();
+      this.laserTimer++;
+      if(this.laserTimer>20){
+        this.saucer.fireLaser(this.enemy.x,this.enemy.y,true);
+        this.enemy.fireLaser(this.saucer.x,this.saucer.y,false);
+        this.laserTimer=0;
+      }
+      this.saucer.thrustTrail('saucer'); this.enemy.thrustTrail('enemy');
+      if(this.timer>this.fightDuration) {
+        this.phase='breakoff';
+        this.saucer.steerAngle(Math.random()*Math.PI*2);
+        this.enemy.steerAngle(Math.random()*Math.PI*2);
+      }
+    } else {
+      this.saucer.speed=Math.min(this.saucer.speed+0.06,5); this.saucer.move();
+      this.enemy.speed=Math.min(this.enemy.speed+0.06,5); this.enemy.move();
+      this.saucer.thrustTrail('saucer'); this.enemy.thrustTrail('enemy');
+      if(this.saucer.offScreen()&&this.enemy.offScreen()) this.done=true;
+    }
+
+    for(let i=lasers.length-1;i>=0;i--) if(!lasers[i].update()) lasers.splice(i,1);
+  }
+  draw() {
+    drawParticles();
+    for(const l of lasers) l.draw();
+    drawSprite(saucerPixels,saucerColors,SW,SH,this.saucer.x,this.saucer.y,this.saucer.opacity,false,1);
+    drawSprite(enemyPixels,enemyColors,EW,EH,this.enemy.x,this.enemy.y,this.enemy.opacity,
+      this.enemy.x>this.saucer.x,1);
+  }
+}
+
+// ─── MAIN LOOP ───────────────────────────────────────────────────────────────
+
+const SCENES = [ClosecallScene, ChaseScene, StandoffScene, AmbushScene, VictoryScene, DogfightScene];
+
+let scene = null;
+let nextScene = 4000;
+let lastTime = 0;
+
+function animate(ts) {
+  const dt = Math.min(ts-lastTime, 50); lastTime = ts;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  nextScene -= dt;
+  if (nextScene <= 0 && !scene) {
+    const S = SCENES[Math.floor(Math.random()*SCENES.length)];
+    scene = new S();
+    nextScene = 20000 + Math.random()*30000;
+  }
+
+  if (scene) {
+    scene.update();
+    scene.draw();
+    if (scene.done) scene = null;
+  }
+
+  requestAnimationFrame(animate);
+}
+
+requestAnimationFrame(animate);
+})();
 </script>
 </body>
 </html>
