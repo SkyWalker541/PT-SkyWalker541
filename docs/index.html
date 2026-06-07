@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>PT SkyWalker541 Shader In Action</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@300;400&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -98,6 +100,24 @@
     display: inline-block;
     width: clamp(220px, 38vw, 420px);
     filter: drop-shadow(0 0 30px rgba(124, 58, 237, 0.3)) drop-shadow(0 0 70px rgba(124, 58, 237, 0.11));
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  .handheld-wrapper,
+  .screen-overlay,
+  .game-menu,
+  #dpad-zone,
+  #btn-a,
+  #btn-b,
+  #btn-select,
+  #btn-start {
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
   }
 
   .handheld-wrapper img.device {
@@ -239,6 +259,19 @@
   }
   .also-line a:hover { color: #9f7fff !important; }
 
+  .play-link {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 300;
+    font-size: 13px;
+    letter-spacing: 6px;
+    color: #7a6aaa;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  .play-link:hover { color: #9f7fff; }
+
 
   /* ── GAME ── */
   #game-canvas {
@@ -327,18 +360,18 @@
   .ctrl-row { display:flex; justify-content:space-between; font-family:'Rajdhani',sans-serif; font-size:clamp(4px,1vw,7px); letter-spacing:1px; color:#3a2a5a; }
   .ctrl-row span:first-child { color:#5a4a8a; }
   #dpad-zone {
-    position:absolute; left:8.4%; top:58.8%; width:24.5%; aspect-ratio:1;
+    position:absolute; left:8.3%; top:61.0%; width:24.5%; height:15.0%;
     touch-action:none; user-select:none;
     display:none; grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr;
     z-index:13; border-radius:4px;
   }
   .dpad-btn { cursor:pointer; -webkit-tap-highlight-color:transparent; display:flex; align-items:center; justify-content:center; font-size:clamp(5px,1.5vw,10px); color:transparent; border-radius:4px; transition:background 0.05s; touch-action:none; user-select:none; }
   .dpad-btn.pressed { background:rgba(168,85,247,0.35); box-shadow:0 0 8px rgba(168,85,247,0.6); }
-  #btn-a { position:absolute; left:60.6%; top:60.8%; width:12.2%; aspect-ratio:1; border-radius:50%; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background 0.05s,box-shadow 0.05s; display:none; z-index:13; touch-action:none; user-select:none; }
-  #btn-b { position:absolute; left:78.5%; top:57.8%; width:12.2%; aspect-ratio:1; border-radius:50%; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background 0.05s,box-shadow 0.05s; display:none; z-index:13; touch-action:none; user-select:none; }
+  #btn-a { position:absolute; left:60.5%; top:66.8%; width:7.4%; height:7.4%; border-radius:50%; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background 0.05s,box-shadow 0.05s; display:none; z-index:13; touch-action:none; user-select:none; }
+  #btn-b { position:absolute; left:78.6%; top:63.2%; width:7.4%; height:7.4%; border-radius:50%; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background 0.05s,box-shadow 0.05s; display:none; z-index:13; touch-action:none; user-select:none; }
   #btn-a.pressed, #btn-b.pressed { background:rgba(168,85,247,0.4); box-shadow:0 0 12px rgba(168,85,247,0.8); }
-  #btn-select { position:absolute; left:40.1%; top:81.5%; width:12%; height:3%; border-radius:4px; cursor:pointer; z-index:13; -webkit-tap-highlight-color:transparent; transition:background 0.05s; touch-action:none; user-select:none; }
-  #btn-start  { position:absolute; left:51.8%; top:81.5%; width:12%; height:3%; border-radius:4px; cursor:pointer; z-index:13; -webkit-tap-highlight-color:transparent; transition:background 0.05s; touch-action:none; user-select:none; }
+  #btn-select { position:absolute; left:37.9%; top:84.8%; width:11.9%; height:3.1%; border-radius:4px; cursor:pointer; z-index:13; -webkit-tap-highlight-color:transparent; transition:background 0.05s; touch-action:none; user-select:none; }
+  #btn-start  { position:absolute; left:53.6%; top:84.8%; width:11.9%; height:3.1%; border-radius:4px; cursor:pointer; z-index:13; -webkit-tap-highlight-color:transparent; transition:background 0.05s; touch-action:none; user-select:none; }
   #btn-select.pressed, #btn-start.pressed { background:rgba(168,85,247,0.3); box-shadow:0 0 8px rgba(168,85,247,0.6); }
   /* game-mode */
   body.game-mode::before { content:''; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(8,8,16,0.9); z-index:50; pointer-events:none; }
@@ -357,7 +390,7 @@
 <canvas id="stars"></canvas>
 
   <div class="title-wrap">
-    <a href="https://github.com/SkyWalker541/PT-SkyWalker541" target="_blank" style="text-decoration:none;"><h1 class="title-main">PT SkyWalker541<br>Shader</h1></a>
+    <a href="https://github.com/SkyWalker541/PT-SkyWalker541" target="_blank" rel="noopener noreferrer" style="text-decoration:none;"><h1 class="title-main">PT SkyWalker541<br>Shader</h1></a>
     <svg width="100%" height="30" viewBox="0 0 400 30" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:16px auto;max-width:420px;">
       <line x1="80" y1="6" x2="320" y2="6" stroke="#2d1245" stroke-width="0.75" style="filter:drop-shadow(0 0 2px #4a1a6a)"/>
       <line x1="40" y1="15" x2="360" y2="15" stroke="#6b21a8" stroke-width="1.25" style="filter:drop-shadow(0 0 4px #6b21a8)"/>
@@ -365,9 +398,9 @@
     </svg>
 
     <div class="game-selector" style="margin-top: 20px; margin-bottom: 0;">
-      <button class="game-pill active" onclick="selectGame(0, this)">Bark Sequelo</button>
-      <button class="game-pill" onclick="selectGame(1, this)">Black Castle 2</button>
-      <button class="game-pill" onclick="selectGame(2, this)">Entomophobia DX</button>
+      <button class="game-pill active" data-game-index="0">Bark Sequelo</button>
+      <button class="game-pill" data-game-index="1">Black Castle 2</button>
+      <button class="game-pill" data-game-index="2">Entomophobia DX</button>
     </div>
     <div class="credit" style="margin-top: 16px; margin-bottom: 0;">
       <div class="credit-line">
@@ -375,15 +408,15 @@
         <span class="credit-text">featured game</span>
         <div class="line-accent right"></div>
       </div>
-      <a id="credit-link" href="https://polynaut.itch.io/bark-sequelo" target="_blank">Bark Sequelo by Polynaut</a>
+      <a id="credit-link" href="https://polynaut.itch.io/bark-sequelo" target="_blank" rel="noopener noreferrer">Bark Sequelo by Polynaut</a>
     </div>
   </div>
 
 
   <div class="handheld-wrapper">
-    <img class="device" src="Handheld_Generic.png" alt="PT SkyWalker541 handheld console" onload="this.closest('.handheld-wrapper').style.opacity='1'">
+    <img class="device" src="Handheld_Generic.png" alt="PT SkyWalker541 handheld console" loading="lazy">
     <div class="screen-overlay">
-      <video id="game-video" autoplay loop muted playsinline src="https://res.cloudinary.com/di0ydhfv8/video/upload/v1780770794/gameplay_tgfjdo.mp4"></video>
+      <video id="game-video" autoplay loop muted playsinline preload="auto" src="https://res.cloudinary.com/di0ydhfv8/video/upload/v1780770794/gameplay_tgfjdo.mp4"></video>
     </div>
   <canvas id="game-canvas"></canvas>
   <div id="game-hud"><div id="hud-top"><span id="hud-score">SCORE 00000</span><span id="hud-lives">♦ ♦ ♦</span></div></div>
@@ -444,24 +477,112 @@
     }
   ];
 
+  const gameVideo = document.getElementById('game-video');
+  const creditLink = document.getElementById('credit-link');
+  const gamePills = Array.from(document.querySelectorAll('.game-pill'));
+  gameVideo.addEventListener('error',()=>{console.warn('Video load failed:',gameVideo.src);});
+
   function selectGame(index, btn) {
     const g = games[index];
 
     // Swap video
-    const vid = document.getElementById('game-video');
-    vid.src = g.video;
-    vid.load();
-    vid.play();
+    gameVideo.src = g.video;
+    gameVideo.currentTime = 0;
+    gameVideo.play().catch(()=>{});
 
     // Update credit
-    const link = document.getElementById('credit-link');
-    link.textContent = g.label;
-    link.href = g.url;
+    creditLink.textContent = g.label;
+    creditLink.href = g.url;
 
     // Update active pill
-    document.querySelectorAll('.game-pill').forEach(p => p.classList.remove('active'));
+    gamePills.forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
   }
+
+  gamePills.forEach((button, index) => {
+    button.addEventListener('click', () => selectGame(index, button));
+  });
+</script>
+<script>
+const saucerPixels = [
+  [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,1,1,1,2,2,2,2,2,2,1,1,1,0,0,0,0,0,0],
+  [0,0,0,0,0,1,1,1,2,2,2,2,2,2,2,2,1,1,1,0,0,0,0,0],
+  [0,0,0,0,0,1,1,2,2,2,2,2,2,2,2,2,2,1,1,0,0,0,0,0],
+  [0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0],
+  [0,0,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0],
+  [3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,3,3,3],
+  [3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,3,3,3],
+  [0,0,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0],
+  [0,0,0,0,5,5,0,0,5,5,0,0,5,5,0,0,5,5,0,0,0,0,0,0],
+  [0,0,0,0,5,5,0,0,5,5,0,0,5,5,0,0,5,5,0,0,0,0,0,0],
+];
+const saucerColors = { 1:'#6b21a8', 2:'#a78bfa', 3:'#3a1a5a', 4:'#5a2a8a', 5:'#ff8c42' };
+const enemyPixels = [
+  [0,0,0,0,0,0,1,0,0,0,0,0,0],
+  [0,0,0,0,0,1,2,1,0,0,0,0,0],
+  [0,0,1,0,1,2,2,2,1,0,1,0,0],
+  [0,1,2,1,2,2,4,2,2,1,2,1,0],
+  [1,2,2,2,2,2,4,2,2,2,2,2,1],
+  [1,2,2,2,2,2,4,2,2,2,2,2,1],
+  [0,1,2,1,2,2,1,2,2,1,2,1,0],
+  [0,0,1,0,1,2,2,2,1,0,1,0,0],
+  [0,0,0,0,0,1,2,1,0,0,0,0,0],
+  [0,0,0,0,0,0,1,0,0,0,0,0,0],
+];
+const enemyColors = { 1:'#3a0808', 2:'#7a1515', 3:'#1a0303', 4:'#ff2222' };
+const SW = 24, SH = 11, EW = 13, EH = 10;
+
+class Laser {
+  constructor(x, y, angle, friendly, speed = 9, length = 6, decay = 0.02) {
+    this.x = x; this.y = y;
+    this.vx = Math.cos(angle) * speed;
+    this.vy = Math.sin(angle) * speed;
+    this.life = 1;
+    this.friendly = friendly;
+    this.length = length;
+    this.decay = decay;
+  }
+  update() {
+    this.x += this.vx; this.y += this.vy;
+    this.life -= this.decay;
+    return this.life > 0;
+  }
+  draw(ctx) {
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, this.life * 2);
+    ctx.translate(this.x, this.y);
+    ctx.rotate(Math.atan2(this.vy, this.vx));
+    const len = this.length;
+    const g = ctx.createLinearGradient(-len, 0, len, 0);
+    const c = this.friendly ? '200,150,255' : '255,80,50';
+    g.addColorStop(0, `rgba(${c},0)`);
+    g.addColorStop(0.5, `rgba(${c},1)`);
+    g.addColorStop(1, `rgba(${c},0)`);
+    ctx.fillStyle = g;
+    ctx.fillRect(-len, -1, len * 2, 2);
+    ctx.restore();
+  }
+}
+
+function drawSprite(ctx, pixels, colors, W, H, x, y, opacity = 1, flipX = false, scale = 1) {
+  ctx.save();
+  ctx.globalAlpha = opacity;
+  ctx.translate(x, y);
+  if (scale !== 1) ctx.scale(scale, scale);
+  if (flipX) ctx.scale(-1, 1);
+  ctx.translate(-W / 2, -H / 2);
+  for (let r = 0; r < pixels.length; r++) {
+    const row = pixels[r];
+    for (let c = 0; c < row.length; c++) {
+      const v = row[c];
+      if (!v) continue;
+      ctx.fillStyle = colors[v];
+      ctx.fillRect(c, r, 1, 1);
+    }
+  }
+  ctx.restore();
+}
 </script>
 
   <div class="also-by">
@@ -470,7 +591,7 @@
       <span class="also-text">GET THE SHADER HERE</span>
       <div class="line-accent right"></div>
     </div>
-    <a href="https://github.com/SkyWalker541/PT-SkyWalker541" target="_blank">PT SkyWalker541 Shader</a>
+    <a href="https://github.com/SkyWalker541/PT-SkyWalker541" target="_blank" rel="noopener noreferrer">PT SkyWalker541 Shader</a>
   </div>
 
   <div class="also-by">
@@ -479,7 +600,7 @@
       <span class="also-text">ALSO BY SkyWalker541</span>
       <div class="line-accent right"></div>
     </div>
-    <a href="https://github.com/SkyWalker541/Retroid-Pocket-Classic-Overlays" target="_blank">Retroid Pocket Classic Overlays</a>
+    <a href="https://github.com/SkyWalker541/Retroid-Pocket-Classic-Overlays" target="_blank" rel="noopener noreferrer">Retroid Pocket Classic Overlays</a>
   </div>
 
 
@@ -630,39 +751,6 @@ setTimeout(updateHandheldZone, 100);
 setTimeout(updateHandheldZone, 500);
 setTimeout(updateHandheldZone, 1500);
 
-// ─── PIXEL SHIPS ─────────────────────────────────────────────────────────────
-
-const saucerPixels = [
-  [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,1,1,1,2,2,2,2,2,2,1,1,1,0,0,0,0,0,0],
-  [0,0,0,0,0,1,1,1,2,2,2,2,2,2,2,2,1,1,1,0,0,0,0,0],
-  [0,0,0,0,0,1,1,2,2,2,2,2,2,2,2,2,2,1,1,0,0,0,0,0],
-  [0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0],
-  [0,0,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0],
-  [3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,3,3,3],
-  [3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,3,3,3],
-  [0,0,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0],
-  [0,0,0,0,5,5,0,0,5,5,0,0,5,5,0,0,5,5,0,0,0,0,0,0],
-  [0,0,0,0,5,5,0,0,5,5,0,0,5,5,0,0,5,5,0,0,0,0,0,0],
-];
-const saucerColors = { 1:'#6b21a8', 2:'#a78bfa', 3:'#3a1a5a', 4:'#5a2a8a', 5:'#ff8c42' };
-const SW = 24, SH = 11;
-
-const enemyPixels = [
-  [0,0,0,0,0,0,1,0,0,0,0,0,0],
-  [0,0,0,0,0,1,2,1,0,0,0,0,0],
-  [0,0,1,0,1,2,2,2,1,0,1,0,0],
-  [0,1,2,1,2,2,4,2,2,1,2,1,0],
-  [1,2,2,2,2,2,4,2,2,2,2,2,1],
-  [1,2,2,2,2,2,4,2,2,2,2,2,1],
-  [0,1,2,1,2,2,1,2,2,1,2,1,0],
-  [0,0,1,0,1,2,2,2,1,0,1,0,0],
-  [0,0,0,0,0,1,2,1,0,0,0,0,0],
-  [0,0,0,0,0,0,1,0,0,0,0,0,0],
-];
-const enemyColors = { 1:'#3a0808', 2:'#7a1515', 3:'#1a0303', 4:'#ff2222' };
-const EW = 13, EH = 10;
-
 // ─── PARTICLES ───────────────────────────────────────────────────────────────
 
 class Particle {
@@ -700,41 +788,7 @@ function drawParticles() {
 
 // ─── LASERS ──────────────────────────────────────────────────────────────────
 
-class Laser {
-  constructor(x, y, angle, friendly) {
-    this.x = x; this.y = y;
-    this.vx = Math.cos(angle) * 9; this.vy = Math.sin(angle) * 9;
-    this.life = 1; this.friendly = friendly;
-  }
-  update() { this.x += this.vx; this.y += this.vy; this.life -= 0.018; return this.life > 0; }
-  draw() {
-    ctx.save(); ctx.globalAlpha = Math.min(1, this.life * 2);
-    ctx.translate(this.x, this.y); ctx.rotate(Math.atan2(this.vy, this.vx));
-    const g = ctx.createLinearGradient(-6, 0, 6, 0);
-    const c = this.friendly ? '200,150,255' : '255,80,50';
-    g.addColorStop(0, `rgba(${c},0)`); g.addColorStop(0.5, `rgba(${c},1)`); g.addColorStop(1, `rgba(${c},0)`);
-    ctx.fillStyle = g; ctx.fillRect(-6, -1, 12, 2);
-    ctx.restore();
-  }
-}
 const lasers = [];
-
-// ─── SPRITE HELPER ───────────────────────────────────────────────────────────
-
-function drawSprite(pixels, colors, W, H, x, y, opacity, flipX, scale) {
-  ctx.save(); ctx.globalAlpha = opacity;
-  ctx.translate(x, y);
-  if (scale && scale !== 1) ctx.scale(scale, scale);
-  if (flipX) ctx.scale(-1, 1);
-  ctx.translate(-W / 2, -H / 2);
-  for (let r = 0; r < pixels.length; r++)
-    for (let c = 0; c < pixels[r].length; c++) {
-      const v = pixels[r][c]; if (!v) continue;
-      ctx.fillStyle = colors[v];
-      ctx.fillRect(c, r, 1, 1);
-    }
-  ctx.restore();
-}
 
 // ─── ACTOR: smooth steerable ship ────────────────────────────────────────────
 
@@ -771,7 +825,7 @@ class Actor {
     // Offset laser from front of ship
     const ox = this.x + Math.cos(a) * (friendly ? SW*0.4 : EW*0.4);
     const oy = this.y + Math.sin(a) * (friendly ? SH*0.3 : EH*0.3);
-    lasers.push(new Laser(ox, oy, a, friendly));
+    lasers.push(new Laser(ox, oy, a, friendly, 9, 6, 0.018));
   }
 
   thrustTrail(type) {
@@ -853,7 +907,7 @@ class Lightspeed {
   }
   draw(opacity) {
     if (this.phase === 'shrink') {
-      drawSprite(saucerPixels, saucerColors, SW, SH, this.cx, this.cy, opacity, false, this.scale);
+      drawSprite(ctx, saucerPixels, saucerColors, SW, SH, this.cx, this.cy, opacity, false, this.scale);
       const sc = this.scale;
       for (let i = 0; i < 10; i++) {
         const a = (i/10)*Math.PI*2;
@@ -955,9 +1009,9 @@ class ClosecallScene {
   }
   draw() {
     drawParticles();
-    for (const l of lasers) l.draw();
-    drawSprite(saucerPixels, saucerColors, SW, SH, this.saucer.x, this.saucer.y, this.saucer.opacity, false, 1);
-    drawSprite(enemyPixels, enemyColors, EW, EH, this.enemy.x, this.enemy.y, this.enemy.opacity,
+    for (const l of lasers) l.draw(ctx);
+    drawSprite(ctx, saucerPixels, saucerColors, SW, SH, this.saucer.x, this.saucer.y, this.saucer.opacity, false, 1);
+    drawSprite(ctx, enemyPixels, enemyColors, EW, EH, this.enemy.x, this.enemy.y, this.enemy.opacity,
       this.enemy.vx !== undefined ? this.enemy.vx < 0 : true, 1);
   }
 }
@@ -1114,12 +1168,12 @@ class ChaseScene {
   }
   draw() {
     drawParticles();
-    for (const l of lasers) l.draw();
+    for (const l of lasers) l.draw(ctx);
     if (this.ls) this.ls.draw(1);
     else if (this.saucer.opacity > 0 && !this.lsComplete)
-      drawSprite(saucerPixels, saucerColors, SW, SH, this.saucer.x, this.saucer.y, this.saucer.opacity, false, 1);
+      drawSprite(ctx, saucerPixels, saucerColors, SW, SH, this.saucer.x, this.saucer.y, this.saucer.opacity, false, 1);
     if (this.timer > this.eDelay)
-      drawSprite(enemyPixels, enemyColors, EW, EH, this.enemy.x, this.enemy.y, this.enemy.opacity, true, 1);
+      drawSprite(ctx, enemyPixels, enemyColors, EW, EH, this.enemy.x, this.enemy.y, this.enemy.opacity, true, 1);
   }
 }
 
@@ -1248,9 +1302,9 @@ class StandoffScene {
   }
   draw() {
     drawParticles();
-    for (const l of lasers) l.draw();
-    drawSprite(saucerPixels,saucerColors,SW,SH,this.saucer.x,this.saucer.y,this.saucer.opacity,false,1);
-    drawSprite(enemyPixels,enemyColors,EW,EH,this.enemy.x,this.enemy.y,this.enemy.opacity,true,1);
+    for (const l of lasers) l.draw(ctx);
+    drawSprite(ctx,saucerPixels,saucerColors,SW,SH,this.saucer.x,this.saucer.y,this.saucer.opacity,false,1);
+    drawSprite(ctx,enemyPixels,enemyColors,EW,EH,this.enemy.x,this.enemy.y,this.enemy.opacity,true,1);
   }
 }
 
@@ -1343,10 +1397,10 @@ class AmbushScene {
   }
   draw() {
     drawParticles();
-    for(const l of lasers) l.draw();
-    drawSprite(saucerPixels,saucerColors,SW,SH,this.saucer.x,this.saucer.y,this.saucer.opacity,false,1);
+    for(const l of lasers) l.draw(ctx);
+    drawSprite(ctx,saucerPixels,saucerColors,SW,SH,this.saucer.x,this.saucer.y,this.saucer.opacity,false,1);
     if(this.ambushFired)
-      drawSprite(enemyPixels,enemyColors,EW,EH,this.enemy.x,this.enemy.y,this.enemy.opacity,this.enemy.x>this.saucer.x,1);
+      drawSprite(ctx,enemyPixels,enemyColors,EW,EH,this.enemy.x,this.enemy.y,this.enemy.opacity,this.enemy.x>this.saucer.x,1);
   }
 }
 
@@ -1391,9 +1445,9 @@ class VictoryScene {
   }
   draw() {
     drawParticles();
-    for(const l of lasers) l.draw();
-    drawSprite(saucerPixels,saucerColors,SW,SH,this.saucer.x,this.saucer.y,this.saucer.opacity,false,1);
-    drawSprite(enemyPixels,enemyColors,EW,EH,this.enemy.x,this.enemy.y,this.enemy.opacity,false,1);
+    for(const l of lasers) l.draw(ctx);
+    drawSprite(ctx,saucerPixels,saucerColors,SW,SH,this.saucer.x,this.saucer.y,this.saucer.opacity,false,1);
+    drawSprite(ctx,enemyPixels,enemyColors,EW,EH,this.enemy.x,this.enemy.y,this.enemy.opacity,false,1);
   }
 }
 
@@ -1465,9 +1519,9 @@ class DogfightScene {
   }
   draw() {
     drawParticles();
-    for(const l of lasers) l.draw();
-    drawSprite(saucerPixels,saucerColors,SW,SH,this.saucer.x,this.saucer.y,this.saucer.opacity,false,1);
-    drawSprite(enemyPixels,enemyColors,EW,EH,this.enemy.x,this.enemy.y,this.enemy.opacity,
+    for(const l of lasers) l.draw(ctx);
+    drawSprite(ctx,saucerPixels,saucerColors,SW,SH,this.saucer.x,this.saucer.y,this.saucer.opacity,false,1);
+    drawSprite(ctx,enemyPixels,enemyColors,EW,EH,this.enemy.x,this.enemy.y,this.enemy.opacity,
       this.enemy.x>this.saucer.x,1);
   }
 }
@@ -1520,7 +1574,7 @@ requestAnimationFrame(animate);
       <span style="font-family:'Rajdhani',sans-serif;font-weight:300;font-size:11px;letter-spacing:4px;text-transform:uppercase;color:#6a5a9a;">mini game</span>
       <div style="height:1px;width:60px;background:linear-gradient(90deg,#7c3aed,transparent);"></div>
     </div>
-    <a href="#" onclick="launchGame();return false;" style="font-family:'Rajdhani',sans-serif;font-weight:300;font-size:13px;letter-spacing:6px;color:#7a6aaa;text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='#9f7fff'" onmouseout="this.style.color='#7a6aaa'">Play</a>
+    <button id="play-button" type="button" class="play-link">Play</button>
   </div>
 
 
@@ -1553,7 +1607,7 @@ const DIFF = {
 // ── GAME STATE ────────────────────────────────────────────────────────────────
 const SCALE = 0.8;
 let gameState = 'idle';
-let score=0, lives=3, wave=1, lastTime=0, shootCooldown=0, invincible=0;
+let score=0, lives=3, wave=1, lastTime=0, shootCooldown=0, invincible=0, prevFireState=false;
 const player = {x:0,y:0,angle:0,vx:0,vy:0,maxSpeed:2.5};
 let enemies=[], gameStars=[];
 const lasers=[];
@@ -1597,31 +1651,6 @@ function drawGameStars(t){
   }
 }
 
-class Laser{
-  constructor(x,y,angle,friendly){this.x=x;this.y=y;this.vx=Math.cos(angle)*6;this.vy=Math.sin(angle)*6;this.life=1;this.friendly=friendly;}
-  update(){this.x+=this.vx;this.y+=this.vy;this.life-=0.02;return this.life>0;}
-  draw(){
-    ctx.save();ctx.globalAlpha=Math.min(1,this.life*2);
-    ctx.translate(this.x,this.y);ctx.rotate(Math.atan2(this.vy,this.vx));
-    const g=ctx.createLinearGradient(-5,0,5,0),c=this.friendly?'200,150,255':'255,80,50';
-    g.addColorStop(0,`rgba(${c},0)`);g.addColorStop(0.5,`rgba(${c},1)`);g.addColorStop(1,`rgba(${c},0)`);
-    ctx.fillStyle=g;ctx.fillRect(-5,-1,10,2);ctx.restore();
-  }
-}
-
-const saucerPixels=[[0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,1,1,1,2,2,2,2,2,2,1,1,1,0,0,0,0,0,0],[0,0,0,0,0,1,1,1,2,2,2,2,2,2,2,2,1,1,1,0,0,0,0,0],[0,0,0,0,0,1,1,2,2,2,2,2,2,2,2,2,2,1,1,0,0,0,0,0],[0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0],[0,0,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0],[3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,3,3,3],[3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,3,3,3],[0,0,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0],[0,0,0,0,5,5,0,0,5,5,0,0,5,5,0,0,5,5,0,0,0,0,0,0],[0,0,0,0,5,5,0,0,5,5,0,0,5,5,0,0,5,5,0,0,0,0,0,0]];
-const saucerColors={1:'#6b21a8',2:'#a78bfa',3:'#3a1a5a',4:'#5a2a8a',5:'#ff8c42'};
-const enemyPixels=[[0,0,0,0,0,0,1,0,0,0,0,0,0],[0,0,0,0,0,1,2,1,0,0,0,0,0],[0,0,1,0,1,2,2,2,1,0,1,0,0],[0,1,2,1,2,2,4,2,2,1,2,1,0],[1,2,2,2,2,2,4,2,2,2,2,2,1],[1,2,2,2,2,2,4,2,2,2,2,2,1],[0,1,2,1,2,2,1,2,2,1,2,1,0],[0,0,1,0,1,2,2,2,1,0,1,0,0],[0,0,0,0,0,1,2,1,0,0,0,0,0],[0,0,0,0,0,0,1,0,0,0,0,0,0]];
-const enemyColors={1:'#3a0808',2:'#7a1515',3:'#1a0303',4:'#ff2222'};
-const SW=24,SH=11,EW=13,EH=10;
-
-function drawSprite(pixels,colors,W,H,x,y,scale,flipX){
-  const s=scale||1; ctx.save(); ctx.translate(x,y);
-  if(flipX) ctx.scale(-1,1); ctx.translate(-W*s/2,-H*s/2);
-  for(let r=0;r<pixels.length;r++) for(let c=0;c<pixels[r].length;c++){const v=pixels[r][c];if(!v)continue;ctx.fillStyle=colors[v];ctx.fillRect(c*s,r*s,s,s);}
-  ctx.restore();
-}
-
 class Enemy{
   constructor(){
     const W=gameCanvas.width,H=gameCanvas.height,edge=Math.floor(Math.random()*4);
@@ -1642,12 +1671,12 @@ class Enemy{
     if(dist<50){this.x-=(dx/dist)*0.3;this.y-=(dy/dist)*0.3;}
     this.laserTimer--;
     if(this.laserTimer<=0){
-      lasers.push(new Laser(this.x,this.y,angle,false));
+      lasers.push(new Laser(this.x,this.y,angle,false,6,5,0.02));
       const d2=DIFF[difficulty]; this.laserTimer=Math.max(d2.fireMin,Math.floor(Math.random()*d2.fireRand)+d2.fireMin);
     }
     emit(this.x+EW*SCALE*0.4,this.y,angle,'enemy',1);
   }
-  draw(){drawSprite(enemyPixels,enemyColors,EW,EH,this.x,this.y,SCALE,this.x<player.x);}
+  draw(){drawSprite(ctx,enemyPixels,enemyColors,EW,EH,this.x,this.y,SCALE,this.x<player.x);}
 }
 
 function spawnWave(){enemies=[];const count=Math.max(1,DIFF[difficulty].count(wave));for(let i=0;i<count;i++)enemies.push(new Enemy());}
@@ -1668,6 +1697,14 @@ function setupTouch(){
   // Also block document touchmove in game mode
   document.addEventListener('touchmove', e=>{
     if(document.body.classList.contains('game-mode')) e.preventDefault();
+  }, {passive:false});
+  ['touchstart','touchend','touchcancel'].forEach(evt => {
+    document.addEventListener(evt, e => {
+      if (document.body.classList.contains('game-mode')) e.preventDefault();
+    }, {passive:false});
+  });
+  document.addEventListener('contextmenu', e => {
+    if (document.body.classList.contains('game-mode')) e.preventDefault();
   }, {passive:false});
 
   function press(dir,el){
@@ -1698,6 +1735,9 @@ const isDown=()=>keys['ArrowDown']||keys['s']||keys['S']||dpad.down;
 const isLeft=()=>keys['ArrowLeft']||keys['a']||keys['A']||dpad.left;
 const isRight=()=>keys['ArrowRight']||keys['d']||keys['D']||dpad.right;
 const isFire=()=>keys[' ']||dpad.fire;
+
+// Reset lastTime when tab becomes visible to prevent speedup after pause
+document.addEventListener('visibilitychange',()=>{if(!document.hidden) lastTime=0;});
 
 function updateHUD(){
   document.getElementById('hud-score').textContent='SCORE '+String(score).padStart(5,'0');
@@ -1750,11 +1790,13 @@ function gameLoop(ts){
     if(spd>0.2)player.angle=Math.atan2(player.vy,player.vx);
     if(spd>0.3)emit(player.x-Math.cos(player.angle)*SW*SCALE*0.4,player.y-Math.sin(player.angle)*SH*SCALE*0.2,player.angle,'thruster',1);
     shootCooldown=Math.max(0,shootCooldown-1);
-    if(isFire()&&shootCooldown<=0){
+    const currentFire=isFire();
+    if(currentFire&&!prevFireState&&shootCooldown<=0){
       let ta=player.angle,nearest=Infinity;
       for(const e of enemies){const d=Math.hypot(e.x-player.x,e.y-player.y);if(d<nearest){nearest=d;ta=Math.atan2(e.y-player.y,e.x-player.x);}}
-      lasers.push(new Laser(player.x,player.y,ta,true));shootCooldown=15;
+      lasers.push(new Laser(player.x,player.y,ta,true,6,5,0.02));shootCooldown=15;
     }
+    prevFireState=currentFire;
     for(let i=enemies.length-1;i>=0;i--){
       const e=enemies[i];e.update();
       for(let j=lasers.length-1;j>=0;j--){
@@ -1774,15 +1816,15 @@ function gameLoop(ts){
     if(enemies.length===0){wave++;spawnWave();score+=500;updateHUD();showMessage('WAVE '+wave,'',1500);}
     for(let i=lasers.length-1;i>=0;i--)if(!lasers[i].update())lasers.splice(i,1);
     drawParticles();
-    for(const l of lasers)l.draw();
+    for(const l of lasers)l.draw(ctx);
     for(const e of enemies)e.draw();
     if(invincible<=0||Math.floor(invincible/6)%2===0){
       if(invincible>0)ctx.globalAlpha=0.5;
-      drawSprite(saucerPixels,saucerColors,SW,SH,player.x,player.y,SCALE,player.vx<-0.2);
+      drawSprite(ctx,saucerPixels,saucerColors,SW,SH,player.x,player.y,SCALE,player.vx<-0.2);
       ctx.globalAlpha=1;
     }
   } else if(gameState==='gameover'){
-    drawParticles();for(const l of lasers)l.draw();
+    drawParticles();for(const l of lasers)l.draw(ctx);
   }
   requestAnimationFrame(gameLoop);
 }
@@ -1975,12 +2017,60 @@ function _exitGame(){
     setTimeout(()=>{ hw.style.transition=''; }, 400);
   }
   document.body.classList.remove('game-mode');
+  if(window._scrollLock){
+    window.removeEventListener('scroll', window._scrollLock, {passive:true});
+    window._scrollLock = null;
+  }
 
+}
+
+const playButton = document.getElementById('play-button');
+if (playButton) {
+  playButton.addEventListener('click', _launchGame);
+}
+const handheldImage = document.querySelector('.handheld-wrapper .device');
+if (handheldImage) {
+  const showDevice = () => { handheldImage.closest('.handheld-wrapper').style.opacity = '1'; };
+  handheldImage.addEventListener('load', showDevice);
+  if (handheldImage.complete) showDevice();
 }
 window.launchGame=_launchGame;
 
 })();
+</script>
+<script>
+(function(){
+  const wrapper = document.querySelector('.handheld-wrapper');
+  const controls = {
+    'dpad-zone': { left: 35, top: 418, width: 103, height: 103 },
+    'btn-select': { left: 159, top: 581, width: 50, height: 21 },
+    'btn-start': { left: 225, top: 581, width: 50, height: 21 },
+    'btn-a': { left: 254, top: 458, width: 51, height: 51 },
+    'btn-b': { left: 330, top: 433, width: 51, height: 51 },
+  };
 
+  function updateControlPositions() {
+    if (!wrapper) return;
+    const wrapperWidth = wrapper.clientWidth;
+    const wrapperHeight = wrapper.clientHeight;
+    if (!wrapperWidth || !wrapperHeight) return;
+
+    Object.entries(controls).forEach(([id, dims]) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.style.left = `${(dims.left / wrapperWidth) * 100}%`;
+      el.style.top = `${(dims.top / wrapperHeight) * 100}%`;
+      el.style.width = `${(dims.width / wrapperWidth) * 100}%`;
+      el.style.height = `${(dims.height / wrapperHeight) * 100}%`;
+    });
+  }
+
+  const resizeObserver = window.ResizeObserver ? new ResizeObserver(updateControlPositions) : null;
+  if (resizeObserver && wrapper) resizeObserver.observe(wrapper);
+  window.addEventListener('resize', updateControlPositions);
+  window.addEventListener('load', updateControlPositions);
+  updateControlPositions();
+})();
 </script>
 </body>
 </html>
