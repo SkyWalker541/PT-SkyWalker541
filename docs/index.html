@@ -423,7 +423,29 @@ const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// ─── PIXEL SHIPS ────────────────────────────────────────────────────────────
+// ─── HANDHELD ZONE ───────────────────────────────────────────────────────────
+
+let _zoneCache = null;
+let _zoneCacheTime = 0;
+
+function getHandheldZone() {
+  // Cache for 500ms so we're not querying DOM every frame
+  const now = Date.now();
+  if (_zoneCache && now - _zoneCacheTime < 500) return _zoneCache;
+  const el = document.querySelector('.handheld-wrapper');
+  if (!el) return null;
+  const rect = el.getBoundingClientRect();
+  _zoneCache = {
+    cx: rect.left + rect.width / 2,
+    cy: rect.top + rect.height / 2,
+    w: rect.width * 0.6,   // buffer around the handheld
+    h: rect.height * 0.55,
+  };
+  _zoneCacheTime = now;
+  return _zoneCache;
+}
+
+// ─── PIXEL SHIPS ─────────────────────────────────────────────────────────────
 
 const saucerPixels = [
   [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0],
@@ -586,14 +608,12 @@ class Actor {
   }
 
   avoidStructure() {
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
-    const zoneW = Math.min(canvas.width * 0.38, 420) * 0.7;
-    const zoneH = zoneW * 1.8;
-    const dx = this.x - cx;
-    const dy = this.y - cy;
-    const nx = dx / zoneW;
-    const ny = dy / zoneH;
+    const zone = getHandheldZone();
+    if (!zone) return false;
+    const dx = this.x - zone.cx;
+    const dy = this.y - zone.cy;
+    const nx = dx / zone.w;
+    const ny = dy / zone.h;
     const dist = Math.sqrt(nx*nx + ny*ny);
     if (dist < 1.2) {
       const pushStrength = Math.max(0, (1.2 - dist) / 1.2);
