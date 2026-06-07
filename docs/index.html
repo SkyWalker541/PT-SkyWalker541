@@ -189,6 +189,10 @@
     font-size: 11px;
     letter-spacing: 4px;
     color: #6a5a9a;
+    transition: color 0.2s;
+  }
+  .also-by .also-text:hover {
+    color: #9f7fff;
   }
   .also-by a {
     font-family: 'Rajdhani', sans-serif;
@@ -198,8 +202,24 @@
     color: #7a6aaa;
     text-decoration: none;
     transition: color 0.2s;
+    cursor: pointer;
+    display: inline-block;
+    pointer-events: all;
+    position: relative;
+    z-index: 10;
   }
-  .also-by a:hover { color: #9f7fff; }
+  .also-by a:hover { color: #9f7fff !important; }
+  .also-line a {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 300;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: #6a5a9a;
+    text-decoration: none;
+    transition: color 0.2s;
+    cursor: pointer;
+  }
+  .also-line a:hover { color: #9f7fff !important; }
 </style>
 </head>
 <body>
@@ -216,6 +236,14 @@
       <button class="game-pill" onclick="selectGame(1, this)">Black Castle 2</button>
       <button class="game-pill" onclick="selectGame(2, this)">Entomophobia DX</button>
     </div>
+    <div class="credit" style="margin-top: 16px; margin-bottom: 0;">
+      <div class="credit-line">
+        <div class="line-accent"></div>
+        <span class="credit-text">featured game</span>
+        <div class="line-accent right"></div>
+      </div>
+      <a id="credit-link" href="https://polynaut.itch.io/bark-sequelo" target="_blank">Bark Sequelo by Polynaut</a>
+    </div>
   </div>
 
   <div class="handheld-wrapper">
@@ -225,15 +253,7 @@
     </div>
   </div>
 
-  <!-- Credit -->
-  <div class="credit">
-    <div class="credit-line">
-      <div class="line-accent"></div>
-      <span class="credit-text">featured game</span>
-      <div class="line-accent right"></div>
-    </div>
-    <a id="credit-link" href="https://polynaut.itch.io/bark-sequelo" target="_blank">Bark Sequelo by Polynaut</a>
-  </div>
+
 
 <script>
   const games = [
@@ -273,6 +293,15 @@
     btn.classList.add('active');
   }
 </script>
+
+  <div class="also-by">
+    <div class="also-line">
+      <div class="line-accent"></div>
+      <span class="also-text">Get The Shader Here</span>
+      <div class="line-accent right"></div>
+    </div>
+    <a href="https://github.com/SkyWalker541/PT-SkyWalker541" target="_blank">PT SkyWalker541 Shader</a>
+  </div>
 
   <div class="also-by">
     <div class="also-line">
