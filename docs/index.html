@@ -100,7 +100,7 @@
     display: inline-block;
     width: clamp(220px, 38vw, 420px);
     filter: drop-shadow(0 0 30px rgba(124, 58, 237, 0.3)) drop-shadow(0 0 70px rgba(124, 58, 237, 0.11));
-    touch-action: none;
+    touch-action: pan-y;
     user-select: none;
     -webkit-user-select: none;
     -webkit-touch-callout: none;
@@ -108,12 +108,18 @@
 
   .handheld-wrapper,
   .screen-overlay,
-  .game-menu,
+  .game-menu {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
   #dpad-zone,
   #btn-a,
   #btn-b,
   #btn-select,
-  #btn-start {
+  #btn-start,
+  .dpad-btn {
     touch-action: none;
     user-select: none;
     -webkit-user-select: none;
@@ -1687,24 +1693,15 @@ window.addEventListener('keyup',e=>{keys[e.key]=false;});
 const dpad={up:false,down:false,left:false,right:false,fire:false};
 
 function setupTouch(){
-  // Block touchmove on handheld wrapper during game to prevent scroll
+  // Block touchmove while the game is active to prevent page scrolling during play.
   const hw = document.querySelector('.handheld-wrapper');
   if(hw){
     hw.addEventListener('touchmove', e=>{
       if(document.body.classList.contains('game-mode')) e.preventDefault();
     }, {passive:false});
   }
-  // Also block document touchmove in game mode
   document.addEventListener('touchmove', e=>{
     if(document.body.classList.contains('game-mode')) e.preventDefault();
-  }, {passive:false});
-  ['touchstart','touchend','touchcancel'].forEach(evt => {
-    document.addEventListener(evt, e => {
-      if (document.body.classList.contains('game-mode')) e.preventDefault();
-    }, {passive:false});
-  });
-  document.addEventListener('contextmenu', e => {
-    if (document.body.classList.contains('game-mode')) e.preventDefault();
   }, {passive:false});
 
   function press(dir,el){
@@ -1726,6 +1723,7 @@ function setupTouch(){
     el.addEventListener('touchcancel',()=>{dpad.fire=false;el.classList.remove('pressed');});
     el.addEventListener('mousedown',()=>{dpad.fire=true;el.classList.add('pressed');});
     el.addEventListener('mouseup',()=>{dpad.fire=false;el.classList.remove('pressed');});
+    el.addEventListener('mouseleave',()=>{dpad.fire=false;el.classList.remove('pressed');});
   });
 }
 setupTouch();
