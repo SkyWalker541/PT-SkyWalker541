@@ -371,14 +371,14 @@
     display:none; grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr;
     z-index:13; border-radius:4px;
   }
-  .dpad-btn { cursor:pointer; -webkit-tap-highlight-color:transparent; display:flex; align-items:center; justify-content:center; font-size:clamp(5px,1.5vw,10px); color:transparent; border-radius:4px; transition:background 0.05s; touch-action:none; user-select:none; }
-  .dpad-btn.pressed { background:rgba(168,85,247,0.35); box-shadow:0 0 8px rgba(168,85,247,0.6); }
-  #btn-a { position:absolute; left:60.5%; top:66.8%; width:7.4%; height:7.4%; border-radius:50%; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background 0.05s,box-shadow 0.05s; display:none; z-index:13; touch-action:none; user-select:none; }
-  #btn-b { position:absolute; left:78.6%; top:63.2%; width:7.4%; height:7.4%; border-radius:50%; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background 0.05s,box-shadow 0.05s; display:none; z-index:13; touch-action:none; user-select:none; }
-  #btn-a.pressed, #btn-b.pressed { background:rgba(168,85,247,0.4); box-shadow:0 0 12px rgba(168,85,247,0.8); }
-  #btn-select { position:absolute; left:37.9%; top:84.8%; width:11.9%; height:3.1%; border-radius:4px; cursor:pointer; z-index:13; -webkit-tap-highlight-color:transparent; transition:background 0.05s; touch-action:none; user-select:none; }
-  #btn-start  { position:absolute; left:53.6%; top:84.8%; width:11.9%; height:3.1%; border-radius:4px; cursor:pointer; z-index:13; -webkit-tap-highlight-color:transparent; transition:background 0.05s; touch-action:none; user-select:none; }
-  #btn-select.pressed, #btn-start.pressed { background:rgba(168,85,247,0.3); box-shadow:0 0 8px rgba(168,85,247,0.6); }
+  .dpad-btn { cursor:pointer; -webkit-tap-highlight-color:transparent; display:flex; align-items:center; justify-content:center; font-size:clamp(5px,1.5vw,10px); color:transparent; border-radius:4px; transition:background 0.1s, box-shadow 0.1s, transform 0.1s; touch-action:none; user-select:none; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); }
+  .dpad-btn.pressed { background: rgba(168,85,247,0.45); box-shadow: 0 0 14px rgba(168,85,247,0.85); transform: scale(0.96); }
+  #btn-a { position:absolute; left:60.5%; top:66.8%; width:7.4%; height:7.4%; border-radius:50%; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background 0.1s,box-shadow 0.1s,transform 0.1s; display:none; z-index:13; touch-action:none; user-select:none; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); }
+  #btn-b { position:absolute; left:78.6%; top:63.2%; width:7.4%; height:7.4%; border-radius:50%; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background 0.1s,box-shadow 0.1s,transform 0.1s; display:none; z-index:13; touch-action:none; user-select:none; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); }
+  #btn-a.pressed, #btn-b.pressed { background: rgba(168,85,247,0.55); box-shadow: 0 0 18px rgba(168,85,247,0.95); transform: scale(0.98); }
+  #btn-select { position:absolute; left:37.9%; top:84.8%; width:11.9%; height:3.1%; border-radius:4px; cursor:pointer; z-index:13; -webkit-tap-highlight-color:transparent; transition:background 0.1s,box-shadow 0.1s,transform 0.1s; touch-action:none; user-select:none; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); }
+  #btn-start  { position:absolute; left:53.6%; top:84.8%; width:11.9%; height:3.1%; border-radius:4px; cursor:pointer; z-index:13; -webkit-tap-highlight-color:transparent; transition:background 0.1s,box-shadow 0.1s,transform 0.1s; touch-action:none; user-select:none; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); }
+  #btn-select.pressed, #btn-start.pressed { background:rgba(168,85,247,0.35); box-shadow:0 0 12px rgba(168,85,247,0.7); transform: scale(0.98); }
   /* game-mode */
   body.game-mode::before { content:''; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(8,8,16,0.9); z-index:50; pointer-events:none; }
   body.game-mode .handheld-wrapper { z-index:51 !important; }
@@ -1691,6 +1691,36 @@ const keys={};
 window.addEventListener('keydown',e=>{keys[e.key]=true;});
 window.addEventListener('keyup',e=>{keys[e.key]=false;});
 const dpad={up:false,down:false,left:false,right:false,fire:false};
+let dpadPointerId = null;
+
+function syncDpadButtonState(){
+  ['up','down','left','right'].forEach(dir=>{
+    const el = document.getElementById('dpad-' + dir);
+    if(!el) return;
+    el.classList.toggle('pressed', dpad[dir]);
+  });
+}
+
+function updateDpadFromPoint(clientX, clientY){
+  const zone = document.getElementById('dpad-zone');
+  if(!zone) return;
+  const rect = zone.getBoundingClientRect();
+  const dx = clientX - (rect.left + rect.width / 2);
+  const dy = clientY - (rect.top + rect.height / 2);
+  const nx = dx / (rect.width / 2);
+  const ny = dy / (rect.height / 2);
+  const threshold = 0.25;
+  dpad.left  = nx < -threshold;
+  dpad.right = nx >  threshold;
+  dpad.up    = ny < -threshold;
+  dpad.down  = ny >  threshold;
+  syncDpadButtonState();
+}
+
+function clearDpad(){
+  dpad.up = dpad.down = dpad.left = dpad.right = false;
+  syncDpadButtonState();
+}
 
 function setupTouch(){
   // Block touchmove while the game is active to prevent page scrolling during play.
@@ -1704,10 +1734,43 @@ function setupTouch(){
     if(document.body.classList.contains('game-mode')) e.preventDefault();
   }, {passive:false});
 
+  const zone = document.getElementById('dpad-zone');
+  if(zone){
+    zone.addEventListener('pointerdown', e=>{
+      if(e.pointerType==='touch' || e.pointerType==='pen'){
+        dpadPointerId = e.pointerId;
+        zone.setPointerCapture(e.pointerId);
+        updateDpadFromPoint(e.clientX, e.clientY);
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    });
+    zone.addEventListener('pointermove', e=>{
+      if(e.pointerId===dpadPointerId && (e.pointerType==='touch' || e.pointerType==='pen')){
+        updateDpadFromPoint(e.clientX, e.clientY);
+      }
+    });
+    zone.addEventListener('pointerup', e=>{
+      if(e.pointerId===dpadPointerId){
+        dpadPointerId = null;
+        clearDpad();
+      }
+    });
+    zone.addEventListener('pointercancel', e=>{
+      if(e.pointerId===dpadPointerId){
+        dpadPointerId = null;
+        clearDpad();
+      }
+    });
+  }
+
   function press(dir,el){
     el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();dpad[dir]=true;el.classList.add('pressed');},{passive:false});
     el.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();dpad[dir]=false;el.classList.remove('pressed');},{passive:false});
     el.addEventListener('touchcancel',()=>{dpad[dir]=false;el.classList.remove('pressed');});
+    el.addEventListener('pointerdown',e=>{if(e.pointerType==='touch' || e.pointerType==='pen'){e.preventDefault();e.stopPropagation();dpad[dir]=true;el.classList.add('pressed');}});
+    el.addEventListener('pointerup',e=>{if(e.pointerType==='touch' || e.pointerType==='pen'){e.preventDefault();e.stopPropagation();dpad[dir]=false;el.classList.remove('pressed');}});
+    el.addEventListener('pointercancel',()=>{dpad[dir]=false;el.classList.remove('pressed');});
     el.addEventListener('mousedown',()=>{dpad[dir]=true;el.classList.add('pressed');});
     el.addEventListener('mouseup',()=>{dpad[dir]=false;el.classList.remove('pressed');});
     el.addEventListener('mouseleave',()=>{dpad[dir]=false;el.classList.remove('pressed');});
@@ -1721,6 +1784,9 @@ function setupTouch(){
     el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();dpad.fire=true;el.classList.add('pressed');},{passive:false});
     el.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();dpad.fire=false;el.classList.remove('pressed');},{passive:false});
     el.addEventListener('touchcancel',()=>{dpad.fire=false;el.classList.remove('pressed');});
+    el.addEventListener('pointerdown',e=>{if(e.pointerType==='touch' || e.pointerType==='pen'){e.preventDefault();e.stopPropagation();dpad.fire=true;el.classList.add('pressed');}});
+    el.addEventListener('pointerup',e=>{if(e.pointerType==='touch' || e.pointerType==='pen'){e.preventDefault();e.stopPropagation();dpad.fire=false;el.classList.remove('pressed');}});
+    el.addEventListener('pointercancel',()=>{dpad.fire=false;el.classList.remove('pressed');});
     el.addEventListener('mousedown',()=>{dpad.fire=true;el.classList.add('pressed');});
     el.addEventListener('mouseup',()=>{dpad.fire=false;el.classList.remove('pressed');});
     el.addEventListener('mouseleave',()=>{dpad.fire=false;el.classList.remove('pressed');});
@@ -1918,6 +1984,8 @@ function addBtn(el,fn){
   el.addEventListener('click',fn);
   el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();el.classList.add('pressed');},{passive:false});
   el.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();el.classList.remove('pressed');fn();},{passive:false});
+  el.addEventListener('pointerdown',e=>{if(e.pointerType==='touch' || e.pointerType==='pen'){e.preventDefault();e.stopPropagation();el.classList.add('pressed');}});
+  el.addEventListener('pointerup',e=>{if(e.pointerType==='touch' || e.pointerType==='pen'){e.preventDefault();e.stopPropagation();el.classList.remove('pressed');fn();}});
   el.addEventListener('mousedown',()=>el.classList.add('pressed'));
   el.addEventListener('mouseup',()=>el.classList.remove('pressed'));
   el.addEventListener('mouseleave',()=>el.classList.remove('pressed'));
