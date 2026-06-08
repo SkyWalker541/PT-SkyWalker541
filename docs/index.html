@@ -397,6 +397,10 @@
   html.game-mode, body.game-mode { overflow:hidden; overscroll-behavior:none; }
   body.game-mode { touch-action: none; }
   body.game-mode .handheld-wrapper { touch-action: none; }
+  body.mobile-game-hidden .handheld-wrapper,
+  body.mobile-game-hidden .mini-game-launch {
+    display: none !important;
+  }
 </style>
 </head>
 <body>
@@ -1583,7 +1587,7 @@ requestAnimationFrame(animate);
 
 
   <!-- Play Game link -->
-  <div style="margin-top:28px; text-align:center; position:relative; z-index:1;">
+  <div class="mini-game-launch" style="margin-top:28px; text-align:center; position:relative; z-index:1;">
     <div style="display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:10px;">
       <div style="height:1px;width:60px;background:linear-gradient(90deg,transparent,#7c3aed);"></div>
       <span style="font-family:'Rajdhani',sans-serif;font-weight:300;font-size:11px;letter-spacing:4px;text-transform:uppercase;color:#6a5a9a;">mini game</span>
@@ -1700,359 +1704,6 @@ const keys={};
 window.addEventListener('keydown',e=>{keys[e.key]=true;});
 window.addEventListener('keyup',e=>{keys[e.key]=false;});
 const dpad={up:false,down:false,left:false,right:false,fire:false};
-let dpadPointerId = null;
-let activeControlPointerId = null;
-let activeControlElement = null;
-
-const controlElements = {
-  dpad:      'dpad-zone',
-  btnSelect: 'btn-select',
-  btnStart:  'btn-start',
-  btnA:      'btn-a',
-  btnB:      'btn-b',
-};
-
-function renderTouchDebugOverlay(){
-  const wrapper = document.querySelector('.handheld-wrapper');
-  const overlay = document.getElementById('touch-debug-overlay');
-  if(!wrapper || !overlay) return;
-  const wrapperRect = wrapper.getBoundingClientRect();
-  overlay.innerHTML = '';
-  for(const [key, id] of Object.entries(controlElements)){
-    const el = document.getElementById(id);
-    if(!el) continue;
-    const rect = el.getBoundingClientRect();
-    const debugEl = document.createElement('div');
-    debugEl.className = 'debug-region debug-region-' + key;
-    debugEl.style.left = `${rect.left - wrapperRect.left}px`;
-    debugEl.style.top = `${rect.top - wrapperRect.top}px`;
-    debugEl.style.width = `${rect.width}px`;
-    debugEl.style.height = `${rect.height}px`;
-    debugEl.textContent = key;
-    overlay.appendChild(debugEl);
-  }
-}
-
-window.addEventListener('resize', renderTouchDebugOverlay);
-
-function getControlForPoint(clientX, clientY){
-  for(const [key, id] of Object.entries(controlElements)){
-    const el = document.getElementById(id);
-    if(!el) continue;
-    const rect = el.getBoundingClientRect();
-    if(clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom){
-      return key;
-    }
-  }
-  return null;
-}
-
-function syncDpadButtonState(){
-  ['up','down','left','right'].forEach(dir=>{
-    const el = document.getElementById('dpad-' + dir);
-    if(!el) return;
-    el.classList.toggle('pressed', dpad[dir]);
-  });
-}
-
-function updateDpadFromPoint(clientX, clientY){
-  const zone = document.getElementById('dpad-zone');
-  if(!zone) return;
-  const rect = zone.getBoundingClientRect();
-  const dx = clientX - (rect.left + rect.width / 2);
-  const dy = clientY - (rect.top + rect.height / 2);
-  const nx = dx / (rect.width / 2);
-  const ny = dy / (rect.height / 2);
-  const threshold = 0.25;
-  dpad.left  = nx < -threshold;
-  dpad.right = nx >  threshold;
-  dpad.up    = ny < -threshold;
-  dpad.down  = ny >  threshold;
-  syncDpadButtonState();
-}
-
-function clearDpad(){
-  dpad.up = dpad.down = dpad.left = dpad.right = false;
-  syncDpadButtonState();
-}
-
-function handleGlobalPointerDown(e){
-  if(!document.body.classList.contains('game-mode')) return;
-  if(e.pointerType!=='touch' && e.pointerType!=='pen') return;
-  const wrapper = e.target.closest('.handheld-wrapper');
-  if(!wrapper) return;
-  const control = getControlForPoint(e.clientX, e.clientY);
-  if(!control) return;
-
-  if(control === 'dpad'){
-    dpadPointerId = e.pointerId;
-    wrapper.setPointerCapture(e.pointerId);
-    updateDpadFromPoint(e.clientX, e.clientY);
-    e.preventDefault();
-    e.stopPropagation();
-    return;
-  }
-
-  if(control === 'btnA' || control === 'btnB'){
-    activeControlPointerId = e.pointerId;
-    activeControlElement = document.getElementById(control === 'btnA' ? 'btn-a' : 'btn-b');
-    if(activeControlElement){
-      activeControlElement.classList.add('pressed');
-      dpad.fire = true;
-    }
-    e.preventDefault();
-    e.stopPropagation();
-    return;
-  }
-
-  if(control === 'btnSelect' || control === 'btnStart'){
-    activeControlPointerId = e.pointerId;
-    activeControlElement = document.getElementById(control === 'btnSelect' ? 'btn-select' : 'btn-start');
-    if(activeControlElement) activeControlElement.classList.add('pressed');
-    e.preventDefault();
-    e.stopPropagation();
-    return;
-  }
-}
-
-function handleGlobalPointerMove(e){
-  if(e.pointerId===dpadPointerId && (e.pointerType==='touch' || e.pointerType==='pen')){
-    updateDpadFromPoint(e.clientX, e.clientY);
-  }
-}
-
-function handleGlobalPointerUp(e){
-  if(e.pointerId===dpadPointerId){
-    dpadPointerId = null;
-    clearDpad();
-  }
-  if(e.pointerId===activeControlPointerId){
-    if(activeControlElement){
-      if(activeControlElement.id==='btn-select') handleSelect();
-      if(activeControlElement.id==='btn-start') handleStart();
-      if(activeControlElement.id==='btn-a' || activeControlElement.id==='btn-b') dpad.fire = false;
-      activeControlElement.classList.remove('pressed');
-    }
-    activeControlPointerId = null;
-    activeControlElement = null;
-  }
-}
-
-function setupTouch(){
-  // Prevent double-tap zoom and scrolling while the game is active.
-  let lastTouchTime = 0;
-  document.addEventListener('touchstart', e=>{
-    if(document.body.classList.contains('game-mode')){
-      const now = performance.now();
-      if(now - lastTouchTime < 300){
-        e.preventDefault();
-      }
-      lastTouchTime = now;
-    }
-  }, {passive:false});
-
-  const hw = document.querySelector('.handheld-wrapper');
-  if(hw){
-    hw.addEventListener('touchmove', e=>{
-      if(document.body.classList.contains('game-mode')) e.preventDefault();
-    }, {passive:false});
-  }
-  document.addEventListener('touchmove', e=>{
-    if(document.body.classList.contains('game-mode')) e.preventDefault();
-  }, {passive:false});
-
-  const zone = document.getElementById('dpad-zone');
-  if(zone){
-    zone.addEventListener('pointerdown', e=>{
-      if(e.pointerType==='touch' || e.pointerType==='pen'){
-        dpadPointerId = e.pointerId;
-        zone.setPointerCapture(e.pointerId);
-        updateDpadFromPoint(e.clientX, e.clientY);
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    });
-    zone.addEventListener('pointermove', e=>{
-      if(e.pointerId===dpadPointerId && (e.pointerType==='touch' || e.pointerType==='pen')){
-        updateDpadFromPoint(e.clientX, e.clientY);
-      }
-    });
-    zone.addEventListener('pointerup', e=>{
-      if(e.pointerId===dpadPointerId){
-        dpadPointerId = null;
-        clearDpad();
-      }
-    });
-    zone.addEventListener('pointercancel', e=>{
-      if(e.pointerId===dpadPointerId){
-        dpadPointerId = null;
-        clearDpad();
-      }
-    });
-    zone.addEventListener('touchstart', e=>{
-      if(document.body.classList.contains('game-mode')){
-        updateDpadFromPoint(e.touches[0].clientX, e.touches[0].clientY);
-      }
-    }, {passive:false});
-    zone.addEventListener('touchmove', e=>{
-      if(document.body.classList.contains('game-mode')){
-        updateDpadFromPoint(e.touches[0].clientX, e.touches[0].clientY);
-        e.preventDefault();
-      }
-    }, {passive:false});
-    zone.addEventListener('touchend', e=>{
-      clearDpad();
-    });
-  }
-
-  function resetActiveControl(){
-    if(activeControlElement){
-      activeControlElement.classList.remove('pressed');
-      if(activeControlElement.id==='btn-a' || activeControlElement.id==='btn-b') dpad.fire = false;
-      activeControlElement = null;
-    }
-  }
-
-  function handleWrapperPointerDown(e){
-    if(!document.body.classList.contains('game-mode')) return;
-    if(e.pointerType!=='touch' && e.pointerType!=='pen') return;
-    const wrapper = e.target.closest('.handheld-wrapper');
-    if(!wrapper) return;
-
-    const buttonTarget = e.target.closest('#btn-a, #btn-b, #btn-select, #btn-start');
-    if(buttonTarget){
-      activeControlPointerId = e.pointerId;
-      activeControlElement = buttonTarget;
-      if(activeControlElement.id==='btn-a' || activeControlElement.id==='btn-b'){
-        activeControlElement.classList.add('pressed');
-        dpad.fire = true;
-      } else {
-        activeControlElement.classList.add('pressed');
-      }
-      e.preventDefault();
-      e.stopPropagation();
-      return;
-    }
-
-    const dpadTarget = e.target.closest('#dpad-zone');
-    if(dpadTarget){
-      dpadPointerId = e.pointerId;
-      wrapper.setPointerCapture(e.pointerId);
-      updateDpadFromPoint(e.clientX, e.clientY);
-      e.preventDefault();
-      e.stopPropagation();
-      return;
-    }
-
-    const control = getControlForPoint(e.clientX, e.clientY);
-    if(!control) return;
-
-    if(control === 'dpad'){
-      dpadPointerId = e.pointerId;
-      wrapper.setPointerCapture(e.pointerId);
-      updateDpadFromPoint(e.clientX, e.clientY);
-      e.preventDefault();
-      e.stopPropagation();
-      return;
-    }
-
-    if(control === 'btnA' || control === 'btnB'){
-      activeControlPointerId = e.pointerId;
-      activeControlElement = document.getElementById(control === 'btnA' ? 'btn-a' : 'btn-b');
-      if(activeControlElement){
-        activeControlElement.classList.add('pressed');
-        dpad.fire = true;
-      }
-      e.preventDefault();
-      e.stopPropagation();
-      return;
-    }
-
-    if(control === 'btnSelect' || control === 'btnStart'){
-      activeControlPointerId = e.pointerId;
-      activeControlElement = document.getElementById(control === 'btnSelect' ? 'btn-select' : 'btn-start');
-      if(activeControlElement) activeControlElement.classList.add('pressed');
-      e.preventDefault();
-      e.stopPropagation();
-      return;
-    }
-  }
-
-  function handleWrapperPointerMove(e){
-    if(e.pointerId===dpadPointerId && (e.pointerType==='touch' || e.pointerType==='pen')){
-      updateDpadFromPoint(e.clientX, e.clientY);
-    }
-  }
-
-  function handleWrapperPointerUp(e){
-    if(e.pointerId===dpadPointerId){
-      dpadPointerId = null;
-      clearDpad();
-    }
-    if(e.pointerId===activeControlPointerId){
-      if(activeControlElement){
-        if(activeControlElement.id==='btn-select') handleSelect();
-        if(activeControlElement.id==='btn-start') handleStart();
-        activeControlElement.classList.remove('pressed');
-        if(activeControlElement.id==='btn-a' || activeControlElement.id==='btn-b') dpad.fire = false;
-      }
-      activeControlPointerId = null;
-      activeControlElement = null;
-    }
-  }
-
-  if(hw){
-    hw.addEventListener('pointerdown', handleWrapperPointerDown);
-    hw.addEventListener('pointermove', handleWrapperPointerMove);
-    hw.addEventListener('pointerup', handleWrapperPointerUp);
-    hw.addEventListener('pointercancel', handleWrapperPointerUp);
-  }
-
-  document.addEventListener('pointerdown', handleGlobalPointerDown, {passive:false});
-  document.addEventListener('pointermove', handleGlobalPointerMove, {passive:false});
-  document.addEventListener('pointerup', handleGlobalPointerUp, {passive:false});
-  document.addEventListener('pointercancel', handleGlobalPointerUp, {passive:false});
-  document.addEventListener('gesturestart', e=>{ e.preventDefault(); }, false);
-
-  function press(dir,el){
-    el.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'){dpad[dir]=true;el.classList.add('pressed');}});
-    el.addEventListener('pointerup',e=>{if(e.pointerType==='mouse'){dpad[dir]=false;el.classList.remove('pressed');}});
-    el.addEventListener('pointercancel',()=>{dpad[dir]=false;el.classList.remove('pressed');});
-    el.addEventListener('mousedown',()=>{dpad[dir]=true;el.classList.add('pressed');});
-    el.addEventListener('mouseup',()=>{dpad[dir]=false;el.classList.remove('pressed');});
-    el.addEventListener('mouseleave',()=>{dpad[dir]=false;el.classList.remove('pressed');});
-  }
-  press('up',document.getElementById('dpad-up'));
-  press('down',document.getElementById('dpad-down'));
-  press('left',document.getElementById('dpad-left'));
-  press('right',document.getElementById('dpad-right'));
-  ['btn-a','btn-b'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(!el) return;
-    el.addEventListener('pointerdown',e=>{
-      if(e.pointerType==='touch' || e.pointerType==='pen'){
-        e.preventDefault();
-        e.stopPropagation();
-        dpad.fire=true;
-        el.classList.add('pressed');
-      }
-    });
-    el.addEventListener('pointerup',e=>{
-      if(e.pointerType==='touch' || e.pointerType==='pen'){
-        e.preventDefault();
-        e.stopPropagation();
-        dpad.fire=false;
-        el.classList.remove('pressed');
-      }
-    });
-    el.addEventListener('pointercancel',()=>{dpad.fire=false;el.classList.remove('pressed');});
-    el.addEventListener('mousedown',()=>{dpad.fire=true;el.classList.add('pressed');});
-    el.addEventListener('mouseup',()=>{dpad.fire=false;el.classList.remove('pressed');});
-    el.addEventListener('mouseleave',()=>{dpad.fire=false;el.classList.remove('pressed');});
-  });
-  renderTouchDebugOverlay();
-}
-setupTouch();
 
 const isUp=()=>keys['ArrowUp']||keys['w']||keys['W']||dpad.up;
 const isDown=()=>keys['ArrowDown']||keys['s']||keys['S']||dpad.down;
@@ -2242,16 +1893,20 @@ function handleSelect(){
 
 function addBtn(el,fn){
   el.addEventListener('click',fn);
-  el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();el.classList.add('pressed');},{passive:false});
-  el.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();el.classList.remove('pressed');fn();},{passive:false});
-  el.addEventListener('pointerdown',e=>{if(e.pointerType==='touch' || e.pointerType==='pen'){e.preventDefault();e.stopPropagation();el.classList.add('pressed');}});
-  el.addEventListener('pointerup',e=>{if(e.pointerType==='touch' || e.pointerType==='pen'){e.preventDefault();e.stopPropagation();el.classList.remove('pressed');fn();}});
-  el.addEventListener('mousedown',()=>el.classList.add('pressed'));
-  el.addEventListener('mouseup',()=>el.classList.remove('pressed'));
-  el.addEventListener('mouseleave',()=>el.classList.remove('pressed'));
+  el.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'){el.classList.add('pressed');}});
+  el.addEventListener('pointerup',e=>{if(e.pointerType==='mouse'){el.classList.remove('pressed');}});
+  el.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse'){el.classList.remove('pressed');}});
 }
 addBtn(btnStart,handleStart);
 addBtn(btnSelect,handleSelect);
+
+['btn-a','btn-b'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'){e.preventDefault();dpad.fire=true;el.classList.add('pressed');}});
+  el.addEventListener('pointerup',e=>{if(e.pointerType==='mouse'){e.preventDefault();dpad.fire=false;el.classList.remove('pressed');}});
+  el.addEventListener('pointerleave',()=>{dpad.fire=false;el.classList.remove('pressed');});
+});
 
 gameCanvas.addEventListener('click',()=>{if(gameState==='gameover')startGame();});
 
@@ -2353,7 +2008,11 @@ function _exitGame(){
 }
 
 const playButton = document.getElementById('play-button');
-if (playButton) {
+const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop|webOS/i.test(navigator.userAgent);
+if (isMobileDevice) {
+  document.body.classList.add('mobile-game-hidden');
+}
+if (playButton && !document.body.classList.contains('mobile-game-hidden')) {
   playButton.addEventListener('click', _launchGame);
 }
 const handheldImage = document.querySelector('.handheld-wrapper .device');
