@@ -290,6 +290,7 @@
     background:    #000;
     display:       none;
     z-index:       10;
+    pointer-events: none;
   }
   #game-hud {
     position: absolute;
@@ -1788,6 +1789,81 @@ function setupTouch(){
     zone.addEventListener('touchend', e=>{
       clearDpad();
     });
+  }
+
+  let activeControlPointerId = null;
+  let activeControlElement = null;
+
+  function resetActiveControl(){
+    if(activeControlElement){
+      activeControlElement.classList.remove('pressed');
+      if(activeControlElement.id==='btn-a' || activeControlElement.id==='btn-b') dpad.fire = false;
+      activeControlElement = null;
+    }
+  }
+
+  function handleWrapperPointerDown(e){
+    if(!document.body.classList.contains('game-mode')) return;
+    if(e.pointerType!=='touch' && e.pointerType!=='pen') return;
+    const pointEl = document.elementFromPoint(e.clientX, e.clientY);
+    if(!pointEl) return;
+    const target = pointEl.closest('#btn-a, #btn-b, #btn-select, #btn-start, #dpad-zone, .dpad-btn');
+    if(!target) return;
+    if(target.id==='dpad-zone' || target.classList.contains('dpad-btn')){
+      dpadPointerId = e.pointerId;
+      e.currentTarget.setPointerCapture(e.pointerId);
+      updateDpadFromPoint(e.clientX, e.clientY);
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    if(target.id==='btn-a' || target.id==='btn-b'){
+      activeControlElement = target;
+      activeControlPointerId = e.pointerId;
+      activeControlElement.classList.add('pressed');
+      dpad.fire = true;
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    if(target.id==='btn-select' || target.id==='btn-start'){
+      activeControlElement = target;
+      activeControlPointerId = e.pointerId;
+      activeControlElement.classList.add('pressed');
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+  }
+
+  function handleWrapperPointerMove(e){
+    if(e.pointerId===dpadPointerId && (e.pointerType==='touch' || e.pointerType==='pen')){
+      updateDpadFromPoint(e.clientX, e.clientY);
+    }
+  }
+
+  function handleWrapperPointerUp(e){
+    if(e.pointerId===dpadPointerId){
+      dpadPointerId = null;
+      clearDpad();
+    }
+    if(e.pointerId===activeControlPointerId){
+      if(activeControlElement){
+        if(activeControlElement.id==='btn-select') handleSelect();
+        if(activeControlElement.id==='btn-start') handleStart();
+        activeControlElement.classList.remove('pressed');
+        if(activeControlElement.id==='btn-a' || activeControlElement.id==='btn-b') dpad.fire = false;
+      }
+      activeControlPointerId = null;
+      activeControlElement = null;
+    }
+  }
+
+  if(hw){
+    hw.addEventListener('pointerdown', handleWrapperPointerDown);
+    hw.addEventListener('pointermove', handleWrapperPointerMove);
+    hw.addEventListener('pointerup', handleWrapperPointerUp);
+    hw.addEventListener('pointercancel', handleWrapperPointerUp);
   }
 
   function press(dir,el){
