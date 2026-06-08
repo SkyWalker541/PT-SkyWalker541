@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>PT SkyWalker541 Shader In Action</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -381,6 +381,9 @@
   #btn-select { position:absolute; left:37.9%; top:84.8%; width:11.9%; height:3.1%; border-radius:4px; cursor:pointer; z-index:14; -webkit-tap-highlight-color:transparent; transition:background 0.1s,box-shadow 0.1s,transform 0.1s; touch-action:none; user-select:none; display:none; pointer-events:auto; background: transparent; border: none; }
   #btn-start  { position:absolute; left:53.6%; top:84.8%; width:11.9%; height:3.1%; border-radius:4px; cursor:pointer; z-index:14; -webkit-tap-highlight-color:transparent; transition:background 0.1s,box-shadow 0.1s,transform 0.1s; touch-action:none; user-select:none; display:none; pointer-events:auto; background: transparent; border: none; }
   #btn-select.pressed, #btn-start.pressed { background: rgba(168,85,247,0.34); box-shadow: 0 0 22px rgba(168,85,247,0.75), inset 0 0 10px rgba(168,85,247,0.3); transform: scale(0.98); }
+  #touch-debug-overlay { position:absolute; inset:0; z-index:15; pointer-events:none; display:none; }
+  #touch-debug-overlay .debug-region { position:absolute; border:2px dashed rgba(255,255,255,0.9); background:rgba(167,139,250,0.18); box-sizing:border-box; color:#fff; font-size:10px; font-family:system-ui, sans-serif; text-align:center; line-height:1.2; pointer-events:none; }
+  body.game-mode #touch-debug-overlay { display:block; }
   /* game-mode */
   body.game-mode::before { content:''; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(8,8,16,0.9); z-index:50; pointer-events:none; }
   body.game-mode .handheld-wrapper { z-index:51 !important; pointer-events:auto; }
@@ -429,6 +432,7 @@
     </div>
   <canvas id="game-canvas"></canvas>
   <div id="game-hud"><div id="hud-top"><span id="hud-score">SCORE 00000</span><span id="hud-lives">♦ ♦ ♦</span></div></div>
+  <div id="touch-debug-overlay" aria-hidden="true"></div>
   <div id="game-message"><div class="msg-title" id="msg-title"></div><div class="msg-sub" id="msg-sub"></div></div>
   <div class="game-menu" id="select-menu">
     <div class="menu-title">OPTIONS</div>
@@ -1698,6 +1702,53 @@ let dpadPointerId = null;
 let activeControlPointerId = null;
 let activeControlElement = null;
 
+const controlRegions = {
+  dpad:      { left: 35, top: 418, width: 103, height: 103 },
+  btnSelect: { left: 159, top: 581, width: 50, height: 21 },
+  btnStart:  { left: 225, top: 581, width: 50, height: 21 },
+  btnA:      { left: 254, top: 458, width: 51, height: 51 },
+  btnB:      { left: 330, top: 433, width: 51, height: 51 },
+};
+const CONTROL_DESIGN_WIDTH = 420;
+const CONTROL_DESIGN_HEIGHT = 620;
+
+function renderTouchDebugOverlay(){
+  const wrapper = document.querySelector('.handheld-wrapper');
+  const overlay = document.getElementById('touch-debug-overlay');
+  if(!wrapper || !overlay) return;
+  const wrapperRect = wrapper.getBoundingClientRect();
+  const scaleX = wrapperRect.width / CONTROL_DESIGN_WIDTH;
+  const scaleY = wrapperRect.height / CONTROL_DESIGN_HEIGHT;
+  overlay.innerHTML = '';
+  for(const [key, region] of Object.entries(controlRegions)){
+    const el = document.createElement('div');
+    el.className = 'debug-region debug-region-' + key;
+    el.style.left = `${region.left * scaleX}px`;
+    el.style.top = `${region.top * scaleY}px`;
+    el.style.width = `${region.width * scaleX}px`;
+    el.style.height = `${region.height * scaleY}px`;
+    el.textContent = key;
+    overlay.appendChild(el);
+  }
+}
+
+window.addEventListener('resize', renderTouchDebugOverlay);
+
+function getControlRegionForPoint(wrapperRect, clientX, clientY){
+  const x = clientX - wrapperRect.left;
+  const y = clientY - wrapperRect.top;
+  if(x < 0 || y < 0 || x > wrapperRect.width || y > wrapperRect.height) return null;
+  const normX = x / wrapperRect.width * CONTROL_DESIGN_WIDTH;
+  const normY = y / wrapperRect.height * CONTROL_DESIGN_HEIGHT;
+  for(const [key, region] of Object.entries(controlRegions)){
+    if(normX >= region.left && normX <= region.left + region.width &&
+       normY >= region.top  && normY <= region.top  + region.height){
+      return key;
+    }
+  }
+  return null;
+}
+
 function syncDpadButtonState(){
   ['up','down','left','right'].forEach(dir=>{
     const el = document.getElementById('dpad-' + dir);
@@ -1727,42 +1778,43 @@ function clearDpad(){
   syncDpadButtonState();
 }
 
-function getClosestControl(target){
-  return target.closest('#btn-a, #btn-b, #btn-select, #btn-start, #dpad-zone, .dpad-btn');
-}
-
 function handleGlobalPointerDown(e){
   if(!document.body.classList.contains('game-mode')) return;
   if(e.pointerType!=='touch' && e.pointerType!=='pen') return;
   const wrapper = e.target.closest('.handheld-wrapper');
   if(!wrapper) return;
-  const control = getClosestControl(e.target);
-  if(control){
-    if(control.id==='dpad-zone' || control.classList.contains('dpad-btn')){
-      dpadPointerId = e.pointerId;
-      wrapper.setPointerCapture(e.pointerId);
-      updateDpadFromPoint(e.clientX, e.clientY);
-      e.preventDefault();
-      e.stopPropagation();
-      return;
-    }
-    if(control.id==='btn-a' || control.id==='btn-b'){
-      activeControlPointerId = e.pointerId;
-      activeControlElement = control;
+  const rect = wrapper.getBoundingClientRect();
+  const control = getControlRegionForPoint(rect, e.clientX, e.clientY);
+  if(!control) return;
+
+  if(control === 'dpad'){
+    dpadPointerId = e.pointerId;
+    wrapper.setPointerCapture(e.pointerId);
+    updateDpadFromPoint(e.clientX, e.clientY);
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
+
+  if(control === 'btnA' || control === 'btnB'){
+    activeControlPointerId = e.pointerId;
+    activeControlElement = document.getElementById(control === 'btnA' ? 'btn-a' : 'btn-b');
+    if(activeControlElement){
       activeControlElement.classList.add('pressed');
       dpad.fire = true;
-      e.preventDefault();
-      e.stopPropagation();
-      return;
     }
-    if(control.id==='btn-select' || control.id==='btn-start'){
-      activeControlPointerId = e.pointerId;
-      activeControlElement = control;
-      activeControlElement.classList.add('pressed');
-      e.preventDefault();
-      e.stopPropagation();
-      return;
-    }
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
+
+  if(control === 'btnSelect' || control === 'btnStart'){
+    activeControlPointerId = e.pointerId;
+    activeControlElement = document.getElementById(control === 'btnSelect' ? 'btn-select' : 'btn-start');
+    if(activeControlElement) activeControlElement.classList.add('pressed');
+    e.preventDefault();
+    e.stopPropagation();
+    return;
   }
 }
 
@@ -1867,31 +1919,37 @@ function setupTouch(){
   function handleWrapperPointerDown(e){
     if(!document.body.classList.contains('game-mode')) return;
     if(e.pointerType!=='touch' && e.pointerType!=='pen') return;
-    const pointEl = document.elementFromPoint(e.clientX, e.clientY);
-    if(!pointEl) return;
-    const target = pointEl.closest('#btn-a, #btn-b, #btn-select, #btn-start, #dpad-zone, .dpad-btn');
-    if(!target) return;
-    if(target.id==='dpad-zone' || target.classList.contains('dpad-btn')){
+    const wrapper = e.target.closest('.handheld-wrapper');
+    if(!wrapper) return;
+    const rect = wrapper.getBoundingClientRect();
+    const control = getControlRegionForPoint(rect, e.clientX, e.clientY);
+    if(!control) return;
+
+    if(control === 'dpad'){
       dpadPointerId = e.pointerId;
-      e.currentTarget.setPointerCapture(e.pointerId);
+      wrapper.setPointerCapture(e.pointerId);
       updateDpadFromPoint(e.clientX, e.clientY);
       e.preventDefault();
       e.stopPropagation();
       return;
     }
-    if(target.id==='btn-a' || target.id==='btn-b'){
-      activeControlElement = target;
+
+    if(control === 'btnA' || control === 'btnB'){
       activeControlPointerId = e.pointerId;
-      activeControlElement.classList.add('pressed');
-      dpad.fire = true;
+      activeControlElement = document.getElementById(control === 'btnA' ? 'btn-a' : 'btn-b');
+      if(activeControlElement){
+        activeControlElement.classList.add('pressed');
+        dpad.fire = true;
+      }
       e.preventDefault();
       e.stopPropagation();
       return;
     }
-    if(target.id==='btn-select' || target.id==='btn-start'){
-      activeControlElement = target;
+
+    if(control === 'btnSelect' || control === 'btnStart'){
       activeControlPointerId = e.pointerId;
-      activeControlElement.classList.add('pressed');
+      activeControlElement = document.getElementById(control === 'btnSelect' ? 'btn-select' : 'btn-start');
+      if(activeControlElement) activeControlElement.classList.add('pressed');
       e.preventDefault();
       e.stopPropagation();
       return;
@@ -1932,6 +1990,7 @@ function setupTouch(){
   document.addEventListener('pointermove', handleGlobalPointerMove, {passive:false});
   document.addEventListener('pointerup', handleGlobalPointerUp, {passive:false});
   document.addEventListener('pointercancel', handleGlobalPointerUp, {passive:false});
+  document.addEventListener('gesturestart', e=>{ e.preventDefault(); }, false);
 
   function press(dir,el){
     el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();dpad[dir]=true;el.classList.add('pressed');},{passive:false});
@@ -1960,6 +2019,7 @@ function setupTouch(){
     el.addEventListener('mouseup',()=>{dpad.fire=false;el.classList.remove('pressed');});
     el.addEventListener('mouseleave',()=>{dpad.fire=false;el.classList.remove('pressed');});
   });
+  renderTouchDebugOverlay();
 }
 setupTouch();
 
