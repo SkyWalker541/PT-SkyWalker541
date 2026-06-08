@@ -1918,6 +1918,32 @@ function setupTouch(){
     if(e.pointerType!=='touch' && e.pointerType!=='pen') return;
     const wrapper = e.target.closest('.handheld-wrapper');
     if(!wrapper) return;
+
+    const buttonTarget = e.target.closest('#btn-a, #btn-b, #btn-select, #btn-start');
+    if(buttonTarget){
+      activeControlPointerId = e.pointerId;
+      activeControlElement = buttonTarget;
+      if(activeControlElement.id==='btn-a' || activeControlElement.id==='btn-b'){
+        activeControlElement.classList.add('pressed');
+        dpad.fire = true;
+      } else {
+        activeControlElement.classList.add('pressed');
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
+    const dpadTarget = e.target.closest('#dpad-zone');
+    if(dpadTarget){
+      dpadPointerId = e.pointerId;
+      wrapper.setPointerCapture(e.pointerId);
+      updateDpadFromPoint(e.clientX, e.clientY);
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
     const control = getControlForPoint(e.clientX, e.clientY);
     if(!control) return;
 
@@ -2002,11 +2028,23 @@ function setupTouch(){
   press('right',document.getElementById('dpad-right'));
   ['btn-a','btn-b'].forEach(id=>{
     const el=document.getElementById(id);
-    el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();dpad.fire=true;el.classList.add('pressed');},{passive:false});
-    el.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();dpad.fire=false;el.classList.remove('pressed');},{passive:false});
-    el.addEventListener('touchcancel',()=>{dpad.fire=false;el.classList.remove('pressed');});
-    el.addEventListener('pointerdown',e=>{if(e.pointerType==='touch' || e.pointerType==='pen'){e.preventDefault();e.stopPropagation();dpad.fire=true;el.classList.add('pressed');}});
-    el.addEventListener('pointerup',e=>{if(e.pointerType==='touch' || e.pointerType==='pen'){e.preventDefault();e.stopPropagation();dpad.fire=false;el.classList.remove('pressed');}});
+    if(!el) return;
+    el.addEventListener('pointerdown',e=>{
+      if(e.pointerType==='touch' || e.pointerType==='pen'){
+        e.preventDefault();
+        e.stopPropagation();
+        dpad.fire=true;
+        el.classList.add('pressed');
+      }
+    });
+    el.addEventListener('pointerup',e=>{
+      if(e.pointerType==='touch' || e.pointerType==='pen'){
+        e.preventDefault();
+        e.stopPropagation();
+        dpad.fire=false;
+        el.classList.remove('pressed');
+      }
+    });
     el.addEventListener('pointercancel',()=>{dpad.fire=false;el.classList.remove('pressed');});
     el.addEventListener('mousedown',()=>{dpad.fire=true;el.classList.add('pressed');});
     el.addEventListener('mouseup',()=>{dpad.fire=false;el.classList.remove('pressed');});
@@ -2326,42 +2364,6 @@ if (handheldImage) {
 }
 window.launchGame=_launchGame;
 
-})();
-</script>
-<script>
-(function(){
-  const wrapper = document.querySelector('.handheld-wrapper');
-  const controls = {
-    'dpad-zone': { left: 35, top: 418, width: 103, height: 103 },
-    'btn-select': { left: 159, top: 581, width: 50, height: 21 },
-    'btn-start': { left: 225, top: 581, width: 50, height: 21 },
-    'btn-a': { left: 254, top: 458, width: 51, height: 51 },
-    'btn-b': { left: 330, top: 433, width: 51, height: 51 },
-  };
-  const CONTROL_DESIGN_WIDTH = 420;
-  const CONTROL_DESIGN_HEIGHT = 620;
-
-  function updateControlPositions() {
-    if (!wrapper) return;
-    const wrapperWidth = wrapper.clientWidth;
-    const wrapperHeight = wrapper.clientHeight;
-    if (!wrapperWidth || !wrapperHeight) return;
-
-    Object.entries(controls).forEach(([id, dims]) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.style.left = `${(dims.left / CONTROL_DESIGN_WIDTH) * 100}%`;
-      el.style.top = `${(dims.top / CONTROL_DESIGN_HEIGHT) * 100}%`;
-      el.style.width = `${(dims.width / CONTROL_DESIGN_WIDTH) * 100}%`;
-      el.style.height = `${(dims.height / CONTROL_DESIGN_HEIGHT) * 100}%`;
-    });
-  }
-
-  const resizeObserver = window.ResizeObserver ? new ResizeObserver(updateControlPositions) : null;
-  if (resizeObserver && wrapper) resizeObserver.observe(wrapper);
-  window.addEventListener('resize', updateControlPositions);
-  window.addEventListener('load', updateControlPositions);
-  updateControlPositions();
 })();
 </script>
 </body>
