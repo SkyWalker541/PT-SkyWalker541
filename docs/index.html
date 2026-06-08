@@ -383,7 +383,9 @@
   #btn-select.pressed, #btn-start.pressed { background: rgba(168,85,247,0.34); box-shadow: 0 0 22px rgba(168,85,247,0.75), inset 0 0 10px rgba(168,85,247,0.3); transform: scale(0.98); }
   #touch-debug-overlay { position:absolute; inset:0; z-index:15; pointer-events:none; display:none; }
   #touch-debug-overlay .debug-region { position:absolute; border:2px dashed rgba(255,255,255,0.9); background:rgba(167,139,250,0.18); box-sizing:border-box; color:#fff; font-size:10px; font-family:system-ui, sans-serif; text-align:center; line-height:1.2; pointer-events:none; }
-  body.game-mode #touch-debug-overlay { display:block; }
+  @media (hover: none) {
+    body.game-mode #touch-debug-overlay { display:block; }
+  }
   /* game-mode */
   body.game-mode::before { content:''; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(8,8,16,0.9); z-index:50; pointer-events:none; }
   body.game-mode .handheld-wrapper { z-index:51 !important; pointer-events:auto; }
@@ -1702,47 +1704,43 @@ let dpadPointerId = null;
 let activeControlPointerId = null;
 let activeControlElement = null;
 
-const controlRegions = {
-  dpad:      { left: 35, top: 418, width: 103, height: 103 },
-  btnSelect: { left: 159, top: 581, width: 50, height: 21 },
-  btnStart:  { left: 225, top: 581, width: 50, height: 21 },
-  btnA:      { left: 254, top: 458, width: 51, height: 51 },
-  btnB:      { left: 330, top: 433, width: 51, height: 51 },
+const controlElements = {
+  dpad:      'dpad-zone',
+  btnSelect: 'btn-select',
+  btnStart:  'btn-start',
+  btnA:      'btn-a',
+  btnB:      'btn-b',
 };
-const CONTROL_DESIGN_WIDTH = 420;
-const CONTROL_DESIGN_HEIGHT = 620;
 
 function renderTouchDebugOverlay(){
   const wrapper = document.querySelector('.handheld-wrapper');
   const overlay = document.getElementById('touch-debug-overlay');
   if(!wrapper || !overlay) return;
   const wrapperRect = wrapper.getBoundingClientRect();
-  const scaleX = wrapperRect.width / CONTROL_DESIGN_WIDTH;
-  const scaleY = wrapperRect.height / CONTROL_DESIGN_HEIGHT;
   overlay.innerHTML = '';
-  for(const [key, region] of Object.entries(controlRegions)){
-    const el = document.createElement('div');
-    el.className = 'debug-region debug-region-' + key;
-    el.style.left = `${region.left * scaleX}px`;
-    el.style.top = `${region.top * scaleY}px`;
-    el.style.width = `${region.width * scaleX}px`;
-    el.style.height = `${region.height * scaleY}px`;
-    el.textContent = key;
-    overlay.appendChild(el);
+  for(const [key, id] of Object.entries(controlElements)){
+    const el = document.getElementById(id);
+    if(!el) continue;
+    const rect = el.getBoundingClientRect();
+    const debugEl = document.createElement('div');
+    debugEl.className = 'debug-region debug-region-' + key;
+    debugEl.style.left = `${rect.left - wrapperRect.left}px`;
+    debugEl.style.top = `${rect.top - wrapperRect.top}px`;
+    debugEl.style.width = `${rect.width}px`;
+    debugEl.style.height = `${rect.height}px`;
+    debugEl.textContent = key;
+    overlay.appendChild(debugEl);
   }
 }
 
 window.addEventListener('resize', renderTouchDebugOverlay);
 
-function getControlRegionForPoint(wrapperRect, clientX, clientY){
-  const x = clientX - wrapperRect.left;
-  const y = clientY - wrapperRect.top;
-  if(x < 0 || y < 0 || x > wrapperRect.width || y > wrapperRect.height) return null;
-  const normX = x / wrapperRect.width * CONTROL_DESIGN_WIDTH;
-  const normY = y / wrapperRect.height * CONTROL_DESIGN_HEIGHT;
-  for(const [key, region] of Object.entries(controlRegions)){
-    if(normX >= region.left && normX <= region.left + region.width &&
-       normY >= region.top  && normY <= region.top  + region.height){
+function getControlForPoint(clientX, clientY){
+  for(const [key, id] of Object.entries(controlElements)){
+    const el = document.getElementById(id);
+    if(!el) continue;
+    const rect = el.getBoundingClientRect();
+    if(clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom){
       return key;
     }
   }
@@ -1783,8 +1781,7 @@ function handleGlobalPointerDown(e){
   if(e.pointerType!=='touch' && e.pointerType!=='pen') return;
   const wrapper = e.target.closest('.handheld-wrapper');
   if(!wrapper) return;
-  const rect = wrapper.getBoundingClientRect();
-  const control = getControlRegionForPoint(rect, e.clientX, e.clientY);
+  const control = getControlForPoint(e.clientX, e.clientY);
   if(!control) return;
 
   if(control === 'dpad'){
@@ -1921,8 +1918,7 @@ function setupTouch(){
     if(e.pointerType!=='touch' && e.pointerType!=='pen') return;
     const wrapper = e.target.closest('.handheld-wrapper');
     if(!wrapper) return;
-    const rect = wrapper.getBoundingClientRect();
-    const control = getControlRegionForPoint(rect, e.clientX, e.clientY);
+    const control = getControlForPoint(e.clientX, e.clientY);
     if(!control) return;
 
     if(control === 'dpad'){
@@ -1993,11 +1989,8 @@ function setupTouch(){
   document.addEventListener('gesturestart', e=>{ e.preventDefault(); }, false);
 
   function press(dir,el){
-    el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();dpad[dir]=true;el.classList.add('pressed');},{passive:false});
-    el.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();dpad[dir]=false;el.classList.remove('pressed');},{passive:false});
-    el.addEventListener('touchcancel',()=>{dpad[dir]=false;el.classList.remove('pressed');});
-    el.addEventListener('pointerdown',e=>{if(e.pointerType==='touch' || e.pointerType==='pen'){e.preventDefault();e.stopPropagation();dpad[dir]=true;el.classList.add('pressed');}});
-    el.addEventListener('pointerup',e=>{if(e.pointerType==='touch' || e.pointerType==='pen'){e.preventDefault();e.stopPropagation();dpad[dir]=false;el.classList.remove('pressed');}});
+    el.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'){dpad[dir]=true;el.classList.add('pressed');}});
+    el.addEventListener('pointerup',e=>{if(e.pointerType==='mouse'){dpad[dir]=false;el.classList.remove('pressed');}});
     el.addEventListener('pointercancel',()=>{dpad[dir]=false;el.classList.remove('pressed');});
     el.addEventListener('mousedown',()=>{dpad[dir]=true;el.classList.add('pressed');});
     el.addEventListener('mouseup',()=>{dpad[dir]=false;el.classList.remove('pressed');});
@@ -2345,6 +2338,8 @@ window.launchGame=_launchGame;
     'btn-a': { left: 254, top: 458, width: 51, height: 51 },
     'btn-b': { left: 330, top: 433, width: 51, height: 51 },
   };
+  const CONTROL_DESIGN_WIDTH = 420;
+  const CONTROL_DESIGN_HEIGHT = 620;
 
   function updateControlPositions() {
     if (!wrapper) return;
@@ -2355,10 +2350,10 @@ window.launchGame=_launchGame;
     Object.entries(controls).forEach(([id, dims]) => {
       const el = document.getElementById(id);
       if (!el) return;
-      el.style.left = `${(dims.left / wrapperWidth) * 100}%`;
-      el.style.top = `${(dims.top / wrapperHeight) * 100}%`;
-      el.style.width = `${(dims.width / wrapperWidth) * 100}%`;
-      el.style.height = `${(dims.height / wrapperHeight) * 100}%`;
+      el.style.left = `${(dims.left / CONTROL_DESIGN_WIDTH) * 100}%`;
+      el.style.top = `${(dims.top / CONTROL_DESIGN_HEIGHT) * 100}%`;
+      el.style.width = `${(dims.width / CONTROL_DESIGN_WIDTH) * 100}%`;
+      el.style.height = `${(dims.height / CONTROL_DESIGN_HEIGHT) * 100}%`;
     });
   }
 
