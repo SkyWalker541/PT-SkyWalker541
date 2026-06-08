@@ -367,21 +367,21 @@
   .ctrl-row span:first-child { color:#5a4a8a; }
   #dpad-zone {
     position:absolute; left:8.3%; top:61.0%; width:24.5%; height:15.0%;
-    touch-action:none; user-select:none;
+    touch-action:none; user-select:none; pointer-events:auto;
     display:none; grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr;
     z-index:13; border-radius:4px;
   }
-  .dpad-btn { cursor:pointer; -webkit-tap-highlight-color:transparent; display:flex; align-items:center; justify-content:center; font-size:clamp(5px,1.5vw,10px); color:transparent; border-radius:4px; transition:background 0.1s, box-shadow 0.1s, transform 0.1s; touch-action:none; user-select:none; background: transparent; border: none; }
-  .dpad-btn.pressed { background: rgba(168,85,247,0.3); box-shadow: 0 0 24px rgba(168,85,247,0.85), inset 0 0 10px rgba(168,85,247,0.4); transform: scale(0.96); }
-  #btn-a { position:absolute; left:60.5%; top:66.8%; width:7.4%; height:7.4%; border-radius:50%; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background 0.1s,box-shadow 0.1s,transform 0.1s; display:none; z-index:13; touch-action:none; user-select:none; background: transparent; border: none; }
-  #btn-b { position:absolute; left:78.6%; top:63.2%; width:7.4%; height:7.4%; border-radius:50%; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background 0.1s,box-shadow 0.1s,transform 0.1s; display:none; z-index:13; touch-action:none; user-select:none; background: transparent; border: none; }
-  #btn-a.pressed, #btn-b.pressed { background: rgba(168,85,247,0.45); box-shadow: 0 0 28px rgba(168,85,247,0.95), inset 0 0 12px rgba(168,85,247,0.35); transform: scale(0.98); }
-  #btn-select { position:absolute; left:37.9%; top:84.8%; width:11.9%; height:3.1%; border-radius:4px; cursor:pointer; z-index:13; -webkit-tap-highlight-color:transparent; transition:background 0.1s,box-shadow 0.1s,transform 0.1s; touch-action:none; user-select:none; display:none; background: transparent; border: none; }
-  #btn-start  { position:absolute; left:53.6%; top:84.8%; width:11.9%; height:3.1%; border-radius:4px; cursor:pointer; z-index:13; -webkit-tap-highlight-color:transparent; transition:background 0.1s,box-shadow 0.1s,transform 0.1s; touch-action:none; user-select:none; display:none; background: transparent; border: none; }
+  .dpad-btn { cursor:pointer; -webkit-tap-highlight-color:transparent; display:flex; align-items:center; justify-content:center; font-size:clamp(5px,1.5vw,10px); color:transparent; border-radius:4px; transition:background 0.1s, box-shadow 0.1s, transform 0.1s; touch-action:none; user-select:none; pointer-events:auto; background: transparent; border: none; }
+  .dpad-btn.pressed { background: rgba(168,85,247,0.35); box-shadow: 0 0 26px rgba(168,85,247,0.95), inset 0 0 12px rgba(168,85,247,0.35); transform: scale(0.96); }
+  #btn-a { position:absolute; left:60.5%; top:66.8%; width:7.4%; height:7.4%; border-radius:50%; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background 0.1s,box-shadow 0.1s,transform 0.1s; display:none; z-index:14; touch-action:none; user-select:none; pointer-events:auto; background: transparent; border: none; }
+  #btn-b { position:absolute; left:78.6%; top:63.2%; width:7.4%; height:7.4%; border-radius:50%; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background 0.1s,box-shadow 0.1s,transform 0.1s; display:none; z-index:14; touch-action:none; user-select:none; pointer-events:auto; background: transparent; border: none; }
+  #btn-a.pressed, #btn-b.pressed { background: rgba(168,85,247,0.55); box-shadow: 0 0 28px rgba(168,85,247,0.95), inset 0 0 12px rgba(168,85,247,0.35); transform: scale(0.98); }
+  #btn-select { position:absolute; left:37.9%; top:84.8%; width:11.9%; height:3.1%; border-radius:4px; cursor:pointer; z-index:14; -webkit-tap-highlight-color:transparent; transition:background 0.1s,box-shadow 0.1s,transform 0.1s; touch-action:none; user-select:none; display:none; pointer-events:auto; background: transparent; border: none; }
+  #btn-start  { position:absolute; left:53.6%; top:84.8%; width:11.9%; height:3.1%; border-radius:4px; cursor:pointer; z-index:14; -webkit-tap-highlight-color:transparent; transition:background 0.1s,box-shadow 0.1s,transform 0.1s; touch-action:none; user-select:none; display:none; pointer-events:auto; background: transparent; border: none; }
   #btn-select.pressed, #btn-start.pressed { background: rgba(168,85,247,0.34); box-shadow: 0 0 22px rgba(168,85,247,0.75), inset 0 0 10px rgba(168,85,247,0.3); transform: scale(0.98); }
   /* game-mode */
   body.game-mode::before { content:''; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(8,8,16,0.9); z-index:50; pointer-events:none; }
-  body.game-mode .handheld-wrapper { z-index:51 !important; }
+  body.game-mode .handheld-wrapper { z-index:51 !important; pointer-events:auto; }
   body.game-mode #game-canvas { display:block; }
   body.game-mode #game-hud { display:flex; }
   body.game-mode #dpad-zone { display:grid; }
