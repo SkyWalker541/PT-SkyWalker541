@@ -866,7 +866,8 @@ function drawSprite(ctx, pixels, colors, W, H, x, y, opacity = 1, flipX = false,
   resize();
   initStars();
   initBg();
-  animate();
+  if (isMobile) { setTimeout(animate, 1500); }
+  else { animate(); }
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && starRAF) { cancelAnimationFrame(starRAF); starRAF = null; }
     else if (!document.hidden && !starRAF) starRAF = requestAnimationFrame(animate);
@@ -1817,8 +1818,10 @@ let lastTime = 0;
       bvRAF = requestAnimationFrame(animate);
       return;
     }
+    // 30fps cap on mobile (skip every other frame)
+    if (isMobile && Math.floor(ts / 33) % 2 !== 0) { bvRAF = requestAnimationFrame(animate); return; }
     const dt = Math.min(ts - lastTime, isMobile ? 33 : 50);
-  lastTime = ts;
+    lastTime = ts;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // Screen shake
@@ -1975,7 +1978,8 @@ let lastTime = 0;
     bvRAF = requestAnimationFrame(animate);
   }
 
-  bvRAF = requestAnimationFrame(animate);
+  if (isMobile) { setTimeout(() => { bvRAF = requestAnimationFrame(animate); }, 2000); }
+  else { bvRAF = requestAnimationFrame(animate); }
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && bvRAF) { cancelAnimationFrame(bvRAF); bvRAF = null; }
     else if (!document.hidden && !bvRAF) bvRAF = requestAnimationFrame(animate);
