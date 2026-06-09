@@ -1133,7 +1133,6 @@ function spawnExplosion(x, y, count) {
     q.type = 'smoke';
   }
   triggerShake(count * 0.12);
-  shockwaves.push(new Shockwave(x, y));
 }
 
 function drawShockwaves() {
@@ -1173,7 +1172,7 @@ class Actor {
     this.maxShield = 30;
     this.shieldDecayTimer = 0;
     this.shieldFlash = 0;
-    this.shieldRipples = [];
+    this.shieldArcs = [];
   }
 
   steerTo(tx, ty) {
@@ -1236,7 +1235,7 @@ class Actor {
     this.y += Math.sin(this.angle) * s;
     if (this.damageFlash > 0) this.damageFlash--;
     if (this.shieldFlash > 0) this.shieldFlash--;
-    this.updateRipples();
+    this.updateArcs();
     this.updateDebris();
     this.stuckCheck();
   }
@@ -1337,13 +1336,8 @@ class Actor {
       amount -= absorbed;
       this.shieldFlash = 10;
       if (hx !== undefined) {
-        const dx = hx - this.x, dy = hy - this.y;
-        this.shieldRipples.push({ x: dx, y: dy, radius: 2, life: 1, speed: 2.5 });
-        this.shieldRipples.push({ x: dx, y: dy, radius: 0, life: 0.8, speed: 1.8 });
-      }
-      for (let i = 0; i < 8; i++) {
-        const a = Math.random() * Math.PI * 2;
-        emit(this.x + Math.cos(a) * 14, this.y + Math.sin(a) * 14, a, 'spark', 1);
+        const a = Math.atan2(hy - this.y, hx - this.x) - (this.angle + Math.PI / 2);
+        this.shieldArcs.push({ start: a, arc1: 0, arc2: 0, life: 1 });
       }
       if (amount <= 0) return;
     }
@@ -1393,12 +1387,13 @@ class Actor {
       if (d.life <= 0) this.debris.splice(i, 1);
     }
   }
-  updateRipples() {
-    for (let i = this.shieldRipples.length - 1; i >= 0; i--) {
-      const r = this.shieldRipples[i];
-      r.radius += r.speed;
-      r.life -= 0.035;
-      if (r.life <= 0) this.shieldRipples.splice(i, 1);
+  updateArcs() {
+    for (let i = this.shieldArcs.length - 1; i >= 0; i--) {
+      const a = this.shieldArcs[i];
+      a.arc1 += 0.07;
+      a.arc2 += 0.07;
+      a.life -= 0.025;
+      if (a.life <= 0) this.shieldArcs.splice(i, 1);
     }
   }
 
@@ -1418,17 +1413,22 @@ class Actor {
     const ratio = this.shield / this.maxShield;
     const isS = this.type === 'saucer';
     const gl = isS ? glowS : glowE;
-    // Draw shield ripples in world space
-    for (const r of this.shieldRipples) {
+    // Energy arcs traveling along shield edge from impact point
+    const sx = (isS ? SW : EW) * 1.15 * 0.5, sy = (isS ? SH : EH) * 1.15 * 0.5;
+    for (const a of this.shieldArcs) {
       ctx.save();
-      ctx.translate(this.x + r.x, this.y + r.y);
-      ctx.globalAlpha = r.life * 0.5;
-      ctx.shadowColor = `rgba(${isS ? '180,140,255' : '255,140,140'},${r.life * 0.3})`;
+      ctx.translate(this.x, this.y);
+      ctx.rotate(this.angle + Math.PI / 2);
+      ctx.globalAlpha = a.life * 0.55;
+      ctx.shadowColor = `rgba(${isS ? '180,140,255' : '255,140,140'},${a.life * 0.35})`;
       ctx.shadowBlur = 4;
-      ctx.strokeStyle = `rgba(${isS ? '180,140,255' : '255,140,140'},${r.life * 0.7})`;
+      ctx.strokeStyle = `rgba(${isS ? '180,140,255' : '255,140,140'},${a.life * 0.75})`;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.arc(0, 0, r.radius, 0, Math.PI * 2);
+      ctx.ellipse(0, 0, sx, sy, 0, a.start - a.arc1, a.start);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(0, 0, sx, sy, 0, a.start, a.start + a.arc2);
       ctx.stroke();
       ctx.shadowBlur = 0;
       ctx.restore();
@@ -1436,10 +1436,8 @@ class Actor {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle + Math.PI / 2);
-    // Shield flash from absorbing damage — boosts glow brightness
-    const flash = this.shieldFlash > 0 ? 1 + this.shieldFlash * 0.15 : 1;
     // Soft glow tracing the ship outline, fades outward only
-    ctx.globalAlpha = (ratio * 0.25 + 0.08) * flash;
+    ctx.globalAlpha = ratio * 0.25 + 0.08;
     ctx.drawImage(gl, -gl.width / 2, -gl.height / 2, gl.width, gl.height);
     ctx.restore();
   }
@@ -1448,6 +1446,7 @@ class Actor {
     this.alive = false;
     this.opacity = 0;
     spawnExplosion(this.x, this.y, 35);
+    shockwaves.push(new Shockwave(this.x, this.y));
   }
 
   get healthFraction() {
@@ -1975,8 +1974,6 @@ let lastTime = 0;
     const victim = t.friendly ? enemy : saucer;
     if (victim.alive && Math.hypot(t.x - victim.x, t.y - victim.y) < 22) {
       victim.takeDamage(3, t.x, t.y);
-      spawnExplosion(t.x, t.y, 35);
-      shockwaves.push(new Shockwave(t.x, t.y, 35 + Math.random() * 20, '255,220,120', '255,160,60'));
       triggerShake(4);
       torpedoes.splice(i, 1);
     }
@@ -1987,15 +1984,12 @@ let lastTime = 0;
     const m = mines[i];
     if (!m.update()) {
       spawnExplosion(m.x, m.y, 20);
-      shockwaves.push(new Shockwave(m.x, m.y, 100 + Math.random() * 40, '255,200,100', '255,80,30'));
       mines.splice(i, 1);
       continue;
     }
     const victim = m.friendly ? enemy : saucer;
     if (victim.alive && Math.hypot(m.x - victim.x, m.y - victim.y) < 45) {
       victim.takeDamage(1, m.x, m.y);
-      spawnExplosion(m.x, m.y, 25);
-      shockwaves.push(new Shockwave(m.x, m.y, 160 + Math.random() * 60, '255,200,100', '255,80,30'));
       triggerShake(8);
       mines.splice(i, 1);
     }
