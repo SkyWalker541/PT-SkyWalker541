@@ -428,6 +428,7 @@
     <div class="menu-title">PT SkyWalker541</div>
     <button class="menu-btn" id="sm-start">Start Game</button>
     <button class="menu-btn" id="sm-controls-view">Controls</button>
+    <button class="menu-btn" id="sm-exit">Exit Game</button>
     <div id="start-controls-ref" style="display:none; width:80%; border-top:1px solid #4a3a7a; padding-top:3%; grid-template-columns:1fr 1fr; gap:2% 4%;">
       <div class="ctrl-row"><span>↑↓←→/WASD</span><span>Move</span></div>
       <div class="ctrl-row"><span>Space</span><span>Shoot</span></div>
@@ -538,13 +539,15 @@ class Laser {
     const len = this.length;
     const alpha = Math.min(1, this.life * 2);
     const c = this.friendly ? '200,150,255' : '255,80,50';
-    // Outer glow
-    ctx.globalAlpha = alpha * 0.2;
-    const g2 = ctx.createRadialGradient(0, 0, 0, 0, 0, len * 0.8);
-    g2.addColorStop(0, `rgba(${c},0.6)`);
-    g2.addColorStop(1, `rgba(${c},0)`);
-    ctx.fillStyle = g2;
-    ctx.fillRect(-len, -4, len * 2, 8);
+    // Outer glow (skip on mobile)
+    if (!isMobile) {
+      ctx.globalAlpha = alpha * 0.2;
+      const g2 = ctx.createRadialGradient(0, 0, 0, 0, 0, len * 0.8);
+      g2.addColorStop(0, `rgba(${c},0.6)`);
+      g2.addColorStop(1, `rgba(${c},0)`);
+      ctx.fillStyle = g2;
+      ctx.fillRect(-len, -4, len * 2, 8);
+    }
     // Core beam
     ctx.globalAlpha = alpha;
     const g = ctx.createLinearGradient(-len, 0, len, 0);
@@ -598,13 +601,16 @@ function drawSprite(ctx, pixels, colors, W, H, x, y, opacity = 1, flipX = false,
 
 
 <script>
+  const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth < 768;
+  const M_SCALE = 0.6;
   const canvas = document.getElementById('stars');
   const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
   let stars = [];
 
   function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    canvas.width = isMobile ? Math.round(window.innerWidth * M_SCALE) : window.innerWidth;
+    canvas.height = isMobile ? Math.round(window.innerHeight * M_SCALE) : window.innerHeight;
   }
 
   function seededRandom(seed) {
@@ -652,6 +658,7 @@ function drawSprite(ctx, pixels, colors, W, H, x, y, opacity = 1, flipX = false,
   let t = 0;
   let bgObjects = [];
   function initBg() {
+    if (isMobile) { bgObjects = []; return; }
     bgObjects = [];
     const W = canvas.width, H = canvas.height, rng = seededRandom(137);
     // Planets
@@ -875,22 +882,23 @@ const canvas = document.getElementById('ship');
 const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
 const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth < 768;
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+const M_SCALE = 0.6;
+canvas.width = isMobile ? Math.round(window.innerWidth * M_SCALE) : window.innerWidth;
+canvas.height = isMobile ? Math.round(window.innerHeight * M_SCALE) : window.innerHeight;
 
 // ─── SCREEN SHAKE ────────────────────────────────────────────────────────────
 let shakeX = 0, shakeY = 0, shakeMag = 0;
 function triggerShake(mag) { shakeMag = Math.max(shakeMag, mag || 4); }
 
 window.addEventListener('resize', () => {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  canvas.width = isMobile ? Math.round(window.innerWidth * M_SCALE) : window.innerWidth;
+  canvas.height = isMobile ? Math.round(window.innerHeight * M_SCALE) : window.innerHeight;
   updateHandheldZone();
 });
 window.addEventListener('orientationchange', () => {
   setTimeout(() => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    canvas.width = isMobile ? Math.round(window.innerWidth * M_SCALE) : window.innerWidth;
+    canvas.height = isMobile ? Math.round(window.innerHeight * M_SCALE) : window.innerHeight;
     updateHandheldZone();
   }, 300);
 });
@@ -1008,6 +1016,14 @@ class Shockwave {
   draw() {
     if (this.done) return;
     const a = Math.max(0, this.life * 0.8);
+    if (isMobile) {
+      // Simple rings on mobile
+      ctx.beginPath(); ctx.arc(this.x, this.y, this.radius * 0.5, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(${this.color1},${a * 0.3})`; ctx.lineWidth = 1; ctx.stroke();
+      ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(${this.color2},${a * 0.2})`; ctx.lineWidth = 0.8; ctx.stroke();
+      return;
+    }
     // Inner filled glow
     const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius * 0.5);
     grad.addColorStop(0, `rgba(${this.color1},${a * 0.5})`);
@@ -1225,10 +1241,12 @@ class Actor {
     const by = this.y - Math.sin(this.angle) * len;
     emit(bx, by, this.angle, isSaucer ? 'thruster' : 'enemy_thruster', 2);
     // Glow puff — larger, slower particle behind the thruster
-    const glen = len * 1.5;
-    const gx = this.x - Math.cos(this.angle) * glen;
-    const gy = this.y - Math.sin(this.angle) * glen;
-    emit(gx, gy, this.angle, isSaucer ? 'thruster_glow' : 'enemy_thruster_glow', 1);
+    if (!isMobile) {
+      const glen = len * 1.5;
+      const gx = this.x - Math.cos(this.angle) * glen;
+      const gy = this.y - Math.sin(this.angle) * glen;
+      emit(gx, gy, this.angle, isSaucer ? 'thruster_glow' : 'enemy_thruster_glow', 1);
+    }
   }
 
   offScreen(pad) {
@@ -1804,13 +1822,13 @@ let lastTime = 0;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // Screen shake
-  if (shakeMag > 0.1) {
+  if (!isMobile && shakeMag > 0.1) {
     shakeX = (Math.random() - 0.5) * shakeMag * 1.5;
     shakeY = (Math.random() - 0.5) * shakeMag * 1.5;
     shakeMag *= 0.88;
   } else { shakeX = 0; shakeY = 0; shakeMag = 0; }
   ctx.save();
-  ctx.translate(shakeX, shakeY);
+  if (!isMobile) ctx.translate(shakeX, shakeY);
 
   // Respawn check
   if (!saucer.alive) {
@@ -1981,11 +1999,16 @@ let lastTime = 0;
 (function(){
 const gameCanvas = document.getElementById('game-canvas');
 const ctx = gameCanvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth < 768;
+const M_SCALE = 0.6;
 
 function resizeGameCanvas() {
   const so = document.querySelector('.screen-overlay');
-  gameCanvas.width  = so ? so.offsetWidth  : gameCanvas.offsetWidth  || 200;
-  gameCanvas.height = so ? so.offsetHeight : gameCanvas.offsetHeight || 174;
+  const w = so ? so.offsetWidth  : gameCanvas.offsetWidth  || 200;
+  const h = so ? so.offsetHeight : gameCanvas.offsetHeight || 174;
+  gameCanvas.width  = isMobile ? Math.round(w * M_SCALE) : w;
+  gameCanvas.height = isMobile ? Math.round(h * M_SCALE) : h;
 }
 window.addEventListener('resize', resizeGameCanvas);
 
@@ -2009,7 +2032,7 @@ const player = {x:0,y:0,angle:0,vx:0,vy:0,maxSpeed:2.5};
 let enemies=[], gameStars=[];
 const lasers=[];
 
-const pool = Array.from({length:200}, ()=>({life:0}));
+const pool = Array.from({length: isMobile ? 100 : 200}, ()=>({life:0}));
 let poolCursor = 0;
 function emit(x,y,angle,type,n){
   const start=poolCursor;
@@ -2035,6 +2058,11 @@ class Shockwave {
   update(){this.life-=this.decay;this.radius=this.maxRadius*(1-this.life);if(this.life<=0)this.done=true;}
   draw(){
     if(this.done)return;const a=Math.max(0,this.life*0.8);
+    if(isMobile){
+      ctx.beginPath();ctx.arc(this.x,this.y,this.radius*0.5,0,Math.PI*2);ctx.strokeStyle=`rgba(${this.c1},${a*0.3})`;ctx.lineWidth=1;ctx.stroke();
+      ctx.beginPath();ctx.arc(this.x,this.y,this.radius,0,Math.PI*2);ctx.strokeStyle=`rgba(${this.c2},${a*0.2})`;ctx.lineWidth=0.8;ctx.stroke();
+      return;
+    }
     const g=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,this.radius*0.5);
     g.addColorStop(0,`rgba(${this.c1},${a*0.5})`);g.addColorStop(0.5,`rgba(${this.c2},${a*0.2})`);g.addColorStop(1,`rgba(${this.c1},0)`);
     ctx.fillStyle=g;ctx.beginPath();ctx.arc(this.x,this.y,this.radius*0.5,0,Math.PI*2);ctx.fill();
@@ -2056,24 +2084,26 @@ function mgSlotAlloc() {
 }
 
 function spawnExplosion(x,y,count){
-  count=count||20;
+  count=isMobile?Math.floor((count||20)*0.5):(count||20);
   for(let i=0;i<count;i++){
     const q=mgSlotAlloc();if(!q)break;
     const a=Math.random()*Math.PI*2,spd=1+Math.random()*4;
     q.x=x;q.y=y;q.vx=Math.cos(a)*spd;q.vy=Math.sin(a)*spd;
     q.life=1;q.decay=0.03+Math.random()*0.06;q.size=0.5+Math.random()*1.5;q.type=i%3===0?'spark':'debris';
   }
-  for(let i=0;i<Math.floor(count*0.5);i++){
-    const q=mgSlotAlloc();if(!q)break;
-    const a=Math.random()*Math.PI*2,spd=0.5+Math.random()*2;
-    q.x=x;q.y=y;q.vx=Math.cos(a)*spd;q.vy=Math.sin(a)*spd;
-    q.life=1;q.decay=0.008+Math.random()*0.015;q.size=0.8+Math.random()*1.5;q.type='ember';
-  }
-  for(let i=0;i<Math.floor(count*0.3);i++){
-    const q=mgSlotAlloc();if(!q)break;
-    const a=Math.random()*Math.PI*2,spd=0.1+Math.random()*0.8;
-    q.x=x;q.y=y;q.vx=Math.cos(a)*spd;q.vy=Math.sin(a)*spd;
-    q.life=1;q.decay=0.005+Math.random()*0.008;q.size=1.5+Math.random()*3;q.type='smoke';
+  if(!isMobile){
+    for(let i=0;i<Math.floor(count*0.5);i++){
+      const q=mgSlotAlloc();if(!q)break;
+      const a=Math.random()*Math.PI*2,spd=0.5+Math.random()*2;
+      q.x=x;q.y=y;q.vx=Math.cos(a)*spd;q.vy=Math.sin(a)*spd;
+      q.life=1;q.decay=0.008+Math.random()*0.015;q.size=0.8+Math.random()*1.5;q.type='ember';
+    }
+    for(let i=0;i<Math.floor(count*0.3);i++){
+      const q=mgSlotAlloc();if(!q)break;
+      const a=Math.random()*Math.PI*2,spd=0.1+Math.random()*0.8;
+      q.x=x;q.y=y;q.vx=Math.cos(a)*spd;q.vy=Math.sin(a)*spd;
+      q.life=1;q.decay=0.005+Math.random()*0.008;q.size=1.5+Math.random()*3;q.type='smoke';
+    }
   }
   shockwaves.push(new Shockwave(x,y));
   triggerShake(count*0.12);
@@ -2141,11 +2171,13 @@ class Enemy{
     emit(this.x+EW*SCALE*0.4,this.y,angle,'enemy',1);
   }
   draw(){drawSprite(ctx,enemyPixels,enemyColors,EW,EH,this.x,this.y,SCALE,this.x<player.x);
-    const spd=Math.hypot(this.vx,this.vy);
-    if(spd>0.2){
-      const gx=this.x+Math.cos(this.angle)*EW*SCALE*0.8,gy=this.y+Math.sin(this.angle)*EH*SCALE*0.5;
-      ctx.globalAlpha=0.08;ctx.fillStyle='#ef4444';
-      ctx.fillRect(Math.floor(gx-2),Math.floor(gy-2),5,5);ctx.globalAlpha=1;
+    if(!isMobile){
+      const spd=Math.hypot(this.vx,this.vy);
+      if(spd>0.2){
+        const gx=this.x+Math.cos(this.angle)*EW*SCALE*0.8,gy=this.y+Math.sin(this.angle)*EH*SCALE*0.5;
+        ctx.globalAlpha=0.08;ctx.fillStyle='#ef4444';
+        ctx.fillRect(Math.floor(gx-2),Math.floor(gy-2),5,5);ctx.globalAlpha=1;
+      }
     }
 }
 }
@@ -2204,11 +2236,13 @@ function gameLoop(ts){
     if(gameState==='idle'){ctx.fillStyle='#000';ctx.fillRect(0,0,gameCanvas.width,gameCanvas.height);drawGameStars(t);}
     requestAnimationFrame(gameLoop);return;
   }
-  // Screen shake
-  if(shakeMag>0.1){shakeX=(Math.random()-0.5)*shakeMag*1.5;shakeY=(Math.random()-0.5)*shakeMag*1.5;shakeMag*=Math.pow(0.88,f);}
+  // 30fps cap on mobile (skip every other frame)
+  if(isMobile && Math.floor(ts/33)%2!==0){requestAnimationFrame(gameLoop);return;}
+  // Screen shake (disabled on mobile)
+  if(!isMobile&&shakeMag>0.1){shakeX=(Math.random()-0.5)*shakeMag*1.5;shakeY=(Math.random()-0.5)*shakeMag*1.5;shakeMag*=Math.pow(0.88,f);}
   else{shakeX=0;shakeY=0;shakeMag=0;}
   ctx.save();
-  ctx.translate(shakeX,shakeY);
+  if(!isMobile) ctx.translate(shakeX,shakeY);
   ctx.fillStyle='#000';ctx.fillRect(-5,-5,gameCanvas.width+10,gameCanvas.height+10);
   drawGameStars(t);
   if(gameState==='playing'){
@@ -2224,10 +2258,12 @@ function gameLoop(ts){
     // Thruster
     if(spd>0.3){
       emit(player.x-Math.cos(player.angle)*SW*SCALE*0.6,player.y-Math.sin(player.angle)*SH*SCALE*0.4,player.angle,'thruster',1);
-      // Glow puff
-      const gx=player.x-Math.cos(player.angle)*SW*SCALE*0.9,gy=player.y-Math.sin(player.angle)*SH*SCALE*0.6;
-      ctx.globalAlpha=0.12;ctx.fillStyle='#a855f7';
-      ctx.fillRect(Math.floor(gx-3),Math.floor(gy-3),7,7);ctx.globalAlpha=1;}
+      // Glow puff (disabled on mobile)
+      if(!isMobile){
+        const gx=player.x-Math.cos(player.angle)*SW*SCALE*0.9,gy=player.y-Math.sin(player.angle)*SH*SCALE*0.6;
+        ctx.globalAlpha=0.12;ctx.fillStyle='#a855f7';
+        ctx.fillRect(Math.floor(gx-3),Math.floor(gy-3),7,7);ctx.globalAlpha=1;
+      }}
     shootCooldown=Math.max(0,shootCooldown-f);
     const currentFire=isFire();
     if(currentFire&&!prevFireState&&shootCooldown<=0){
@@ -2273,7 +2309,7 @@ function gameLoop(ts){
 }
 
 // ── MENUS ─────────────────────────────────────────────────────────────────────
-const START_ITEMS=['sm-start','sm-controls-view'];
+const START_ITEMS=['sm-start','sm-controls-view','sm-exit'];
 const SELECT_ITEMS=['sm-resume','sm-restart','diff-row','sm-reset'];
 const PAUSE_ITEMS=['pm-resume','pm-exit'];
 let menuFocusIdx=0;
@@ -2366,6 +2402,11 @@ document.getElementById('sm-controls-view').addEventListener('click',()=>{
   const btn=document.getElementById('sm-controls-view');
   if(ref.style.display==='grid'){ref.style.display='none';btn.textContent='Controls';}
   else{ref.style.display='grid';btn.textContent='Hide Controls';}
+});
+document.getElementById('sm-exit').addEventListener('click',()=>{
+  document.getElementById('start-controls-ref').style.display='none';
+  document.getElementById('sm-controls-view').textContent='Controls';
+  hideStartMenu();_exitGame();
 });
 
 // ── START / SELECT BUTTONS ────────────────────────────────────────────────────
