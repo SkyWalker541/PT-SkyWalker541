@@ -866,8 +866,7 @@ function drawSprite(ctx, pixels, colors, W, H, x, y, opacity = 1, flipX = false,
   resize();
   initStars();
   initBg();
-  if (isMobile) { setTimeout(animate, 1500); }
-  else { animate(); }
+  animate();
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && starRAF) { cancelAnimationFrame(starRAF); starRAF = null; }
     else if (!document.hidden && !starRAF) starRAF = requestAnimationFrame(animate);
@@ -879,27 +878,27 @@ function drawSprite(ctx, pixels, colors, W, H, x, y, opacity = 1, flipX = false,
 </script>
 <script>
 (function() {
+const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth < 768;
+if (isMobile) return;
 const canvas = document.getElementById('ship');
 const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
-const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth < 768;
-const M_SCALE = 0.6;
-canvas.width = isMobile ? Math.round(window.innerWidth * M_SCALE) : window.innerWidth;
-canvas.height = isMobile ? Math.round(window.innerHeight * M_SCALE) : window.innerHeight;
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
 // ─── SCREEN SHAKE ────────────────────────────────────────────────────────────
 let shakeX = 0, shakeY = 0, shakeMag = 0;
 function triggerShake(mag) { shakeMag = Math.max(shakeMag, mag || 4); }
 
 window.addEventListener('resize', () => {
-  canvas.width = isMobile ? Math.round(window.innerWidth * M_SCALE) : window.innerWidth;
-  canvas.height = isMobile ? Math.round(window.innerHeight * M_SCALE) : window.innerHeight;
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
   updateHandheldZone();
 });
 window.addEventListener('orientationchange', () => {
   setTimeout(() => {
-    canvas.width = isMobile ? Math.round(window.innerWidth * M_SCALE) : window.innerWidth;
-    canvas.height = isMobile ? Math.round(window.innerHeight * M_SCALE) : window.innerHeight;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
     updateHandheldZone();
   }, 300);
 });
@@ -939,7 +938,7 @@ class Particle {
     this.size = 0.5 + Math.random(); this.type = type;
   }
 }
-const pool = Array.from({length: isMobile ? 80 : 300}, () => new Particle());
+const pool = Array.from({length: 300}, () => new Particle());
 let poolCursor = 0;
 
 function emit(x, y, angle, type, n) {
@@ -1017,14 +1016,6 @@ class Shockwave {
   draw() {
     if (this.done) return;
     const a = Math.max(0, this.life * 0.8);
-    if (isMobile) {
-      // Simple rings on mobile
-      ctx.beginPath(); ctx.arc(this.x, this.y, this.radius * 0.5, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(${this.color1},${a * 0.3})`; ctx.lineWidth = 1; ctx.stroke();
-      ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(${this.color2},${a * 0.2})`; ctx.lineWidth = 0.8; ctx.stroke();
-      return;
-    }
     // Inner filled glow
     const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius * 0.5);
     grad.addColorStop(0, `rgba(${this.color1},${a * 0.5})`);
@@ -1242,12 +1233,10 @@ class Actor {
     const by = this.y - Math.sin(this.angle) * len;
     emit(bx, by, this.angle, isSaucer ? 'thruster' : 'enemy_thruster', 2);
     // Glow puff — larger, slower particle behind the thruster
-    if (!isMobile) {
-      const glen = len * 1.5;
-      const gx = this.x - Math.cos(this.angle) * glen;
-      const gy = this.y - Math.sin(this.angle) * glen;
-      emit(gx, gy, this.angle, isSaucer ? 'thruster_glow' : 'enemy_thruster_glow', 1);
-    }
+    const glen = len * 1.5;
+    const gx = this.x - Math.cos(this.angle) * glen;
+    const gy = this.y - Math.sin(this.angle) * glen;
+    emit(gx, gy, this.angle, isSaucer ? 'thruster_glow' : 'enemy_thruster_glow', 1);
   }
 
   offScreen(pad) {
@@ -1818,20 +1807,18 @@ let lastTime = 0;
       bvRAF = requestAnimationFrame(animate);
       return;
     }
-    // 30fps cap on mobile (skip every other frame)
-    if (isMobile && Math.floor(ts / 33) % 2 !== 0) { bvRAF = requestAnimationFrame(animate); return; }
-    const dt = Math.min(ts - lastTime, isMobile ? 33 : 50);
+    const dt = Math.min(ts - lastTime, 50);
     lastTime = ts;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // Screen shake
-  if (!isMobile && shakeMag > 0.1) {
+  if (shakeMag > 0.1) {
     shakeX = (Math.random() - 0.5) * shakeMag * 1.5;
     shakeY = (Math.random() - 0.5) * shakeMag * 1.5;
     shakeMag *= 0.88;
   } else { shakeX = 0; shakeY = 0; shakeMag = 0; }
   ctx.save();
-  if (!isMobile) ctx.translate(shakeX, shakeY);
+  ctx.translate(shakeX, shakeY);
 
   // Respawn check
   if (!saucer.alive) {
@@ -1978,8 +1965,7 @@ let lastTime = 0;
     bvRAF = requestAnimationFrame(animate);
   }
 
-  if (isMobile) { setTimeout(() => { bvRAF = requestAnimationFrame(animate); }, 2000); }
-  else { bvRAF = requestAnimationFrame(animate); }
+  bvRAF = requestAnimationFrame(animate);
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && bvRAF) { cancelAnimationFrame(bvRAF); bvRAF = null; }
     else if (!document.hidden && !bvRAF) bvRAF = requestAnimationFrame(animate);
