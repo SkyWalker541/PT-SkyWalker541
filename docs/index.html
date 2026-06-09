@@ -647,7 +647,7 @@ function drawSprite(ctx, pixels, colors, W, H, x, y, opacity = 1, flipX = false,
     const s = size === 2 ? 3 : 2;
     if (bright && alpha > 0.2) {
       ctx.shadowColor = `rgba(168,85,247,${alpha * 0.8})`;
-      ctx.shadowBlur = 6;
+    ctx.shadowBlur = 2;
     }
     ctx.fillStyle = `rgba(200,150,255,${alpha})`;
     ctx.fillRect(x, y - s, 1, s * 2 + 1);
@@ -885,6 +885,38 @@ const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
+
+// Pre-render ship sprites for shield
+function makeSpriteCanvas(pixels, colors, w, h) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const cx = c.getContext('2d');
+  cx.imageSmoothingEnabled = false;
+  drawSprite(cx, pixels, colors, w, h, w / 2, h / 2, 1, false, 1);
+  return c;
+}
+// Pre-compute glow-only canvases: draw scaled sprite with shadow,
+// then remove the sprite so only the outline glow remains
+function makeGlowCanvas(src, w, h, sc, blur) {
+  const sw = Math.ceil(w * sc), sh = Math.ceil(h * sc);
+  const pad = Math.ceil(blur * 2);
+  const c = document.createElement('canvas');
+  c.width = sw + pad * 2; c.height = sh + pad * 2;
+  const cx = c.getContext('2d');
+  cx.imageSmoothingEnabled = false;
+  cx.shadowColor = 'rgba(255,255,255,1)';
+  cx.shadowBlur = blur;
+  cx.drawImage(src, pad, pad, sw, sh);
+  cx.shadowBlur = 0;
+  cx.globalCompositeOperation = 'destination-out';
+  cx.drawImage(src, pad, pad, sw, sh);
+  cx.globalCompositeOperation = 'source-over';
+  return c;
+}
+const shieldS = makeSpriteCanvas(saucerPixels, saucerColors, SW, SH);
+const shieldE = makeSpriteCanvas(enemyPixels, enemyColors, EW, EH);
+const glowS = makeGlowCanvas(shieldS, SW, SH, 1.15, 15);
+const glowE = makeGlowCanvas(shieldE, EW, EH, 1.15, 15);
 
 // ─── SCREEN SHAKE ────────────────────────────────────────────────────────────
 let shakeX = 0, shakeY = 0, shakeMag = 0;
@@ -1140,6 +1172,8 @@ class Actor {
     this.shield = 30;
     this.maxShield = 30;
     this.shieldDecayTimer = 0;
+    this.shieldFlash = 0;
+    this.shieldRipples = [];
   }
 
   steerTo(tx, ty) {
@@ -1201,6 +1235,8 @@ class Actor {
     this.x += Math.cos(this.angle) * s;
     this.y += Math.sin(this.angle) * s;
     if (this.damageFlash > 0) this.damageFlash--;
+    if (this.shieldFlash > 0) this.shieldFlash--;
+    this.updateRipples();
     this.updateDebris();
     this.stuckCheck();
   }
@@ -1293,12 +1329,18 @@ class Actor {
     }
   }
 
-  takeDamage(amount) {
+  takeDamage(amount, hx, hy) {
     if (!this.alive) return;
     if (this.shield > 0) {
       const absorbed = Math.min(this.shield, amount);
       this.shield -= absorbed;
       amount -= absorbed;
+      this.shieldFlash = 10;
+      if (hx !== undefined) {
+        const dx = hx - this.x, dy = hy - this.y;
+        this.shieldRipples.push({ x: dx, y: dy, radius: 2, life: 1, speed: 2.5 });
+        this.shieldRipples.push({ x: dx, y: dy, radius: 0, life: 0.8, speed: 1.8 });
+      }
       for (let i = 0; i < 8; i++) {
         const a = Math.random() * Math.PI * 2;
         emit(this.x + Math.cos(a) * 14, this.y + Math.sin(a) * 14, a, 'spark', 1);
@@ -1351,6 +1393,14 @@ class Actor {
       if (d.life <= 0) this.debris.splice(i, 1);
     }
   }
+  updateRipples() {
+    for (let i = this.shieldRipples.length - 1; i >= 0; i--) {
+      const r = this.shieldRipples[i];
+      r.radius += r.speed;
+      r.life -= 0.035;
+      if (r.life <= 0) this.shieldRipples.splice(i, 1);
+    }
+  }
 
   drawDebris() {
     for (const d of this.debris) {
@@ -1366,27 +1416,31 @@ class Actor {
   drawShield() {
     if (this.shield <= 0) return;
     const ratio = this.shield / this.maxShield;
-    const r = (this.type === 'saucer' ? 27 : 25);
+    const isS = this.type === 'saucer';
+    const gl = isS ? glowS : glowE;
+    // Draw shield ripples in world space
+    for (const r of this.shieldRipples) {
+      ctx.save();
+      ctx.translate(this.x + r.x, this.y + r.y);
+      ctx.globalAlpha = r.life * 0.5;
+      ctx.shadowColor = `rgba(${isS ? '180,140,255' : '255,140,140'},${r.life * 0.3})`;
+      ctx.shadowBlur = 4;
+      ctx.strokeStyle = `rgba(${isS ? '180,140,255' : '255,140,140'},${r.life * 0.7})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, r.radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
     ctx.save();
     ctx.translate(this.x, this.y);
-    // Outer glow
-    ctx.globalAlpha = ratio * 0.08;
-    const col = this.type === 'saucer' ? '180,140,255' : '255,140,140';
-    const grad = ctx.createRadialGradient(0, 0, r * 0.4, 0, 0, r * 1.2);
-    grad.addColorStop(0, `rgba(${col},0)`);
-    grad.addColorStop(0.5, `rgba(${col},0.25)`);
-    grad.addColorStop(1, `rgba(${col},0)`);
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 1.2, 0, Math.PI * 2);
-    ctx.fill();
-    // Thin ring
-    ctx.globalAlpha = ratio * 0.35;
-    ctx.strokeStyle = `rgba(${col},0.6)`;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 0.85, 0, Math.PI * 2);
-    ctx.stroke();
+    ctx.rotate(this.angle + Math.PI / 2);
+    // Shield flash from absorbing damage — boosts glow brightness
+    const flash = this.shieldFlash > 0 ? 1 + this.shieldFlash * 0.15 : 1;
+    // Soft glow tracing the ship outline, fades outward only
+    ctx.globalAlpha = (ratio * 0.25 + 0.08) * flash;
+    ctx.drawImage(gl, -gl.width / 2, -gl.height / 2, gl.width, gl.height);
     ctx.restore();
   }
 
@@ -1763,7 +1817,7 @@ function checkLaserHits(saucer, enemy) {
   for (let i = lasers.length - 1; i >= 0; i--) {
     const l = lasers[i];
     if (l.friendly && enemy.alive && Math.hypot(l.x - enemy.x, l.y - enemy.y) < EW * 0.6) {
-      enemy.takeDamage(2);
+      enemy.takeDamage(2, l.x, l.y);
       lasers.splice(i, 1);
       if (!enemy.alive) {
         spawnExplosion(enemy.x, enemy.y, 30);
@@ -1771,7 +1825,7 @@ function checkLaserHits(saucer, enemy) {
       continue;
     }
     if (!l.friendly && saucer.alive && Math.hypot(l.x - saucer.x, l.y - saucer.y) < SW * 0.6) {
-      saucer.takeDamage(2);
+      saucer.takeDamage(2, l.x, l.y);
       lasers.splice(i, 1);
       if (!saucer.alive) {
         spawnExplosion(saucer.x, saucer.y, 30);
@@ -1920,7 +1974,7 @@ let lastTime = 0;
     if (!t.update()) { torpedoes.splice(i, 1); continue; }
     const victim = t.friendly ? enemy : saucer;
     if (victim.alive && Math.hypot(t.x - victim.x, t.y - victim.y) < 22) {
-      victim.takeDamage(3);
+      victim.takeDamage(3, t.x, t.y);
       spawnExplosion(t.x, t.y, 35);
       shockwaves.push(new Shockwave(t.x, t.y, 35 + Math.random() * 20, '255,220,120', '255,160,60'));
       triggerShake(4);
@@ -1939,7 +1993,7 @@ let lastTime = 0;
     }
     const victim = m.friendly ? enemy : saucer;
     if (victim.alive && Math.hypot(m.x - victim.x, m.y - victim.y) < 45) {
-      victim.takeDamage(1);
+      victim.takeDamage(1, m.x, m.y);
       spawnExplosion(m.x, m.y, 25);
       shockwaves.push(new Shockwave(m.x, m.y, 160 + Math.random() * 60, '255,200,100', '255,80,30'));
       triggerShake(8);
