@@ -468,13 +468,13 @@
   <div class="handheld-wrapper">
     <img class="device" src="Handheld_Generic.png" alt="PT SkyWalker541 handheld console" loading="lazy">
     <div class="screen-overlay">
-      <video id="game-video" autoplay loop muted playsinline preload="auto" src="https://files.catbox.moe/zzegv2.mp4"></video>
+      <video id="game-video" autoplay loop muted playsinline preload="auto" src="gameplay.mp4"></video>
     </div>
   <canvas id="game-canvas"></canvas>
 <div id="fs-transition-overlay"></div>
-<audio id="bgm-menu" src="space_menu.mp3" loop preload="auto"></audio>
-<audio id="bgm-normal" src="space_loop.mp3" loop preload="auto"></audio>
-<audio id="bgm-boss" src="space_boss.mp3" loop preload="auto"></audio>
+<audio id="bgm-menu" src="space_menu.mp3" loop preload="metadata"></audio>
+<audio id="bgm-normal" src="space_loop.mp3" loop preload="metadata"></audio>
+<audio id="bgm-boss" src="space_boss.mp3" loop preload="metadata"></audio>
   <div id="game-hud">
     <div id="hud-top">
       <span id="hud-score">SCORE 00000</span>
@@ -551,40 +551,43 @@
 <script>
   const games = [
     {
-      video:  'https://files.catbox.moe/zzegv2.mp4',
+      video:  'gameplay.mp4',
       label:  'Bark Sequelo by Polynaut',
       url:    'https://polynaut.itch.io/bark-sequelo'
     },
     {
-      video:  'https://files.catbox.moe/pmijkg.mp4',
+      video:  'gameplay2.mp4',
       label:  'Black Castle 2 by User0x7f',
       url:    'https://user0x7f.itch.io/black-castle-2'
     },
     {
-      video:  'https://files.catbox.moe/u5elxq.mp4',
+      video:  'gameplay3.mp4',
       label:  'Entomophobia DX by drgd_retro',
       url:    'https://drgd-retro.itch.io/entomophobia-dx'
     }
   ];
 
-  const gameVideo = document.getElementById('game-video');
+  let gameVideo = document.getElementById('game-video');
   const creditLink = document.getElementById('credit-link');
   const gamePills = Array.from(document.querySelectorAll('.game-pill'));
-  gameVideo.addEventListener('error',()=>{console.warn('Video load failed:',gameVideo.src);});
 
   function selectGame(index, btn) {
     const g = games[index];
+    const overlay = document.querySelector('.screen-overlay');
+    const newVideo = document.createElement('video');
+    newVideo.id = 'game-video';
+    newVideo.autoplay = true;
+    newVideo.loop = true;
+    newVideo.muted = true;
+    newVideo.playsInline = true;
+    newVideo.preload = 'auto';
+    newVideo.src = g.video;
+    overlay.replaceChild(newVideo, gameVideo);
+    gameVideo = newVideo;
+    gameVideo.addEventListener('error', ()=>{ console.warn('Video load failed:', gameVideo.src); });
 
-    // Swap video
-    gameVideo.src = g.video;
-    gameVideo.currentTime = 0;
-    gameVideo.play().catch(()=>{});
-
-    // Update credit
     creditLink.textContent = g.label;
     creditLink.href = g.url;
-
-    // Update active pill
     gamePills.forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
   }
@@ -592,6 +595,15 @@
   gamePills.forEach((button, index) => {
     button.addEventListener('click', () => selectGame(index, button));
   });
+
+  gameVideo.addEventListener('error', ()=>{ console.warn('Video load failed:', gameVideo.src); });
+
+  function tryPlayVideo() {
+    gameVideo.play().catch(() => {
+      gameVideo.addEventListener('canplay', () => gameVideo.play().catch(()=>{}), {once:true});
+    });
+  }
+  tryPlayVideo();
 </script>
 <script>
 const saucerPixels = [
@@ -970,11 +982,11 @@ function drawSprite(ctx, pixels, colors, W, H, x, y, opacity = 1, flipX = false,
   }
   let starRAF = null;
   function animate() {
-    if (document.body.classList.contains('game-mode') || document.hidden) {
-      if (document.hidden) { starRAF = null; return; }
-      starRAF = requestAnimationFrame(animate);
+    if (document.body.classList.contains('game-mode')) {
+      if (starRAF) { cancelAnimationFrame(starRAF); starRAF = null; }
       return;
     }
+    if (document.hidden) { starRAF = null; return; }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     t += 0.016;
 
@@ -1011,6 +1023,8 @@ function drawSprite(ctx, pixels, colors, W, H, x, y, opacity = 1, flipX = false,
   window.addEventListener('orientationchange', () => {
     setTimeout(() => { resize(); initStars(); initBg(); }, 300);
   });
+  window._starCancel = ()=>{ if(starRAF){ cancelAnimationFrame(starRAF); starRAF = null; } };
+  window._starStart = ()=>{ if(!starRAF) starRAF = requestAnimationFrame(animate); };
 </script>
 <script>
 (function() {
@@ -1276,7 +1290,7 @@ function drawShockwaves() {
     const s = shockwaves[i];
     s.update();
     s.draw();
-    if (s.done) shockwaves.splice(i, 1);
+    if (s.done) { shockwaves[i] = shockwaves[shockwaves.length - 1]; shockwaves.pop(); }
   }
 }
 
@@ -1520,7 +1534,7 @@ class Actor {
       d.vx *= 0.99;
       d.vy *= 0.99;
       d.life -= d.decay;
-      if (d.life <= 0) this.debris.splice(i, 1);
+      if (d.life <= 0) { this.debris[i] = this.debris[this.debris.length - 1]; this.debris.pop(); }
     }
   }
   updateArcs() {
@@ -1529,7 +1543,7 @@ class Actor {
       a.arc1 += 0.07;
       a.arc2 += 0.07;
       a.life -= 0.025;
-      if (a.life <= 0) this.shieldArcs.splice(i, 1);
+      if (a.life <= 0) { this.shieldArcs[i] = this.shieldArcs[this.shieldArcs.length - 1]; this.shieldArcs.pop(); }
     }
   }
 
@@ -1953,7 +1967,7 @@ function checkLaserHits(saucer, enemy) {
     const l = lasers[i];
     if (l.friendly && enemy.alive && Math.hypot(l.x - enemy.x, l.y - enemy.y) < EW * 0.6) {
       enemy.takeDamage(2, l.x, l.y);
-      lasers.splice(i, 1);
+      { lasers[i] = lasers[lasers.length - 1]; lasers.pop(); }
       if (!enemy.alive) {
         spawnExplosion(enemy.x, enemy.y, 30);
       }
@@ -1961,7 +1975,7 @@ function checkLaserHits(saucer, enemy) {
     }
     if (!l.friendly && saucer.alive && Math.hypot(l.x - saucer.x, l.y - saucer.y) < SW * 0.6) {
       saucer.takeDamage(2, l.x, l.y);
-      lasers.splice(i, 1);
+      { lasers[i] = lasers[lasers.length - 1]; lasers.pop(); }
       if (!saucer.alive) {
         spawnExplosion(saucer.x, saucer.y, 30);
       }
@@ -1990,12 +2004,11 @@ let lastTime = 0;
 
   let bvRAF = null;
   function animate(ts) {
-    if (document.body.classList.contains('game-mode') || document.hidden) {
-      if (document.hidden) { bvRAF = null; return; }
-      lastTime = ts;
-      bvRAF = requestAnimationFrame(animate);
+    if (document.body.classList.contains('game-mode')) {
+      if (bvRAF) { cancelAnimationFrame(bvRAF); bvRAF = null; }
       return;
     }
+    if (document.hidden) { bvRAF = null; return; }
     const dt = Math.min(ts - lastTime, 50);
     lastTime = ts;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -2100,18 +2113,18 @@ let lastTime = 0;
 
   // Laser cleanup
   for (let i = lasers.length - 1; i >= 0; i--) {
-    if (!lasers[i].update()) lasers.splice(i, 1);
+    if (!lasers[i].update()) { lasers[i] = lasers[lasers.length - 1]; lasers.pop(); }
   }
 
   // Torpedo update + hit check
   for (let i = torpedoes.length - 1; i >= 0; i--) {
     const t = torpedoes[i];
-    if (!t.update()) { torpedoes.splice(i, 1); continue; }
+    if (!t.update()) { torpedoes[i] = torpedoes[torpedoes.length - 1]; torpedoes.pop(); continue; }
     const victim = t.friendly ? enemy : saucer;
     if (victim.alive && Math.hypot(t.x - victim.x, t.y - victim.y) < 22) {
       victim.takeDamage(3, t.x, t.y);
       triggerShake(4);
-      torpedoes.splice(i, 1);
+      torpedoes[i] = torpedoes[torpedoes.length - 1]; torpedoes.pop();
     }
   }
 
@@ -2120,14 +2133,14 @@ let lastTime = 0;
     const m = mines[i];
     if (!m.update()) {
       spawnExplosion(m.x, m.y, 20);
-      mines.splice(i, 1);
+      mines[i] = mines[mines.length - 1]; mines.pop();
       continue;
     }
     const victim = m.friendly ? enemy : saucer;
     if (victim.alive && Math.hypot(m.x - victim.x, m.y - victim.y) < 45) {
       victim.takeDamage(1, m.x, m.y);
       triggerShake(8);
-      mines.splice(i, 1);
+      mines[i] = mines[mines.length - 1]; mines.pop();
     }
   }
 
@@ -2154,9 +2167,10 @@ let lastTime = 0;
     if (document.hidden && bvRAF) { cancelAnimationFrame(bvRAF); bvRAF = null; }
     else if (!document.hidden && !bvRAF) bvRAF = requestAnimationFrame(animate);
   });
+  window._bvCancel = ()=>{ if(bvRAF){ cancelAnimationFrame(bvRAF); bvRAF = null; } };
+  window._bvStart = ()=>{ if(!bvRAF) bvRAF = requestAnimationFrame(animate); };
 })();
 </script>
-
 
   <!-- Play Game link -->
   <div class="mini-game-launch" style="margin-top:28px; text-align:center; position:relative; z-index:1;">
@@ -3668,19 +3682,19 @@ function gameLoop(ts){
       SND.shoot();
     }
     // Remove enemies that scroll off bottom
-    for(let i=enemies.length-1;i>=0;i--)if(enemies[i].y>H+enemies[i].h*enemies[i].renderScale*SCALE*2){enemies.splice(i,1);}
+    for(let i=enemies.length-1;i>=0;i--)if(enemies[i].y>H+enemies[i].h*enemies[i].renderScale*SCALE*2){enemies[i]=enemies[enemies.length-1];enemies.pop();}
     for(let i=enemies.length-1;i>=0;i--){
-      const e=enemies[i];try{e.update(f);}catch(err){console.error('Enemy update error:',err,e);enemies.splice(i,1);continue;}
+      const e=enemies[i];try{e.update(f);}catch(err){console.error('Enemy update error:',err,e);enemies[i]=enemies[enemies.length-1];enemies.pop();continue;}
       for(let j=lasers.length-1;j>=0;j--){
         const l=lasers[j];
          if(l.friendly&&Math.hypot(l.x-e.x,l.y-e.y)<e.w*e.renderScale*SCALE*0.65){
            if(e.shieldActive)continue;
-           e.hp--;lasers.splice(j,1);SND.hit();
+           e.hp--;lasers[j]=lasers[lasers.length-1];lasers.pop();SND.hit();
           if(e.hp<=0){
              if(e.type==='boss'){
               e.onDeath();SND.bossExplosion();
               MUSIC.crossfade('normal',2000);
-             score+=e.bossScore;enemies.splice(i,1);updateHUD();
+              score+=e.bossScore;enemies[i]=enemies[enemies.length-1];enemies.pop();updateHUD();
              const r=Math.random();
              if(r<0.25)powerups.push(new Powerup(e.x,e.y,PT.life));
              else if(r<0.45)powerups.push(new Powerup(e.x,e.y,PT.bomb));
@@ -3689,7 +3703,7 @@ function gameLoop(ts){
              else powerups.push(new Powerup(e.x,e.y,PT.rapid));
             }else{
             const pts=e.type==='tank'?300*Math.min(wave,5):e.type==='scout'?50*wave:100*wave;
-            spawnExplosion(e.x,e.y,e.type==='tank'?30:20);enemies.splice(i,1);score+=pts;updateHUD();SND.explosion();
+            spawnExplosion(e.x,e.y,e.type==='tank'?30:20);enemies[i]=enemies[enemies.length-1];enemies.pop();score+=pts;updateHUD();SND.explosion();
             // Powerup drops
             const r=Math.random();
             if(e.type==='scout'&&r<0.25){powerups.push(new Powerup(e.x,e.y,PT.shield));}
@@ -3704,18 +3718,17 @@ function gameLoop(ts){
         }
       }
     }
-    if(miniMines.length>0) console.log('MINE COUNT:',miniMines.length);
     for(let i=miniMines.length-1;i>=0;i--){
       const m=miniMines[i];
-      if(!m.update()){spawnExplosion(m.x,m.y,10);miniMines.splice(i,1);continue;}
+      if(!m.update()){spawnExplosion(m.x,m.y,10);miniMines[i]=miniMines[miniMines.length-1];miniMines.pop();continue;}
       if(Math.hypot(m.x-player.x,m.y-player.y)<m.radius+SW*SCALE*0.5){
-        spawnExplosion(m.x,m.y,15);miniMines.splice(i,1);SND.explosion();
+        spawnExplosion(m.x,m.y,15);miniMines[i]=miniMines[miniMines.length-1];miniMines.pop();SND.explosion();
         if(invincible<=0){if(shieldHP>0){shieldHP--;invincible=60;weaponLevel=Math.max(0,weaponLevel-1);rapidLevel=0;updateHUD();SND.shieldHit();}else playerDie();}
       }
     }
     if(invincible<=0){
       let hit=false;
-      for(let j=lasers.length-1;j>=0;j--){const l=lasers[j];if(!l.friendly&&Math.hypot(l.x-player.x,l.y-player.y)<SW*SCALE*0.7){lasers.splice(j,1);hit=true;break;}}
+      for(let j=lasers.length-1;j>=0;j--){const l=lasers[j];if(!l.friendly&&Math.hypot(l.x-player.x,l.y-player.y)<SW*SCALE*0.7){lasers[j]=lasers[lasers.length-1];lasers.pop();hit=true;break;}}
       if(!hit){for(const e of enemies){if(Math.hypot(e.x-player.x,e.y-player.y)<(SW+e.w*e.renderScale)*SCALE*0.4){hit=true;break;}}}
       if(hit){
         if(shieldHP>0){shieldHP--;invincible=60;weaponLevel=Math.max(0,weaponLevel-1);rapidLevel=0;updateHUD();SND.shieldHit();}
@@ -3725,7 +3738,7 @@ function gameLoop(ts){
     if(invincible>0)invincible-=f;
     for(let i=powerups.length-1;i>=0;i--){
       const p=powerups[i];
-      if(!p.update()){powerups.splice(i,1);continue;}
+      if(!p.update()){powerups[i]=powerups[powerups.length-1];powerups.pop();continue;}
       if(Math.hypot(p.x-player.x,p.y-player.y)<SW*SCALE*0.8){
         const bx=p.x,by=p.y;
         if(p.type===PT.shield){shieldHP=Math.min(3,shieldHP+1);}
@@ -3738,14 +3751,14 @@ function gameLoop(ts){
            for(let k=enemies.length-1;k>=0;k--){
              const e=enemies[k];
              if(Math.hypot(e.x-bx,e.y-by)<120){
-               spawnExplosion(e.x,e.y,e.type==='tank'?30:20);
-               if(e.type==='boss')e.onDeath();
-               score+=e.type==='boss'?e.bossScore||1000:e.type==='tank'?300*Math.min(wave,5):e.type==='scout'?50*wave:100*wave;
-               enemies.splice(k,1);
+                spawnExplosion(e.x,e.y,e.type==='tank'?30:20);
+                if(e.type==='boss')e.onDeath();
+                score+=e.type==='boss'?e.bossScore||1000:e.type==='tank'?300*Math.min(wave,5):e.type==='scout'?50*wave:100*wave;
+                enemies[k]=enemies[enemies.length-1];enemies.pop();
              }
            }
          }
-        powerups.splice(i,1);updateHUD();SND.powerup();
+         powerups[i]=powerups[powerups.length-1];powerups.pop();updateHUD();SND.powerup();
       }
     }
     // Wave progression with delay
@@ -3761,9 +3774,9 @@ function gameLoop(ts){
     }
     if(waveTimer>0){waveTimer-=f;if(waveTimer<=0){spawnWave();waveSpawning=false;}}
     if(bossNameTimer>0){bossNameTimer-=f;}
-    for(let i=lasers.length-1;i>=0;i--)if(!lasers[i].update())lasers.splice(i,1);
+    for(let i=lasers.length-1;i>=0;i--)if(!lasers[i].update()){lasers[i]=lasers[lasers.length-1];lasers.pop();}
     drawParticles();
-    for(let i=shockwaves.length-1;i>=0;i--){const s=shockwaves[i];s.update();s.draw();if(s.done)shockwaves.splice(i,1);}
+    for(let i=shockwaves.length-1;i>=0;i--){const s=shockwaves[i];s.update();s.draw();if(s.done){shockwaves[i]=shockwaves[shockwaves.length-1];shockwaves.pop();}}
     for(const l of lasers)l.draw(ctx);
     for(const e of enemies)e.draw();
     for(const m of miniMines)m.draw(ctx);
@@ -3802,7 +3815,7 @@ function gameLoop(ts){
     }
   } else if(gameState==='gameover'){
     drawParticles();
-    for(let i=shockwaves.length-1;i>=0;i--){const s=shockwaves[i];s.update();s.draw();if(s.done)shockwaves.splice(i,1);}
+    for(let i=shockwaves.length-1;i>=0;i--){const s=shockwaves[i];s.update();s.draw();if(s.done){shockwaves[i]=shockwaves[shockwaves.length-1];shockwaves.pop();}}
     for(const l of lasers)l.draw(ctx);
    }
    // Boss arrival cinematic overlay
@@ -4057,6 +4070,8 @@ function _launchGame(){
     document.documentElement.classList.add('fullscreen-mode');
     document.body.classList.add('fullscreen-mode');
   }
+  if(window._starCancel) window._starCancel();
+  if(window._bvCancel) window._bvCancel();
   const vid = document.getElementById('game-video');
   if(vid && !vid.paused) vid.pause();
 
@@ -4088,6 +4103,8 @@ function _exitGame(){
   document.body.classList.remove('game-mode');
   document.documentElement.classList.remove('fullscreen-mode');
   document.body.classList.remove('fullscreen-mode');
+  window._starStart && window._starStart();
+  window._bvStart && window._bvStart();
   const vid = document.getElementById('game-video');
   if(vid && vid.paused) vid.play();
   if(window._scrollLock){
