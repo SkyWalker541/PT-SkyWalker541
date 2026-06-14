@@ -3352,14 +3352,12 @@ class Boss{
    const flip=this.x<player.x;
    for(const L of this.limbs)if(!L.front){if(L.mirror){this.drawLimb(L,1);this.drawLimb(L,-1);}else this.drawLimb(L,1);}
    drawSprite(ctx,this.pixels,this.colors,this.w,this.h,this.x,this.y,1,flip,this.renderScale);
-   for(const L of this.limbs)if(L.front){if(L.mirror){this.drawLimb(L,1);this.drawLimb(L,-1);}else this.drawLimb(L,1);}
-   ctx.save();
-   const bw=Math.max(20,this.w*this.renderScale*SCALE);
-   ctx.fillStyle='#333';ctx.fillRect(this.x-bw/2-1,this.y-this.h*this.renderScale*SCALE*0.5-10-1,bw+2,6);
-   ctx.fillStyle='#ff0000';ctx.fillRect(this.x-bw/2,this.y-this.h*this.renderScale*SCALE*0.5-10,bw,4);
-   ctx.fillStyle='#00ff00';ctx.fillRect(this.x-bw/2,this.y-this.h*this.renderScale*SCALE*0.5-10,bw*(this.hp/this.maxHp),4);
-   ctx.restore();
-  }
+    for(const L of this.limbs)if(L.front){if(L.mirror){this.drawLimb(L,1);this.drawLimb(L,-1);}else this.drawLimb(L,1);}
+    const bw=Math.max(20,this.w*this.renderScale*SCALE);
+    ctx.fillStyle='#333';ctx.fillRect(this.x-bw/2-1,this.y-this.h*this.renderScale*SCALE*0.5-10-1,bw+2,6);
+    ctx.fillStyle='#ff0000';ctx.fillRect(this.x-bw/2,this.y-this.h*this.renderScale*SCALE*0.5-10,bw,4);
+    ctx.fillStyle='#00ff00';ctx.fillRect(this.x-bw/2,this.y-this.h*this.renderScale*SCALE*0.5-10,bw*(this.hp/this.maxHp),4);
+   }
  onDeath(){
   if(this.bossType===8)for(let i=0;i<8;i++){
    const e=new Enemy('scout');e.x=this.x+(Math.random()-0.5)*20;e.y=this.y;
@@ -3788,14 +3786,14 @@ function gameLoop(ts){
       else if(p.type===PT.spread){const nxt=weaponLevel+1;label='SPREAD'+(weaponLevel>=3?' MAX':' '+nxt);}
       else if(p.type===PT.life){label='+1 LIFE'+(extraLives>=3?' (FULL)':'');}
       else if(p.type===PT.bomb){label='BOMB';}
-      ctx.save();
       ctx.translate(p.x,p.y+9);
       ctx.globalAlpha=Math.min(1,p.life*3);
       ctx.fillStyle='#000';ctx.font='5px monospace';
       ctx.textAlign='center';ctx.textBaseline='top';
       ctx.fillText(label,1,1);
       ctx.fillStyle='#fff';ctx.fillText(label,0,0);
-      ctx.restore();
+      ctx.translate(-p.x,-p.y-9);
+      ctx.globalAlpha=1;
     }
     // Shield visual
     if(shieldHP>0){
@@ -3829,15 +3827,15 @@ function gameLoop(ts){
     ctx.shadowColor='#ff0000';ctx.shadowBlur=20;
     ctx.fillStyle='#ff4444';ctx.font='800 18px Orbitron,sans-serif';
     ctx.fillText(lines[0],W/2,H*0.28);
-    ctx.shadowBlur=30;
     ctx.fillStyle='#fff';ctx.font='800 24px Orbitron,sans-serif';
     ctx.shadowColor='#a855f7';ctx.shadowBlur=25;
     ctx.fillText(lines[1],W/2,H*0.36);
     ctx.restore();
    }
    ctx.restore();
-  requestAnimationFrame(gameLoop);
-}
+   requestAnimationFrame(gameLoop);
+ }
+
 
 // ── COMBINED MENU ──────────────────────────────────────────────────────────────
 function getActiveMenu(){
@@ -3894,7 +3892,7 @@ function showGameMenu(){
   const gm=document.getElementById('gm-start'),gr=document.getElementById('gm-resume'),gx=document.getElementById('gm-restart');
   const title=document.getElementById('menu-title');
   if(gameState==='idle'){
-    title.textContent='SKYWALKER 541';
+    title.textContent='SkyWalker541';
     gm.style.display='block';gr.style.display='none';gx.style.display='none';
   }else{
     title.textContent=gameState==='gameover'?'GAME OVER':'PAUSED';
