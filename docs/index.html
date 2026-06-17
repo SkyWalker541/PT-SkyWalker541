@@ -2553,13 +2553,14 @@ class BossBomb {
   }
 }
 
-// Moving-gap curtain: a line of bullets across the arena with one safe gap
-// that drifts at a readable speed. Player tracks and slides into the gap.
+// Moving-gap curtain: sweeps across the arena with one safe gap that drifts
+// left/right. The player must track the gap and fly through as the line passes.
 class GapCurtain {
-  constructor(orientation,fixedCoord,gapStart,gapWidth,gapSpeed,warnFrames,activeFrames,bulletSpacing){
-    this.orientation=orientation; // 'horizontal' (gap moves along x) or 'vertical' (gap moves along y)
-    this.fixedCoord=fixedCoord;   // the y (horizontal) or x (vertical) position of the curtain line
+  constructor(orientation,coord,gapStart,gapWidth,gapSpeed,coordSpeed,warnFrames,activeFrames,bulletSpacing){
+    this.orientation=orientation;
+    this.coord=coord;this.startCoord=coord;
     this.gapPos=gapStart;this.gapWidth=gapWidth;this.gapSpeed=gapSpeed;
+    this.coordSpeed=coordSpeed;
     this.warnFrames=warnFrames;this.activeFrames=activeFrames;
     this.t=0;this.phase='warn';this.bulletSpacing=bulletSpacing||14;
   }
@@ -2569,21 +2570,25 @@ class GapCurtain {
       if(this.t>=this.warnFrames){this.phase='active';this.t=0;}
       return true;
     }
-    // active: gap drifts, bounces within arena bounds
+    // active: gap drifts left/right within arena bounds
     const span=this.orientation==='horizontal'?gameCanvas.width:gameCanvas.height;
     this.gapPos+=this.gapSpeed*f;
     if(this.gapPos<0){this.gapPos=0;this.gapSpeed*=-1;}
     if(this.gapPos>span-this.gapWidth){this.gapPos=span-this.gapWidth;this.gapSpeed*=-1;}
+    // curtain sweeps across the arena (down for horizontal, right for vertical)
+    this.coord+=this.coordSpeed*f;
+    const limit=this.orientation==='horizontal'?gameCanvas.height:gameCanvas.width;
+    if(this.coordSpeed>0?this.coord>limit+20:this.coord<-20)return false;
     return this.t<this.activeFrames;
   }
   hits(px,py){
     if(this.phase!=='active')return false;
     const tol=10;
     if(this.orientation==='horizontal'){
-      if(Math.abs(py-this.fixedCoord)>tol)return false;
+      if(Math.abs(py-this.coord)>tol)return false;
       return !(px>=this.gapPos&&px<=this.gapPos+this.gapWidth);
     }else{
-      if(Math.abs(px-this.fixedCoord)>tol)return false;
+      if(Math.abs(px-this.coord)>tol)return false;
       return !(py>=this.gapPos&&py<=this.gapPos+this.gapWidth);
     }
   }
@@ -2595,8 +2600,8 @@ class GapCurtain {
       ctx.strokeStyle='rgba(255,140,40,0.9)';
       ctx.lineWidth=1.5;ctx.setLineDash([6,4]);
       ctx.beginPath();
-      if(this.orientation==='horizontal'){ctx.moveTo(0,this.fixedCoord);ctx.lineTo(span,this.fixedCoord);}
-      else{ctx.moveTo(this.fixedCoord,0);ctx.lineTo(this.fixedCoord,span);}
+      if(this.orientation==='horizontal'){ctx.moveTo(0,this.coord);ctx.lineTo(span,this.coord);}
+      else{ctx.moveTo(this.coord,0);ctx.lineTo(this.coord,span);}
       ctx.stroke();ctx.setLineDash([]);
     }else{
       ctx.globalAlpha=0.95;
@@ -2605,8 +2610,8 @@ class GapCurtain {
       const segLen=this.bulletSpacing*0.6;
       for(let pos=0;pos<span;pos+=this.bulletSpacing){
         if(pos+segLen>this.gapPos&&pos<this.gapPos+this.gapWidth)continue;
-        if(this.orientation==='horizontal')ctx.fillRect(pos,this.fixedCoord-2,segLen,4);
-        else ctx.fillRect(this.fixedCoord-2,pos,4,segLen);
+        if(this.orientation==='horizontal')ctx.fillRect(pos,this.coord-2,segLen,4);
+        else ctx.fillRect(this.coord-2,pos,4,segLen);
       }
     }
     ctx.restore();
@@ -3931,8 +3936,8 @@ class Boss{
     }
     if(this.bossPhase===3&&curtains.length===0){
      const gw=gameCanvas.width*0.22;
-     curtains.push(new GapCurtain('horizontal',this.y+this.h*this.renderScale*SCALE*0.7,
-      Math.random()*(gameCanvas.width-gw),gw,(Math.random()<0.5?1:-1)*1.1,18,140,16));
+      curtains.push(new GapCurtain('horizontal',this.y+this.h*this.renderScale*SCALE*0.7,
+       Math.random()*(gameCanvas.width-gw),gw,(Math.random()<0.5?1:-1)*1.1,0.5,18,300,16));
     }
     this.timer=rate*this.timerFactor;
    }
