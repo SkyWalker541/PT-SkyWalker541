@@ -47,8 +47,8 @@
   .title-sub {
     font-family: 'Rajdhani', sans-serif;
     font-weight: 300;
-    font-size: 13px;
-    letter-spacing: 6px;
+    font-size: clamp(13px, 1.3vw, 21px);
+    letter-spacing: 0.46em;
     text-transform: uppercase;
     color: #6a4fc4;
     margin-bottom: 10px;
@@ -57,8 +57,8 @@
   .title-main {
     font-family: 'Orbitron', sans-serif;
     font-weight: 900;
-    font-size: clamp(22px, 5vw, 48px);
-    letter-spacing: 3px;
+    font-size: clamp(22px, 5vw, 60px);
+    letter-spacing: 0.28em;
     line-height: 1.1;
     background: linear-gradient(135deg, #c084fc 0%, #a855f7 40%, #7c3aed 70%, #4f46e5 100%);
     -webkit-background-clip: text;
@@ -87,8 +87,8 @@
   .title-tag {
     font-family: 'Rajdhani', sans-serif;
     font-weight: 400;
-    font-size: 11px;
-    letter-spacing: 4px;
+    font-size: clamp(11px, 1.1vw, 18px);
+    letter-spacing: 0.36em;
     text-transform: uppercase;
     color: #4f46e5;
   }
@@ -98,7 +98,7 @@
     transition: opacity 0.4s ease;
     position: relative;
     display: inline-block;
-    width: clamp(220px, 38vw, 420px);
+    width: clamp(220px, 38vw, 520px);
     filter: drop-shadow(0 0 30px rgba(124, 58, 237, 0.3)) drop-shadow(0 0 70px rgba(124, 58, 237, 0.11));
     touch-action: pan-y;
     pointer-events: auto;
@@ -151,11 +151,11 @@
   .game-pill {
     font-family: 'Rajdhani', sans-serif;
     font-weight: 400;
-    font-size: 11px;
-    letter-spacing: 3px;
+    font-size: clamp(11px, 1.1vw, 18px);
+    letter-spacing: 0.28em;
     text-transform: uppercase;
-    padding: 5px 14px;
-    border-radius: 20px;
+    padding: 0.4em 1.2em;
+    border-radius: 999px;
     border: 1px solid #2a1f4a;
     background: transparent;
     color: #4a3a72;
@@ -187,16 +187,16 @@
   .credit .credit-text {
     font-family: 'Rajdhani', sans-serif;
     font-weight: 300;
-    font-size: 11px;
-    letter-spacing: 4px;
+    font-size: clamp(11px, 1.1vw, 18px);
+    letter-spacing: 0.36em;
     text-transform: uppercase;
     color: #6a5a9a;
   }
   .credit a {
     font-family: 'Rajdhani', sans-serif;
     font-weight: 300;
-    font-size: 13px;
-    letter-spacing: 6px;
+    font-size: clamp(13px, 1.3vw, 21px);
+    letter-spacing: 0.46em;
     color: #7a6aaa;
     text-decoration: none;
     transition: color 0.2s;
@@ -219,15 +219,15 @@
   .also-by .also-text {
     font-family: 'Rajdhani', sans-serif;
     font-weight: 300;
-    font-size: 11px;
-    letter-spacing: 4px;
+    font-size: clamp(11px, 1.1vw, 18px);
+    letter-spacing: 0.36em;
     color: #6a5a9a;
   }
   .also-by a {
     font-family: 'Rajdhani', sans-serif;
     font-weight: 300;
-    font-size: 13px;
-    letter-spacing: 6px;
+    font-size: clamp(13px, 1.3vw, 21px);
+    letter-spacing: 0.46em;
     color: #7a6aaa;
     text-decoration: none;
     transition: color 0.2s;
@@ -241,8 +241,8 @@
   .also-line a {
     font-family: 'Rajdhani', sans-serif;
     font-weight: 300;
-    font-size: 11px;
-    letter-spacing: 4px;
+    font-size: clamp(11px, 1.1vw, 18px);
+    letter-spacing: 0.36em;
     color: #6a5a9a;
     text-decoration: none;
     transition: color 0.2s;
@@ -253,8 +253,8 @@
   .play-link {
     font-family: 'Rajdhani', sans-serif;
     font-weight: 300;
-    font-size: 13px;
-    letter-spacing: 6px;
+    font-size: clamp(13px, 1.3vw, 21px);
+    letter-spacing: 0.46em;
     color: #7a6aaa;
     background: transparent;
     border: none;
@@ -266,6 +266,8 @@
 
   /* ── GAME ── */
   #game-canvas {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
     position: absolute;
     top:           5.6%;
     left:          9.5%;
@@ -286,21 +288,21 @@
     display:  none;
     z-index:  11;
     flex-direction: column;
-    padding:  4px 6px;
+    padding: calc(4px * var(--fs-scale,1)) calc(6px * var(--fs-scale,1));
     pointer-events: none;
   }
   #hud-top { display:flex; justify-content:space-between; align-items:center; }
   #hud-score, #hud-stats span {
     font-family: 'Orbitron', sans-serif;
-    font-size: clamp(5px,1.5vw,10px);
-    letter-spacing: 1px;
-    text-shadow: 0 0 6px rgba(168,85,247,0.8);
+    font-size: calc(clamp(5px,1.5vw,12px) * var(--fs-scale,1));
+    letter-spacing: 0.08em;
+    text-shadow: 0 0 0.5em rgba(168,85,247,0.8);
   }
   #hud-score { color:#c084fc; }
-  #hud-stats { display:flex; gap:clamp(6px,1.2vw,14px); align-items:center; }
-  #hud-stats .sl { font-size:clamp(3px,0.7vw,6px); color:#6a5a8a; letter-spacing:2px; margin-right:2px; }
+  #hud-stats { display:flex; gap:calc(clamp(6px,1.2vw,14px) * var(--fs-scale,1)); align-items:center; }
+  #hud-stats .sl { font-size: calc(clamp(3px,0.7vw,8px) * var(--fs-scale,1)); color:#6a5a8a; letter-spacing:0.2em; margin-right:2px; }
   .hu-shield { color:#c084fc; }
-  .hu-overshield { color:#fff066; text-shadow:0 0 4px rgba(255,240,102,0.8); }
+  .hu-overshield { color:#fff066; text-shadow:0 0 0.5em rgba(255,240,102,0.8); }
   .hu-lives { color:#ff6b6b; }
   .hu-lives.ex { color:#fbbf24; }
   .hu-weapon { color:#34d399; }
@@ -310,18 +312,18 @@
     top: 5.6%; left: 9.5%; width: 81.0%; height: 40.0%;
     display: none; z-index: 12;
     flex-direction: column; align-items: center; justify-content: center;
-    pointer-events: none; gap: 4px; border-radius: 5px;
+    pointer-events: none; gap: calc(4px * var(--fs-scale,1)); border-radius: 5px;
   }
   .msg-title {
     font-family: 'Orbitron', sans-serif;
-    font-size: clamp(6px,1.8vw,13px); color: #c084fc;
-    letter-spacing: 2px; text-align: center;
-    text-shadow: 0 0 10px rgba(168,85,247,0.9);
+    font-size: calc(clamp(6px,1.8vw,16px) * var(--fs-scale,1)); color: #c084fc;
+    letter-spacing: 0.2em; text-align: center;
+    text-shadow: 0 0 0.6em rgba(168,85,247,0.9);
   }
   .msg-sub {
     font-family: 'Rajdhani', sans-serif;
-    font-size: clamp(4px,1.1vw,8px); color: #7a6aaa;
-    letter-spacing: 2px; text-align: center;
+    font-size: calc(clamp(4px,1.1vw,10px) * var(--fs-scale,1)); color: #7a6aaa;
+    letter-spacing: 0.2em; text-align: center;
   }
   .game-menu {
     position: absolute;
@@ -333,81 +335,81 @@
     border-radius: 5px; overflow: hidden;
   }
   .menu-title {
-    font-family: 'Orbitron', sans-serif; font-size: clamp(6px,1.7vw,12px);
-    color: #c084fc; letter-spacing: 2px; text-align: center;
-    text-shadow: 0 0 8px rgba(168,85,247,0.8);
+    font-family: 'Orbitron', sans-serif; font-size: calc(clamp(6px,1.7vw,15px) * var(--fs-scale,1));
+    color: #c084fc; letter-spacing: 0.2em; text-align: center;
+    text-shadow: 0 0 0.55em rgba(168,85,247,0.8);
   }
   .menu-btn {
-    font-family: 'Rajdhani', sans-serif; font-size: clamp(5px,1.4vw,10px);
-    letter-spacing: 3px; text-transform: uppercase;
-    padding: 2% 8%; border-radius: 20px; border: 1px solid #4a3a7a;
+    font-family: 'Rajdhani', sans-serif; font-size: calc(clamp(5px,1.4vw,12px) * var(--fs-scale,1));
+    letter-spacing: 0.28em; text-transform: uppercase;
+    padding: 2% 8%; border-radius: 999px; border: calc(1px * var(--fs-scale,1)) solid #4a3a7a;
     background: transparent; color: #b8a0e0; cursor: pointer;
     transition: all 0.15s; width: 80%; text-align: center; display: block;
     text-decoration: none;
   }
   .menu-btn:hover { border-color:#5a4a8a; color:#d0b8f0; background:rgba(124,58,237,0.05); }
-  .menu-btn.focused { border-color:#a855f7; color:#fff; background:rgba(168,85,247,0.2); box-shadow:0 0 10px rgba(168,85,247,0.4), inset 0 0 10px rgba(168,85,247,0.05); }
+  .menu-btn.focused { border-color:#a855f7; color:#fff; background:rgba(168,85,247,0.2); box-shadow:0 0 calc(10px * var(--fs-scale,1)) rgba(168,85,247,0.4), inset 0 0 calc(10px * var(--fs-scale,1)) rgba(168,85,247,0.05); }
   .menu-btn.danger { border-color:#3a0808; color:#7a1515; }
   .menu-btn.danger:hover, .menu-btn.danger.focused { border-color:#ff4444; color:#ff7777; background:rgba(255,34,34,0.1); }
-  .diff-row { display:flex; gap:3%; width:80%; justify-content:center; padding:2% 8%; border-radius:20px; border:1px solid transparent; transition:all 0.15s; box-sizing:border-box; }
+  .diff-row { display:flex; gap:3%; width:80%; justify-content:center; padding:2% 8%; border-radius:20px; border:calc(1px * var(--fs-scale,1)) solid transparent; transition:all 0.15s; box-sizing:border-box; }
   .diff-btn {
-    font-family:'Rajdhani',sans-serif; font-size:clamp(5px,1.2vw,9px);
-    letter-spacing:2px; text-transform:uppercase; padding:2% 4%;
-    border-radius:12px; border:1px solid #4a3a7a; background:transparent;
+    font-family:'Rajdhani',sans-serif; font-size: calc(clamp(5px,1.2vw,11px) * var(--fs-scale,1));
+    letter-spacing:0.2em; text-transform:uppercase; padding:2% 4%;
+    border-radius:999px; border:calc(1px * var(--fs-scale,1)) solid #4a3a7a; background:transparent;
     color:#7a6aaa; cursor:pointer; transition:all 0.15s; flex:1; text-align:center;
   }
-  .diff-row.focused { border-color:#a855f7; background:rgba(168,85,247,0.2); box-shadow:0 0 10px rgba(168,85,247,0.4), inset 0 0 10px rgba(168,85,247,0.05); }
-  .diff-btn.selected { border-color:#fbbf24; color:#fbbf24; background:rgba(251,191,36,0.2); text-shadow:0 0 6px rgba(251,191,36,0.5); }
-  .menu-label { font-family:'Rajdhani',sans-serif; font-size:clamp(5px,1.2vw,9px); letter-spacing:3px; text-transform:uppercase; color:#7a6aaa; text-align:center; }
-  .slider-row { width:80%; display:flex; flex-direction:column; gap:2%; padding:2% 8%; border-radius:20px; border:1px solid transparent; transition:all 0.15s; box-sizing:border-box; }
-  .slider-row.focused { border-color:#a855f7; background:rgba(168,85,247,0.2); box-shadow:0 0 10px rgba(168,85,247,0.4), inset 0 0 10px rgba(168,85,247,0.05); }
-  .slider-label { display:flex; justify-content:space-between; font-family:'Rajdhani',sans-serif; font-size:clamp(5px,1.2vw,9px); letter-spacing:3px; text-transform:uppercase; color:#b8a0e0; }
+  .diff-row.focused { border-color:#a855f7; background:rgba(168,85,247,0.2); box-shadow:0 0 calc(10px * var(--fs-scale,1)) rgba(168,85,247,0.4), inset 0 0 calc(10px * var(--fs-scale,1)) rgba(168,85,247,0.05); }
+  .diff-btn.selected { border-color:#fbbf24; color:#fbbf24; background:rgba(251,191,36,0.2); text-shadow:0 0 0.5em rgba(251,191,36,0.5); }
+  .menu-label { font-family:'Rajdhani',sans-serif; font-size: calc(clamp(5px,1.2vw,11px) * var(--fs-scale,1)); letter-spacing:0.28em; text-transform:uppercase; color:#7a6aaa; text-align:center; }
+  .slider-row { width:80%; display:flex; flex-direction:column; gap:2%; padding:2% 8%; border-radius:20px; border:calc(1px * var(--fs-scale,1)) solid transparent; transition:all 0.15s; box-sizing:border-box; }
+  .slider-row.focused { border-color:#a855f7; background:rgba(168,85,247,0.2); box-shadow:0 0 calc(10px * var(--fs-scale,1)) rgba(168,85,247,0.4), inset 0 0 calc(10px * var(--fs-scale,1)) rgba(168,85,247,0.05); }
+  .slider-label { display:flex; justify-content:space-between; font-family:'Rajdhani',sans-serif; font-size: calc(clamp(5px,1.2vw,11px) * var(--fs-scale,1)); letter-spacing:0.28em; text-transform:uppercase; color:#b8a0e0; }
   .slider-row input[type=range] {
-    width:100%; -webkit-appearance:none; appearance:none; height:4px;
+    width:100%; -webkit-appearance:none; appearance:none; height:calc(clamp(3px,0.45vw,7px) * var(--fs-scale,1));
     background:#4a3a7a; border-radius:2px; outline:none; cursor:pointer;
   }
   .slider-row input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance:none; width:14px; height:14px; border-radius:50%;
-    background:#c084fc; box-shadow:0 0 8px rgba(168,85,247,0.8); cursor:pointer;
+    -webkit-appearance:none; width:calc(clamp(12px,1.5vw,20px) * var(--fs-scale,1)); height:calc(clamp(12px,1.5vw,20px) * var(--fs-scale,1)); border-radius:50%;
+    background:#c084fc; box-shadow:0 0 calc(8px * var(--fs-scale,1)) rgba(168,85,247,0.8); cursor:pointer;
   }
   .slider-row input[type=range]::-moz-range-thumb {
-    width:14px; height:14px; border-radius:50%; border:none;
-    background:#c084fc; box-shadow:0 0 8px rgba(168,85,247,0.8); cursor:pointer;
+    width:calc(clamp(12px,1.5vw,20px) * var(--fs-scale,1)); height:calc(clamp(12px,1.5vw,20px) * var(--fs-scale,1)); border-radius:50%; border:none;
+    background:#c084fc; box-shadow:0 0 calc(8px * var(--fs-scale,1)) rgba(168,85,247,0.8); cursor:pointer;
   }
   #controls-list { width:85%; display:flex; flex-direction:column; gap:3%; }
-  .ctrl-row { display:flex; justify-content:space-between; align-items:center; font-family:'Rajdhani',sans-serif; font-size:clamp(8px,2.4vw,16px); letter-spacing:1px; color:#b8a0e0; padding:1.5% 0; border-bottom:1px solid rgba(74,58,122,0.4); }
-  .ctrl-row span:first-child { color:#c084fc; font-weight:700; letter-spacing:2px; }
+  .ctrl-row { display:flex; justify-content:space-between; align-items:center; font-family:'Rajdhani',sans-serif; font-size: calc(clamp(8px,2.4vw,20px) * var(--fs-scale,1)); letter-spacing:0.08em; color:#b8a0e0; padding:1.5% 0; border-bottom:calc(1px * var(--fs-scale,1)) solid rgba(74,58,122,0.4); }
+  .ctrl-row span:first-child { color:#c084fc; font-weight:700; letter-spacing:0.2em; }
   #hs-list { width:80%; max-height:55%; overflow-y:auto; }
   #hs-list ol { list-style:none; padding:0; margin:0; }
   #hs-list li {
-    font-family:'Rajdhani',sans-serif; font-size:clamp(4px,1.1vw,8px);
-    color:#b8a0e0; letter-spacing:2px; padding:1.5% 0;
+    font-family:'Rajdhani',sans-serif; font-size: calc(clamp(4px,1.1vw,10px) * var(--fs-scale,1));
+    color:#b8a0e0; letter-spacing:0.2em; padding:1.5% 0;
     display:flex; justify-content:space-between;
-    border-bottom:1px solid #1a1228;
+    border-bottom:calc(1px * var(--fs-scale,1)) solid #1a1228;
   }
   #hs-list li:first-child { color:#ffd700; }
-  #hs-list .hs-empty { font-family:'Rajdhani',sans-serif; font-size:clamp(4px,1.1vw,8px); color:#7a6aaa; text-align:center; padding:10% 0; }
+  #hs-list .hs-empty { font-family:'Rajdhani',sans-serif; font-size: calc(clamp(4px,1.1vw,10px) * var(--fs-scale,1)); color:#7a6aaa; text-align:center; padding:10% 0; }
   #ne-name { display:flex; gap:8%; justify-content:center; align-items:center; width:100%; }
   .ne-char {
-    font-family:'Orbitron',sans-serif; font-size:clamp(14px,4vw,28px);
-    color:#c084fc; text-shadow:0 0 10px rgba(168,85,247,0.9);
-    width:1.2em; text-align:center; border-bottom:2px solid #4a3a7a;
+    font-family:'Orbitron',sans-serif; font-size: calc(clamp(14px,4vw,35px) * var(--fs-scale,1));
+    color:#c084fc; text-shadow:0 0 0.6em rgba(168,85,247,0.9);
+    width:1.2em; text-align:center; border-bottom:calc(2px * var(--fs-scale,1)) solid #4a3a7a;
     cursor:default; transition:border-color 0.1s;
   }
   .ne-char.ne-active { border-bottom-color:#c084fc; }
   #ne-password { display:flex; gap:6%; justify-content:center; align-items:center; width:100%; margin-top:0; }
   .ne-pw-char {
-    font-family:'Orbitron',sans-serif; font-size:clamp(14px,4vw,28px);
-    color:#c084fc; text-shadow:0 0 10px rgba(168,85,247,0.9);
-    width:1.2em; text-align:center; border-bottom:2px solid #4a3a7a;
+    font-family:'Orbitron',sans-serif; font-size: calc(clamp(14px,4vw,35px) * var(--fs-scale,1));
+    color:#c084fc; text-shadow:0 0 0.6em rgba(168,85,247,0.9);
+    width:1.2em; text-align:center; border-bottom:calc(2px * var(--fs-scale,1)) solid #4a3a7a;
     cursor:default; transition:border-color 0.1s;
   }
   .ne-pw-char.ne-active { border-bottom-color:#c084fc; }
-  .ne-name-label { font-family:'Rajdhani',sans-serif; font-size:clamp(7px,1.5vw,12px); color:#5a4a7a; letter-spacing:3px; text-transform:uppercase; margin-bottom:4%; }
-  .ne-pw-label { font-family:'Rajdhani',sans-serif; font-size:clamp(7px,1.5vw,12px); color:#5a4a7a; letter-spacing:3px; text-transform:uppercase; margin-top:3%; }
-  .ne-instructions { font-family:'Rajdhani',sans-serif; font-size:clamp(9px,1.8vw,14px); color:#7a6aaa; letter-spacing:1px; text-align:center; margin-top:4%; }
-  .ne-instructions .ne-sep { color:#3a2a5a; margin:0 3px; }
-  .ne-instructions.error { color:#ff6b6b; text-shadow:0 0 6px rgba(255,50,50,0.4); font-size:clamp(10px,2vw,16px); }
+  .ne-name-label { font-family:'Rajdhani',sans-serif; font-size: calc(clamp(7px,1.5vw,15px) * var(--fs-scale,1)); color:#5a4a7a; letter-spacing:0.28em; text-transform:uppercase; margin-bottom:4%; }
+  .ne-pw-label { font-family:'Rajdhani',sans-serif; font-size: calc(clamp(7px,1.5vw,15px) * var(--fs-scale,1)); color:#5a4a7a; letter-spacing:0.28em; text-transform:uppercase; margin-top:3%; }
+  .ne-instructions { font-family:'Rajdhani',sans-serif; font-size: calc(clamp(9px,1.8vw,18px) * var(--fs-scale,1)); color:#7a6aaa; letter-spacing:0.08em; text-align:center; margin-top:4%; }
+  .ne-instructions .ne-sep { color:#3a2a5a; margin:0 0.25em; }
+  .ne-instructions.error { color:#ff6b6b; text-shadow:0 0 0.5em rgba(255,50,50,0.4); font-size: calc(clamp(10px,2vw,20px) * var(--fs-scale,1)); }
   
   /* game-mode */
   body.game-mode::before { content:''; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(8,8,16,0.9); z-index:50; pointer-events:none; }
@@ -430,7 +432,8 @@
   body.fullscreen-mode .screen-overlay { display:none !important; }
   body.fullscreen-mode #game-canvas,
   body.fullscreen-mode #game-hud,
-  body.fullscreen-mode .game-menu {
+  body.fullscreen-mode .game-menu,
+  body.fullscreen-mode #game-message {
     position: fixed !important; border-radius:0 !important;
   }
   body.mobile-game-hidden .mini-game-launch {
@@ -681,8 +684,10 @@ class Laser {
   }
   update() {
     this.x += this.vx; this.y += this.vy;
-    this.life -= this.decay;
-    return this.life > 0;
+    // Shmup behavior: lasers persist at full strength until they leave the
+    // arena (with margin), rather than fading out on a decay timer.
+    const c = Laser._c || (Laser._c = document.getElementById('game-canvas'));
+    return this.x > -40 && this.x < c.width + 40 && this.y > -40 && this.y < c.height + 40;
   }
   draw(ctx) {
     ctx.save();
@@ -2182,7 +2187,7 @@ let lastTime = 0;
   <div class="mini-game-launch" style="margin-top:28px; text-align:center; position:relative; z-index:1;">
     <div style="display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:10px;">
       <div style="height:1px;width:60px;background:linear-gradient(90deg,transparent,#7c3aed);"></div>
-      <span style="font-family:'Rajdhani',sans-serif;font-weight:300;font-size:11px;letter-spacing:4px;text-transform:uppercase;color:#6a5a9a;">mini game</span>
+      <span style="font-family:'Rajdhani',sans-serif;font-weight:300;font-size:clamp(11px, 1.1vw, 18px);letter-spacing:0.36em;text-transform:uppercase;color:#6a5a9a;">mini game</span>
       <div style="height:1px;width:60px;background:linear-gradient(90deg,#7c3aed,transparent);"></div>
     </div>
     <button id="play-button" type="button" class="play-link">Play</button>
@@ -2203,7 +2208,7 @@ let GAME_ASPECT = 81/40; // fallback; refreshed from .screen-overlay whenever me
 let BASELINE_BOX_W = null, BASELINE_BOX_H = null;
 let BASELINE_CANVAS_W = null, BASELINE_CANVAS_H = null;
 let RENDER_SCALE = 1;
-const FS_BOX_SELECTOR='#game-canvas,#game-hud,.game-menu';
+const FS_BOX_SELECTOR='#game-canvas,#game-hud,.game-menu,#game-message';
 function _captureGameAspect(){
   const so=document.querySelector('.screen-overlay');
   if(so){
@@ -2218,9 +2223,17 @@ function _applyFullscreenBox(){
   const vw=window.innerWidth, vh=window.innerHeight;
   let W,H;
   if(vw/vh>GAME_ASPECT){H=vh;W=vh*GAME_ASPECT;}else{W=vw;H=vw/GAME_ASPECT;}
+  // Snap to an exact integer multiple of the canvas bitmap so pixel-art
+  // upscaling is perfectly uniform (fractional scales cause uneven, fuzzy
+  // pixels). Falls back to the fractional fit on screens smaller than 1x.
+  if(BASELINE_CANVAS_W&&BASELINE_CANVAS_H){
+    const zi=Math.floor(Math.min(vw/BASELINE_CANVAS_W, vh/BASELINE_CANVAS_H));
+    if(zi>=1){W=BASELINE_CANVAS_W*zi;H=BASELINE_CANVAS_H*zi;}
+  }
   const left=(vw-W)/2, top=(vh-H)/2;
   const factor = BASELINE_BOX_W ? (W/BASELINE_BOX_W) : 1;
   RENDER_SCALE = factor;
+  document.documentElement.style.setProperty('--fs-scale', factor);
   document.querySelectorAll(FS_BOX_SELECTOR).forEach(el=>{
     if(el.id==='game-canvas'){
       // Keep the canvas's internal drawing resolution at the handheld baseline
@@ -2234,26 +2247,42 @@ function _applyFullscreenBox(){
       el.style.removeProperty('transform');
       el.style.removeProperty('transform-origin');
     }else{
-      // Lay out at the original handheld-sized box, then scale the whole
-      // panel up uniformly so fonts/icons/spacing grow proportionally.
-      el.style.setProperty('width',(W/factor)+'px','important');
-      el.style.setProperty('height',(H/factor)+'px','important');
+      // Lay out at the REAL fullscreen size and scale fonts/borders via the
+      // --fs-scale CSS variable instead of transform:scale(). Text and
+      // borders render natively at final resolution (crisp), rather than
+      // being rasterized small and stretched up (blurry).
+      el.style.setProperty('width',W+'px','important');
+      el.style.setProperty('height',H+'px','important');
       el.style.setProperty('left',left+'px','important');
       el.style.setProperty('top',top+'px','important');
-      el.style.setProperty('transform','scale('+factor+')','important');
-      el.style.setProperty('transform-origin','0 0','important');
+      el.style.removeProperty('transform');
+      el.style.removeProperty('transform-origin');
     }
   });
   return {W,H};
 }
 function _clearFullscreenBox(){
   RENDER_SCALE=1;
+  document.documentElement.style.setProperty('--fs-scale', 1);
   document.querySelectorAll(FS_BOX_SELECTOR).forEach(el=>{
     ['width','height','left','top','transform','transform-origin'].forEach(p=>el.style.removeProperty(p));
   });
 }
 function resizeGameCanvas() {
   if(document.body.classList.contains('fullscreen-mode')){
+    // If we entered fullscreen before handheld mode ever measured the game
+    // screen (e.g. fullscreen remembered from a previous session), derive the
+    // baseline from the screen-overlay's layout size now. Without this, the
+    // canvas keeps the browser default 300x150 bitmap and gets stretched
+    // (vertically distorted + blurry) into the fullscreen box.
+    if(!BASELINE_CANVAS_W||!BASELINE_CANVAS_H){
+      const so=document.querySelector('.screen-overlay');
+      if(so&&so.offsetWidth>0&&so.offsetHeight>0){
+        BASELINE_CANVAS_W=isMobile?Math.round(so.offsetWidth*M_SCALE):so.offsetWidth;
+        BASELINE_CANVAS_H=isMobile?Math.round(so.offsetHeight*M_SCALE):so.offsetHeight;
+      }
+    }
+    if(!BASELINE_BOX_W)_captureGameAspect();
     _applyFullscreenBox();
     if(BASELINE_CANVAS_W&&BASELINE_CANVAS_H){
       gameCanvas.width  = BASELINE_CANVAS_W;
@@ -3820,7 +3849,7 @@ class Boss{
    const cfg=BOSS_ART[bossType-1];
    this.type='boss';this.bossType=bossType;this.bossName=cfg.name;
     this.drawBody=cfg.draw;this.colors=cfg.colors;this.limbs=cfg.limbs||[];
-   this.w=cfg.w;this.h=cfg.h;this.renderScale=cfg.scale;
+   this.w=cfg.w;this.h=cfg.h;this.renderScale=cfg.scale;this.hitboxScale=1;
    this.hp=cfg.hp;this.maxHp=this.hp;this.bossScore=cfg.score;
    this.waveNum=waveNum;
    this.speed=0.5+Math.min(waveNum,50)*0.012;
@@ -4225,6 +4254,12 @@ function startGame(){
   player.x=gameCanvas.width/2;player.y=gameCanvas.height*0.7;
   player.vx=0;player.vy=0;invincible=120;
   lasers.length=0; shockwaves.length=0; enemies.length=0; miniMines.length=0; powerups.length=0; floatTexts.length=0; weaponLevel=0; rapidLevel=0; extraLives=0; bossNameTimer=0; currentBossName=''; clearBossWeapons(); initGameStars(); introTimer=150; gameOverTimer=0;
+  const _msg=document.getElementById('game-message');
+  const _mt=document.getElementById('msg-title');
+  const _ms=document.getElementById('msg-sub');
+  _mt.style.color='';_mt.style.textShadow='';
+  _ms.style.color='';_ms.style.textShadow='';_ms.style.order='';
+  _msg.style.opacity='';_msg.style.display='none';
   gameState='playing'; updateHUD();
   MUSIC.crossfade('normal',1200);
 }
@@ -4281,17 +4316,19 @@ function gameLoop(ts){
     // Intro cinematic
     if(introTimer>0){
       introTimer-=f;
-      if(introTimer<=0){spawnWave();showMessage('WAVE 1','',1000);}
-      const W=gameCanvas.width,H=gameCanvas.height;
+      if(introTimer<=0){const m=document.getElementById('game-message');m.style.opacity='';spawnWave();showMessage('WAVE 1','',1000);}
       const a=introTimer<30?introTimer/30:introTimer>120?(150-introTimer)/30:1;
-      ctx.save();
-      ctx.globalAlpha=Math.max(0,a);
-      ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.shadowColor='#a855f7';ctx.shadowBlur=25;
-      ctx.fillStyle='#fff';
-      ctx.font='800 14px Orbitron,sans-serif';
-      ctx.fillText('You are Earth\'s last hope.',W/2,H*0.38);
-      ctx.restore();
+      // Crisp DOM rendering (scales with --fs-scale) instead of low-res canvas text
+      const introMsg=document.getElementById('game-message');
+      if(introTimer>0){
+        document.getElementById('msg-title').textContent="You are Earth's last hope.";
+        document.getElementById('msg-sub').textContent='';
+        introMsg.style.display='flex';
+        introMsg.style.opacity=String(Math.max(0,Math.min(1,a)));
+      }else{
+        introMsg.style.opacity='';
+        introMsg.style.display='none';
+      }
       ctx.restore();
       requestAnimationFrame(gameLoop);
       return;
@@ -4355,7 +4392,7 @@ function gameLoop(ts){
       const e=enemies[i];try{e.update(f);}catch(err){console.error('Enemy update error:',err,e);enemies[i]=enemies[enemies.length-1];enemies.pop();continue;}
       for(let j=lasers.length-1;j>=0;j--){
         const l=lasers[j];
-         if(l.friendly&&Math.hypot(l.x-e.x,l.y-e.y)<e.w*e.renderScale*SCALE*0.65*e.hitboxScale){
+         if(l.friendly&&Math.abs(l.x-e.x)<e.w*e.renderScale*0.5*(e.hitboxScale||1)&&Math.abs(l.y-e.y)<e.h*e.renderScale*0.5*(e.hitboxScale||1)){
            if(e.shieldActive)continue;
            if(e.hitFlash!==undefined)e.hitFlash=4;
            for(let k=0;k<3;k++)emit(l.x,l.y,Math.atan2(-l.vy,-l.vx)+(Math.random()-0.5)*0.8,'spark',1);
@@ -4410,7 +4447,7 @@ function gameLoop(ts){
     for(let i=miniMines.length-1;i>=0;i--){
       const m=miniMines[i];
       if(!m.update()){spawnExplosion(m.x,m.y,10);miniMines[i]=miniMines[miniMines.length-1];miniMines.pop();continue;}
-      if(Math.hypot(m.x-player.x,m.y-player.y)<m.radius+SW*SCALE*0.5){
+      if(Math.hypot(m.x-player.x,m.y-player.y)<m.radius+SW*0.5){
         spawnExplosion(m.x,m.y,15);miniMines[i]=miniMines[miniMines.length-1];miniMines.pop();SND.explosion();
         if(invincible<=0&&overshieldTimer<=0){if(shieldHP>0){loseShieldHP();}else playerDie();}
       }
@@ -4424,8 +4461,8 @@ function gameLoop(ts){
     }
     if(invincible<=0&&overshieldTimer<=0){
       let hit=false;
-      for(let j=lasers.length-1;j>=0;j--){const l=lasers[j];if(!l.friendly&&Math.hypot(l.x-player.x,l.y-player.y)<SW*SCALE*0.7){lasers[j]=lasers[lasers.length-1];lasers.pop();hit=true;break;}}
-      if(!hit){for(const e of enemies){if(Math.hypot(e.x-player.x,e.y-player.y)<(SW+e.w*e.renderScale*e.hitboxScale)*SCALE*0.4){hit=true;break;}}}
+      for(let j=lasers.length-1;j>=0;j--){const l=lasers[j];if(!l.friendly&&Math.abs(l.x-player.x)<SW*0.5&&Math.abs(l.y-player.y)<SH*0.5){lasers[j]=lasers[lasers.length-1];lasers.pop();hit=true;break;}}
+      if(!hit){for(const e of enemies){if(Math.abs(e.x-player.x)<(SW+e.w*e.renderScale*(e.hitboxScale||1))*0.5&&Math.abs(e.y-player.y)<(SH+e.h*e.renderScale*(e.hitboxScale||1))*0.5){hit=true;break;}}}
       if(!hit&&updateAndDrawBossWeapons(f))hit=true;
       if(hit){
         if(shieldHP>0){loseShieldHP();}
@@ -4503,7 +4540,7 @@ function gameLoop(ts){
       else if(p.type===PT.bomb){label='BOMB';}
       ctx.translate(p.x,p.y+9);
       ctx.globalAlpha=Math.min(1,p.life*3);
-      ctx.fillStyle='#000';ctx.font='5px monospace';
+      ctx.fillStyle='#000';ctx.font='7px monospace';
       ctx.textAlign='center';ctx.textBaseline='top';
       ctx.fillText(label,1,1);
       ctx.fillStyle='#fff';ctx.fillText(label,0,0);
@@ -4514,7 +4551,7 @@ function gameLoop(ts){
       ctx.save();
       ctx.globalAlpha=Math.max(0,ft.life);
       ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.font='bold 7px monospace';
+      ctx.font='bold 9px monospace';
       ctx.shadowColor=ft.color;ctx.shadowBlur=4;
       ctx.fillStyle=ft.color;
       ctx.fillText(ft.text,ft.x,ft.y);
@@ -4576,33 +4613,43 @@ function gameLoop(ts){
     for(const l of lasers)l.draw(ctx);
     gameOverTimer=Math.min(gameOverTimer+f,120);
     if(gameOverTimer>30){
-     const W=gameCanvas.width,H=gameCanvas.height;
+     // Crisp DOM rendering (scales with --fs-scale) instead of low-res canvas text
      const a=Math.min(1,(gameOverTimer-30)/60);
-     ctx.save();
-     ctx.globalAlpha=a;
-     ctx.textAlign='center';ctx.textBaseline='middle';
-     ctx.shadowColor='#ff4444';ctx.shadowBlur=30;
-     ctx.fillStyle='#ff6666';
-     ctx.font='800 16px Orbitron,sans-serif';
-     ctx.fillText('You have failed Earth.',W/2,H*0.38);
-     ctx.restore();
+     const goMsg=document.getElementById('game-message');
+     const goTitle=document.getElementById('msg-title');
+     goTitle.textContent='You have failed Earth.';
+     goTitle.style.color='#ff6666';
+     goTitle.style.textShadow='0 0 0.6em rgba(255,68,68,0.9)';
+     document.getElementById('msg-sub').textContent='';
+     goMsg.style.display='flex';
+     goMsg.style.opacity=String(Math.max(0,Math.min(1,a)));
     }
    }
-   // Boss arrival cinematic overlay
+   // Boss arrival cinematic overlay — crisp DOM rendering
    if(bossNameTimer>0&&gameState==='playing'){
-    const W=gameCanvas.width,H=gameCanvas.height;
     const alpha=Math.min(1,bossNameTimer/30);
     const lines=currentBossName.split('\n');
-    ctx.save();
-    ctx.globalAlpha=alpha;
-    ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.shadowColor='#ff0000';ctx.shadowBlur=20;
-    ctx.fillStyle='#ff4444';ctx.font='800 18px Orbitron,sans-serif';
-    ctx.fillText(lines[0],W/2,H*0.28);
-    ctx.fillStyle='#fff';ctx.font='800 24px Orbitron,sans-serif';
-    ctx.shadowColor='#a855f7';ctx.shadowBlur=25;
-    ctx.fillText(lines[1],W/2,H*0.36);
-    ctx.restore();
+    const bMsg=document.getElementById('game-message');
+    const bTitle=document.getElementById('msg-title');
+    const bSub=document.getElementById('msg-sub');
+    bTitle.textContent=lines[1]||'';
+    bTitle.style.color='#fff';
+    bTitle.style.textShadow='0 0 0.6em rgba(168,85,247,0.95)';
+    bSub.textContent=lines[0]||'';
+    bSub.style.color='#ff4444';
+    bSub.style.textShadow='0 0 0.6em rgba(255,0,0,0.7)';
+    bSub.style.order='-1';
+    bMsg.style.display='flex';
+    bMsg.style.opacity=String(Math.max(0,Math.min(1,alpha)));
+   }else if(bossNameTimer<=0&&currentBossName){
+    // boss intro finished: clear the styling overrides and hide
+    currentBossName='';
+    const bMsg=document.getElementById('game-message');
+    const bTitle=document.getElementById('msg-title');
+    const bSub=document.getElementById('msg-sub');
+    bTitle.style.color='';bTitle.style.textShadow='';
+    bSub.style.color='';bSub.style.textShadow='';bSub.style.order='';
+    bMsg.style.opacity='';bMsg.style.display='none';
    }
    ctx.restore();
    requestAnimationFrame(gameLoop);
