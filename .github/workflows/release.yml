@@ -57,7 +57,7 @@ jobs:
             artifacts/PT-SkyWalker541-NextUI.zip \
             artifacts/PT-SkyWalker541-Standard-RetroArch.zip \
             artifacts/PT-SkyWalker541-README_GLSL.zip \
-            --title "PT SkyWalker541 — Latest" \
+            --title "PT-SkyWalker541 — Latest" \
             --notes-file RELEASE_NOTES.md \
             --latest
 
@@ -71,6 +71,6 @@ jobs:
             artifacts/PT-SkyWalker541-NextUI.zip \
             artifacts/PT-SkyWalker541-Standard-RetroArch.zip \
             artifacts/PT-SkyWalker541-README_GLSL.zip \
-            --title "PT SkyWalker541 $VERSION" \
+            --title "PT-SkyWalker541 $VERSION" \
             --notes-file RELEASE_NOTES.md \
             --latest
