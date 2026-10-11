@@ -30,4 +30,4 @@ This release ships three separate archives:
 
 See **README_GLSL.md** for full documentation and recommended settings per system.
 
-*PT-SkyWalker541 by SkyWalker541 | v2.0.0 | RetroArch and NextUI | AI assisted development*
+*PT-SkyWalker541 by SkyWalker541 | v2.0.0 | RetroArch and NextUI*
