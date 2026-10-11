@@ -63,6 +63,20 @@ Pixel Effect LCD Dot mode inspired by Themaister's dot shader (public domain).
 
 ---
 
+## Screenshots
+
+Glare and sheen active on top of Grid, pixel transparency, and drop shadow — running on a **Retroid Pocket Classic**.
+
+<div align="center">
+
+|  |  |
+| :---: | :---: |
+| ![Glare and sheen on Grid, pixel transparency and drop shadow (Retroid Pocket Classic)](docs/glare_sheen_retroid_pocket_classic_1.png) | ![Glare and sheen on Grid, pixel transparency and drop shadow (Retroid Pocket Classic)](docs/glare_sheen_retroid_pocket_classic_2.png) |
+
+</div>
+
+---
+
 ## Features
 
 * **Pixel Transparency Restoration:** Detects white and near-white pixels to blend them toward a procedural backing texture. Includes modes for White-only, Bright, or All pixels.
