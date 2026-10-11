@@ -65,7 +65,9 @@ Pixel Effect LCD Dot mode inspired by Themaister's dot shader (public domain).
 
 ## Screenshots
 
-Glare and sheen active on top of Grid, pixel transparency, and drop shadow — running on a **Retroid Pocket Classic**.
+**Glare and sheen, on top of the full pixel-transparency stack.**
+
+Grid, pixel transparency, and drop shadow with the new optional light and rainbow sheen — captured on a Retroid Pocket Classic.
 
 <div align="center">
 
