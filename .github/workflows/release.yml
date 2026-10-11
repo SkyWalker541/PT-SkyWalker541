@@ -7,6 +7,8 @@ on:
     paths:
       - 'NextUI/**'
       - 'Standard RetroArch/**'
+      - 'README.md'
+      - 'RELEASE_NOTES.md'
 
 jobs:
   release:
@@ -29,9 +31,15 @@ jobs:
             echo "version=latest" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create zip
+      - name: Create zips
         run: |
-          zip -r PT-SkyWalker541.zip "NextUI" "Standard RetroArch"
+          mkdir -p artifacts
+          cp "Standard RetroArch/README_GLSL.md" README_GLSL.md
+          zip -r artifacts/PT-SkyWalker541-NextUI.zip NextUI \
+            -x "*.DS_Store" -x "*._*" -x "*__MACOSX/*"
+          zip -r artifacts/PT-SkyWalker541-Standard-RetroArch.zip "Standard RetroArch" \
+            -x "Standard RetroArch/README_GLSL.md" -x "*.DS_Store" -x "*._*" -x "*__MACOSX/*"
+          zip artifacts/PT-SkyWalker541-README_GLSL.zip README_GLSL.md
 
       - name: Delete existing latest release (for updates)
         if: steps.version.outputs.is_release == 'false'
@@ -45,9 +53,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create latest PT-SkyWalker541.zip \
+          gh release create latest \
+            artifacts/PT-SkyWalker541-NextUI.zip \
+            artifacts/PT-SkyWalker541-Standard-RetroArch.zip \
+            artifacts/PT-SkyWalker541-README_GLSL.zip \
             --title "PT SkyWalker541 — Latest" \
-            --notes "Latest shader files. Updated automatically on every push." \
+            --notes-file RELEASE_NOTES.md \
             --latest
 
       - name: Create versioned release
@@ -56,7 +67,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          gh release create "$VERSION" PT-SkyWalker541.zip \
+          gh release create "$VERSION" \
+            artifacts/PT-SkyWalker541-NextUI.zip \
+            artifacts/PT-SkyWalker541-Standard-RetroArch.zip \
+            artifacts/PT-SkyWalker541-README_GLSL.zip \
             --title "PT SkyWalker541 $VERSION" \
-            --notes "Release $VERSION" \
+            --notes-file RELEASE_NOTES.md \
             --latest

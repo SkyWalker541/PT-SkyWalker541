@@ -5,11 +5,12 @@
 
 **Performance-focused GLSL shader for low-power handhelds.**
 
-[![RetroArch Version](https://img.shields.io/badge/RetroArch-v1.8.0-brightgreen?style=flat-square)](#)
-[![NextUI Version](https://img.shields.io/badge/NextUI-v1.8.0-brightgreen?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-v2.0.0-brightgreen?style=flat-square)](#)
+[![RetroArch](https://img.shields.io/badge/RetroArch-gl%20%2F%20glcore-blue?style=flat-square)](#)
+[![NextUI](https://img.shields.io/badge/NextUI-v6.11.0%2B-blue?style=flat-square)](#)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey?style=flat-square)](#)
 
-[What It Does](#what-it-does) • [Latest Update](#-v180-update) • [Installation](#installation) • [Recommended Settings](#recommended-settings)
+[What It Does](#what-it-does) • [Latest Update](#-v200-update) • [Installation](#installation) • [Recommended Settings](#recommended-settings)
 
 [![Shader Showcase](docs/showcase_banner.svg)](https://skywalker541.github.io/PT-SkyWalker541)
 
@@ -18,17 +19,19 @@
 ---
 
 > [!IMPORTANT]
-> ### v1.8.0 Update
-> Both the RetroArch and NextUI versions have been upgraded to **v1.8.0**.
-> * **Unified Pixel Effect System:** Replaces the previous pixel border parameter with distinct simulation modes: **Grid, LCD Dot, and CRT Phosphor**.
-> * **Optimized Performance:** Each mode is tuned to run at minimum cost when not selected. Parameters for inactive modes have no effect on the image.
-> * **Enhanced Control:** Adds dedicated parameters for dot size, dot sharpness, phosphor bloom, scanlines, and subpixel layout (RGB/BGR).
-> * **Black Level Threshold:** A parameter for LCD Dot and CRT Phosphor modes that controls where the dot effect fades in relative to black. The RetroArch version uses the raw input frame so color correction cannot cause unlit pixels to appear lit.
-> * **Gap / Grid Color:** New parameter for Grid, LCD Dot, and CRT Phosphor modes. Sets the color for gaps between pixels and grid lines. Choose between Backing Texture, Black, or White. Backing Texture uses the existing background parameters at zero extra cost.
-> * **Gap / Grid Color Intensity:** Controls how strongly the selected gap / grid color appears. Works across all three Pixel Effect modes.
-> * **Parameter Naming:** All parameter code names have been updated to closely match their menu label names, making it much easier to edit defaults directly in the shader file.
-> * **NextUI Update:** The NextUI version has been upgraded to **v1.8.0**, adding Gap / Grid Color, Gap / Grid Color Intensity, Grid width rename, removal of Dot brightness compensation, and parameter naming updates to match the RetroArch version.
-> * Note: some parameters default to 0 and will need adjusted to suit your device and preference.
+> ### v2.0.0 Update
+> A major release. One shader file now serves both RetroArch and NextUI (there is no longer a separate NextUI build or NextUI readme).
+>
+> **Upgrading from 1.x:** parameter code names changed, so saved shader presets and parameter overrides from 1.x fall back to the default values. Re-save your settings after updating. The old-to-new name table is in **[README_GLSL.md](Standard%20RetroArch/README_GLSL.md)**.
+>
+> * **CRT Phosphor removed:** it does not apply to the reflective LCD systems this shader targets. Pixel Effect now has three modes: **Off, Grid, and LCD Dot**.
+> * **New menu layout:** every group has a `== Name ==` main row with its settings indented beneath it. Effect-specific rows are tagged **[Grid]**, **[LCD Dot]** or **[Grid+Dot]**, so it is obvious what each parameter affects.
+> * **Plain-language names:** every menu label now says what the setting does, and the code names match the labels.
+> * **Grid reworked:** *Grid line width* is now a real line thickness (a fraction of one game pixel), and Grid has its own *Grid line opacity*.
+> * **LCD Dot reworked:** *Dot edge softness* sets how soft the edge of each dot is (0 = hard, 1 = soft), and LCD Dot has its own *Dot gap opacity*. The old shared *Gap / Grid color intensity* setting is gone.
+> * **Backing gap fix:** with *Gap color* set to Backing, the gaps around non-white pixels in White mode used to render black. They now use the real backing color.
+> * **Better low-end compatibility:** the vertex shader passes 3 varyings instead of 8, the source is pure ASCII, a zero-width `smoothstep` was guarded, and the fallback defaults now match the parameter defaults. This targets devices where the shader previously appeared in the pass list but showed no parameters and had no effect.
+> * **New defaults** (tuned on a GBC): Game system GBC, Transparent pixels All, Transparency amount 0.10, Backing color strength 2.00, Grid line width 0.25, Grid line opacity 0.50, Dot size 0.90, Dot gap opacity 0.50.
 
 ---
 
@@ -39,7 +42,7 @@ On original Game Boy, GBC, and GBA hardware, pixels that were fully off didn't s
 **PT SkyWalker541** restores this original appearance by detecting white and bright pixels and blending them toward a procedurally generated backing texture.
 
 Inspired by mattakins' pixel transparency work.
-Pixel Effect dot and phosphor modes inspired by Themaister's dot shader (public domain).
+Pixel Effect LCD Dot mode inspired by Themaister's dot shader (public domain).
 
 
 ---
@@ -48,189 +51,109 @@ Pixel Effect dot and phosphor modes inspired by Themaister's dot shader (public 
 
 * **Pixel Transparency Restoration:** Detects white and near-white pixels to blend them toward a procedural backing texture. Includes modes for White-only, Bright, or All pixels.
 * **Procedural Backing Texture:** Grainy noise tinted to match original hardware (Pocket grey, GBC/GBA grey, or GBA SP white).
-* **Unified Pixel Effects (v1.8.0):**
-    * **Grid:** Classic gap simulation between pixels. Available in both RetroArch and NextUI versions.
-    * **LCD Dot:** Circular Gaussian dots with adjustable size, sharpness, and black level threshold. Available in both versions. The RetroArch version uses the raw input frame for black detection so color correction does not affect unlit pixels.
-    * **CRT Phosphor:** 9-sample neighbourhood simulation with RGB/BGR subpixel stripes, bloom spread, dot gamma, and scanline roll-off. RetroArch version only — excluded from NextUI to maintain performance on low-power hardware.
-* **Black Level Threshold (v1.7.1):** Controls where the dot effect fades in above black. Hard gate on truly black pixels ensures zero cost and clean blacks regardless of setting.
-* **Gap / Grid Color (v1.8.0):** Sets the color that appears in pixel gaps and grid lines for Grid, LCD Dot, and CRT Phosphor modes. Backing Texture uses the existing background parameters at zero extra cost. Black and White options include a Gap / Grid Color Intensity slider for opacity control. Dot and Phosphor brightness compensation parameters have been removed — Gap / Grid Color solves brightness at the source, making them redundant.
-* **Drop Shadow:** Casts a subtle shadow from solid pixels onto the backing material at all sprite and tile edges.
-* **Bezel Shadow:** Darkens screen edges to simulate the shadow cast by the physical bezel; width is set automatically per system.
-* **Color Harshness Filter:** Softens overly vivid dark colors, most useful for aggressive GBC palettes.
+* **Pixel Effects:**
+    * **Grid:** Classic gap simulation between pixels, with a real line width and its own opacity.
+    * **LCD Dot:** Round dots with adjustable size, edge softness, gap opacity, and minimum brightness. Black detection uses the raw input frame, so color correction cannot make unlit pixels appear lit.
+* **Gap color:** Sets the color that appears in the grid lines and between the dots. *Backing* uses the existing backing texture at zero extra cost; *Black* and *White* are also available.
+* **Drop Shadow:** Casts a subtle shadow from solid pixels onto the backing material at all sprite and tile edges, with four directions.
+* **Bezel Edge Shadow:** Darkens screen edges to simulate the shadow cast by the physical bezel; width is set automatically per system.
+* **Darken Picture:** Softens overly vivid dark colors, most useful for aggressive GBC palettes.
 
 ---
 
 ## Installation
 
-### RetroArch (v1.8.0)
+### RetroArch
 1. Place `PT_SkyWalker541.glslp` in your `shaders_glsl/handheld/` folder.
 2. Place `PT_SkyWalker541.glsl` in the `shaders_glsl/handheld/shaders/` subfolder.
 3. Load the `.glslp` from **Quick Menu > Shaders > Load Shader Preset**.
-4. Open Shader Parameters and set System to match your target hardware.
+4. Open Shader Parameters and set **Game system** to match your target hardware.
 5. Refer to **[README_GLSL.md](Standard%20RetroArch/README_GLSL.md)** for full documentation and recommended settings per system.
 
-### NextUI (v1.8.0)
-1. Place `PT_SkyWalker541_NextUI.cfg` in your `Shaders/` folder.
-2. Place `PT_SkyWalker541_NextUI.glsl` in the `Shaders/glsl/` subfolder.
+### NextUI (v6.11.0 and later)
+1. Place `PT_SkyWalker541.cfg` in your `Shaders/` folder.
+2. Place `PT_SkyWalker541.glsl` in the `Shaders/glsl/` subfolder.
 3. Load the `.cfg` from the in-game shader menu.
-4. Open Shader Parameters and set System to match your target system.
+4. Open Shader Parameters and set **Game system** to match your target system.
 5. Refer to **[README_GLSL.md](Standard%20RetroArch/README_GLSL.md)** for full documentation and recommended settings per system.
 
 ---
 
 ## System Presets
 
-The System parameter selects a pre-tuned white detection threshold and bezel width for each system's characteristics.
+**Game system** selects a pre-tuned white detection level and bezel shadow width for each system's characteristics.
 
-| PT_SYSTEM | Target System | RA Threshold | NextUI Threshold |
-| :---: | :--- | :---: | :---: |
-| **0** | **Manual** (Use Sensitivity) | — | — |
-| **1** | **Game Boy / Pocket** | 0.90 | 0.62 |
-| **2** | **Game Boy Color** | 0.85 | 0.68 |
-| **3** | **GBA SP** (Front-lit) | 0.80 | 0.45 |
-| **4** | **GBA Original** | 0.75 | 0.42 |
+| PT_GAME_SYSTEM | Target System | White detection level |
+| :---: | :--- | :---: |
+| **0** | **Manual** (use *Manual white detection level*) | — |
+| **1** | **Game Boy / Pocket** | 0.90 |
+| **2** | **Game Boy Color** (default) | 0.85 |
+| **3** | **GBA SP** (Front-lit) | 0.80 |
+| **4** | **GBA Original** | 0.75 |
 
 ---
 
 ## Recommended Settings
 
+One set of settings works as a good starting point for every system. The shader's built-in defaults were tuned and tested on a Game Boy Color, so all you need to change per system is **Game system** and **Backing color**.
+
+**1. Set these two for your system:**
+
+| System | Game system | Backing color |
+| :--- | :---: | :---: |
+| Game Boy / Pocket | 1 | 1 (Pocket) |
+| Game Boy Color | 2 | 1 (Pocket) |
+| GBA SP | 3 | 3 (White) |
+| GBA Original | 4 | 2 (Grey) |
+
+**2. Leave everything else at the defaults:**
+
+| Parameter | Value |
+| :--- | :--- |
+| Transparent pixels | 2 (All) |
+| Transparency amount | 0.10 |
+| Minimum white transparency | 0.20 |
+| Backing color strength | 2.00 |
+| Darken picture | 0 |
+| Pixel Effect | 1 (Grid) |
+| Gap color | 0 (Backing) |
+| Grid line width | 0.25 |
+| Grid line opacity | 0.50 |
+| Drop shadow opacity | 0.30 |
+| Shadow distance | 1.0 |
+| Shadow direction | 0 (Down Right) |
+| Bezel edge shadow | 0.40 |
+
+**LCD Dot alternative:** to use LCD Dot instead of Grid, set **Pixel Effect** to 2 and use these:
+
+| Parameter | Value |
+| :--- | :--- |
+| Pixel Effect | 2 (LCD Dot) |
+| Gap color | 0 (Backing) |
+| Dot size | 0.90 |
+| Dot edge softness | 1.00 |
+| Dot gap opacity | 0.50 |
+| Min brightness for dots | 0.15 |
+
 > [!NOTE]
-> These are recommended starting points. All parameters can be adjusted to suit your preference and screen. See **[README_GLSL.md](Standard%20RetroArch/README_GLSL.md)**, found in the Standard RetroArch folder, for full documentation.
+> This is a good starting point for each system when **Game system** and **Backing color** are set for that system as shown above. All parameters can be adjusted to suit your preference and screen. See **[README_GLSL.md](Standard%20RetroArch/README_GLSL.md)**, found in the Standard RetroArch folder, for full documentation.
 >
 > **Low-power devices (e.g. TrimUI Brick):** The pixel transparency system uses the majority of the GPU budget on constrained hardware. **Grid** is recommended over LCD Dot as the Pixel Effect mode — LCD Dot adds additional per-pixel cost that can cause slowdown. Grid remains nearly free at any setting.
+>
+> **Grid line width and your screen:** the width is a fraction of one game pixel, and a screen can only draw whole pixels. With integer scaling at N times, one screen pixel is 1/N of a game pixel, so widths below about 1/N fade out or do not show. See **Grid line width and screen resolution** in README_GLSL.md.
 
----
+### Emulator core settings
 
-### Game Boy DMG
+These are settings in the emulator core, not the shader.
 
-**Core Settings — Gambatte / SameBoy**
+| System | Core | Color correction | Interframe blending |
+| :--- | :--- | :--- | :--- |
+| Game Boy / Pocket | Gambatte / SameBoy | Disabled | Disabled |
+| Game Boy Color | Gambatte / SameBoy | GBC Only | Disabled |
+| GBA SP | mGBA | Enabled | Smart |
+| GBA Original | mGBA | Enabled | LCD ghosting (accurate) |
 
-| Setting | Value |
-| :--- | :--- |
-| Color correction | Disabled |
-| Interframe blending | Disabled |
-| GB Colorization | Disabled |
-
-**Shader Parameters**
-
-| Parameter | Value |
-| :--- | :--- |
-| System | 1 |
-| Pixel mode | 0 (White only) |
-| Base transparency amount | 0.20 |
-| White pixel min transparency | 0.20 |
-| Background tint | 1 (Pocket) |
-| Tint intensity | 1.00 |
-| Dark color filter | 0 |
-| Pixel Effect | 2 (LCD Dot) |
-| Dot size | 0.60 |
-| Dot sharpness | 0.20 |
-| Black level threshold | 0.15 |
-| Gap / Grid color | 0 (Backing Texture) |
-| Gap / Grid color intensity | 0.30 |
-| Shadow offset | 1.0 |
-| Shadow direction | 0 (Down Right) |
-| Shadow opacity | 0.30 |
-| Bezel shadow strength | 0.30 |
-
----
-
-### Game Boy Color
-
-**Core Settings — Gambatte / SameBoy**
-
-| Setting | Value |
-| :--- | :--- |
-| Color correction | GBC Only |
-| Interframe blending | Disabled |
-
-**Shader Parameters**
-
-| Parameter | Value |
-| :--- | :--- |
-| System | 2 |
-| Pixel mode | 0 (White only) |
-| Base transparency amount | 0.20 |
-| White pixel min transparency | 0.20 |
-| Background tint | 1 (Pocket) |
-| Tint intensity | 1.00 |
-| Dark color filter | 10 |
-| Pixel Effect | 2 (LCD Dot) |
-| Dot size | 0.60 |
-| Dot sharpness | 0.20 |
-| Black level threshold | 0.15 |
-| Gap / Grid color | 0 (Backing Texture) |
-| Gap / Grid color intensity | 0.30 |
-| Shadow offset | 1.0 |
-| Shadow direction | 0 (Down Right) |
-| Shadow opacity | 0.30 |
-| Bezel shadow strength | 0.30 |
-
----
-
-### Game Boy Advance Original
-
-**Core Settings — mGBA**
-
-| Setting | Value |
-| :--- | :--- |
-| Color correction | Enabled |
-| Interframe blending | LCD ghosting (accurate) |
-
-**Shader Parameters**
-
-| Parameter | Value |
-| :--- | :--- |
-| System | 4 |
-| Pixel mode | 0 (White only) |
-| Base transparency amount | 0.25 |
-| White pixel min transparency | 0.55 |
-| Background tint | 2 (Grey) |
-| Tint intensity | 1.00 |
-| Dark color filter | 0 |
-| Pixel Effect | 2 (LCD Dot) |
-| Dot size | 0.60 |
-| Dot sharpness | 0.20 |
-| Black level threshold | 0.15 |
-| Gap / Grid color | 0 (Backing Texture) |
-| Gap / Grid color intensity | 0.30 |
-| Shadow offset | 1.0 |
-| Shadow direction | 0 (Down Right) |
-| Shadow opacity | 0.20 |
-| Bezel shadow strength | 0.30 |
-
----
-
-### Game Boy Advance SP
-
-**Core Settings — mGBA**
-
-| Setting | Value |
-| :--- | :--- |
-| Color correction | Enabled |
-| Interframe blending | Smart |
-
-**Shader Parameters**
-
-| Parameter | Value |
-| :--- | :--- |
-| System | 3 |
-| Pixel mode | 0 (White only) |
-| Base transparency amount | 0.15 |
-| White pixel min transparency | 0.45 |
-| Background tint | 3 (White) |
-| Tint intensity | 1.00 |
-| Dark color filter | 0 |
-| Pixel Effect | 2 (LCD Dot) |
-| Dot size | 0.65 |
-| Dot sharpness | 0.20 |
-| Black level threshold | 0.15 |
-| Gap / Grid color | 0 (Backing Texture) |
-| Gap / Grid color intensity | 0.30 |
-| Shadow offset | 1.0 |
-| Shadow direction | 0 (Down Right) |
-| Shadow opacity | 0.20 |
-| Bezel shadow strength | 0.30 |
+For Game Boy / Pocket, also disable GB Colorization.
 
 ---
 
@@ -241,6 +164,6 @@ This shader specifically targets low-power emulation devices — handhelds and b
 
 <div align="center">
 
-*PT SkyWalker541 by SkyWalker541 | RetroArch v1.8.0 | NextUI v1.8.0 | AI assisted development*
+*PT SkyWalker541 by SkyWalker541 | v2.0.0 | RetroArch and NextUI | AI assisted development*
 
 </div>

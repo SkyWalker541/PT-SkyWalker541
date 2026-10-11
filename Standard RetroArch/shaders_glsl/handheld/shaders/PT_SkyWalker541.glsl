@@ -1,91 +1,139 @@
 /*
-  PT SkyWalker541  v1.8.0
+  PT SkyWalker541  v2.0.0
   by SkyWalker541  |  RetroArch GLSL
 
   Pixel transparency shader inspired by mattakins' pixel transparency work.
   Restores GB/GBC/GBA backing material appearance on white/bright pixels.
 
-  Pixel Effect dot and phosphor modes inspired by Themaister's dot shader
+  Pixel Effect LCD Dot mode inspired by Themaister's dot shader
   (public domain).
 
-  v1.7.0 — replaced PT_PIXEL_BORDER with unified Pixel Effect system:
+  v1.7.0 - replaced PT_PIXEL_BORDER with unified Pixel Effect system:
             Grid, LCD Dot (Gaussian falloff), CRT Phosphor (9-sample
             neighbourhood, RGB subpixels, scanlines, bloom). All effect
             parameters strictly gated to their own mode for minimum cost
             when not selected.
 
-  v1.7.1 — added Black Level Threshold parameter shared by LCD Dot and
+  v1.7.1 - added Black Level Threshold parameter shared by LCD Dot and
             CRT Phosphor modes. Black detection uses the raw input frame
             before color correction so unlit pixels remain clean regardless
             of emulator color settings. Hard gate on truly black pixels
             ensures clean blacks at zero cost regardless of threshold value.
 
-  v1.8.0 — added PT_GAP_GRID_COLOR and PT_GAP_GRID_COLOR_INTENSITY parameters.
+  v1.8.0 - added PT_GAP_GRID_COLOR and PT_GAP_GRID_COLOR_INTENSITY parameters.
             Gap / Grid color applies to Grid, LCD Dot, and CRT Phosphor modes.
             Backing Texture option uses the already-computed bg value at zero
             extra cost. Black and White options use PT_GAP_GRID_COLOR_INTENSITY
             for opacity control. Removed Dot brightness compensation and
-            Phosphor brightness comp parameters — these were designed to recover
+            Phosphor brightness comp parameters - these were designed to recover
             brightness lost to pure black gaps. PT_GAP_GRID_COLOR now solves
             this at the source making compensation redundant. Also renamed all
             parameter code names to closely match their menu label names.
-            Added PT_SHADOW_DIRECTION parameter — lets the user choose from
+            Added PT_SHADOW_DIRECTION parameter - lets the user choose from
             four drop shadow directions (Down Right, Down Left, Up Right,
             Up Left). Default is Down Right. Corrected shadow offset direction
             to cast down and to the right by default.
+
+  v2.0.0 - major release (supersedes the unreleased 1.8.1 work). Parameter
+            code names changed, so saved presets from 1.x fall back to the
+            default values and should be re-saved. Removed CRT Phosphor mode
+            (it does not apply to the reflective LCD systems this shader
+            targets) and made the shader safer on low-end / strict GLSL ES
+            drivers.
+            * Pixel Effect now has three modes: Off, Grid, LCD Dot.
+            * Removed all PT_PHOSPHOR_* parameters.
+            * Menu labels renamed to say plainly what each setting does.
+            * Menu reorganised: each group has a "== Name ==" main row with its
+              dependent settings indented beneath it, and effect-specific rows
+              tagged [Grid], [LCD Dot] or [Grid+Dot].
+            * Code names now match the menu labels (old -> new):
+                PT_SYSTEM                        -> PT_GAME_SYSTEM
+                PT_MANUAL_SENSITIVITY_THRESHOLD  -> PT_MANUAL_WHITE_DETECTION_LEVEL
+                PT_PIXEL_MODE                    -> PT_TRANSPARENT_PIXELS
+                PT_BASE_TRANSPARENCY_AMOUNT      -> PT_TRANSPARENCY_AMOUNT
+                PT_WHITE_PIXEL_MIN_TRANSPARENCY  -> PT_MINIMUM_WHITE_TRANSPARENCY
+                PT_BACKGROUND_TINT               -> PT_BACKING_COLOR
+                PT_TINT_INTENSITY                -> PT_BACKING_COLOR_STRENGTH
+                PT_DARK_COLOR_FILTER             -> PT_DARKEN_PICTURE
+                PT_GRID_WIDTH                    -> PT_GRID_LINE_WIDTH (now a real line width)
+                PT_DOT_SHARPNESS                 -> PT_DOT_EDGE_SOFTNESS (new range and meaning)
+                PT_BLACK_LEVEL_THRESHOLD         -> PT_MIN_BRIGHTNESS_FOR_DOTS
+                PT_GAP_GRID_COLOR                -> PT_GAP_COLOR
+                PT_GAP_GRID_COLOR_INTENSITY      -> split into PT_GRID_LINE_OPACITY and
+                                                    PT_DOT_GAP_OPACITY
+                PT_SHADOW_OPACITY                -> PT_DROP_SHADOW_OPACITY
+                PT_SHADOW_OFFSET                 -> PT_SHADOW_DISTANCE
+                PT_BEZEL_SHADOW_STRENGTH         -> PT_BEZEL_EDGE_SHADOW
+              Presets that saved an old name fall back to the default value.
+            * Backing gap fix: with Gap color = Backing, gaps around non-white
+              pixels in White mode used to come out black. They now use the
+              real backing color, built by a shared computeBacking() function
+              that white pixels use too (their result is unchanged).
+            * Grid reworked: Grid line width is now a real line thickness, and
+              Grid has its own opacity (PT_GRID_LINE_OPACITY).
+              Width is a fraction of one game pixel. With integer scaling at
+              N times, one screen pixel is 1/N of a game pixel, so very thin
+              widths (roughly below 1/N) fade out or do not show.
+            * LCD Dot reworked: Dot edge softness (formerly Dot sharpness) sets
+              how soft the dot's edge is (0 = hard edge, 1 = soft, which
+              matches the old default look), and LCD Dot has its own opacity
+              (PT_DOT_GAP_OPACITY).
+              The shared gap strength setting no longer exists.
+            * New defaults: Game system GBC, Transparent pixels All, Transparency
+              amount 0.10, Backing color strength 2.0, Grid line width 0.25,
+              Grid line opacity 0.50, Dot size 0.90, Dot gap opacity 0.50.
+            * Vertex shader now passes only TEX0, texel and orig_coord
+              (3 varyings instead of 8).
+            * Source is now pure ASCII (box-drawing characters, em dashes and
+              arrows removed from comments) - some mobile GLSL compilers
+              reject non-ASCII bytes even inside comments.
+            * Guarded smoothstep() against a zero Black Level Threshold
+              (undefined behaviour when both edges are equal).
+            * Fallback #define defaults now match the #pragma defaults.
 */
 
-// ── PARAMETERS ───────────────────────────────────────────────────────────────
+
+// -- PARAMETERS ---------------------------------------------------------------
+
+// Menu layout: each "== Name ==" row is the main setting for a group. The
+// "     > " rows beneath it only matter when that main setting is turned on.
+// Tags in square brackets show which pixel effect a row applies to.
+// RetroArch lists parameters in the order of the lines below.
 
 // System
-#pragma parameter PT_SYSTEM              "System (0=Manual, 1=GB, 2=GBC, 3=GBA SP, 4=GBA Orig)" 1.0 0.0 4.0 1.0
-#pragma parameter PT_MANUAL_SENSITIVITY_THRESHOLD         "  Manual sensitivity threshold"            0.85 0.0 1.0 0.01
+#pragma parameter PT_GAME_SYSTEM "== Game system == (0=Manual, 1=GB, 2=GBC, 3=GBA SP, 4=GBA Orig)" 2.0 0.0 4.0 1.0
+#pragma parameter PT_MANUAL_WHITE_DETECTION_LEVEL "     > Manual white detection level (Manual only)" 0.85 0.0 1.0 0.01
 
 // Pixel Transparency
-#pragma parameter PT_PIXEL_MODE          "Pixel mode (0=White, 1=Bright, 2=All)"    0.0 0.0 2.0 1.0
-#pragma parameter PT_BASE_TRANSPARENCY_AMOUNT          "  Base transparency amount"                0.20 0.0 1.0 0.01
-#pragma parameter PT_WHITE_PIXEL_MIN_TRANSPARENCY  "  White pixel min transparency"            0.20 0.0 1.0 0.01
+#pragma parameter PT_TRANSPARENT_PIXELS "== Transparent pixels == (0=White, 1=Bright, 2=All)" 2.0 0.0 2.0 1.0
+#pragma parameter PT_TRANSPARENCY_AMOUNT "     > Transparency amount" 0.10 0.0 1.0 0.01
+#pragma parameter PT_MINIMUM_WHITE_TRANSPARENCY "     > Minimum white transparency" 0.20 0.0 1.0 0.01
 
 // Background
-#pragma parameter PT_BACKGROUND_TINT             "Background tint (0=Off, 1=Pocket, 2=Grey, 3=White)" 1.0 0.0 3.0 1.0
-#pragma parameter PT_TINT_INTENSITY   "  Tint intensity"                          1.0 0.0 2.0 0.05
-
+#pragma parameter PT_BACKING_COLOR "== Backing color == (0=Off, 1=Pocket, 2=Grey, 3=White)" 1.0 0.0 3.0 1.0
+#pragma parameter PT_BACKING_COLOR_STRENGTH "     > Backing color strength" 2.0 0.0 2.0 0.05
 // Color Filter
-#pragma parameter PT_DARK_COLOR_FILTER   "Dark color filter (0=off)"                0.0 0.0 100.0 1.0
+#pragma parameter PT_DARKEN_PICTURE "== Darken picture == (0=Off)" 0.0 0.0 100.0 1.0
 
-// Pixel Effect — mode selector
-#pragma parameter PT_PIXEL_EFFECT           "Pixel Effect (0=Off, 1=Grid, 2=LCD Dot, 3=CRT Phosphor)" 1.0 0.0 3.0 1.0
-
-// [Grid] parameters — only active when PT_PIXEL_EFFECT = 1
-#pragma parameter PT_GRID_WIDTH       "  [Grid]     Grid width"                0.08 0.0 1.0 0.01
-
-// [LCD Dot] parameters — only active when PT_PIXEL_EFFECT = 2
-#pragma parameter PT_DOT_SIZE            "  [LCD Dot]  Dot size"                     0.50 0.1 0.9 0.01
-#pragma parameter PT_DOT_SHARPNESS       "  [LCD Dot]  Dot sharpness"                0.0  0.0 5.0 0.1
-
-// [Phosphor] parameters — only active when PT_PIXEL_EFFECT = 3
-#pragma parameter PT_PHOSPHOR_DOT_SIZE           "  [Phosphor] Phosphor dot size"            0.50 0.1 0.9 0.01
-#pragma parameter PT_PHOSPHOR_BLOOM_SPREAD          "  [Phosphor] Bloom spread"                 0.0  0.0 1.0 0.01
-#pragma parameter PT_PHOSPHOR_DOT_GAMMA          "  [Phosphor] Dot gamma"                    2.40 0.5 5.0 0.05
-#pragma parameter PT_PHOSPHOR_SCANLINE_STRENGTH       "  [Phosphor] Scanline strength"            0.0  0.0 1.0 0.01
-#pragma parameter PT_PHOSPHOR_SUBPIXEL_LAYOUT         "  [Phosphor] Subpixel layout (0=RGB, 1=BGR)" 0.0 0.0 1.0 1.0
-
-// [Dot/Phosphor] shared parameter — active when PT_PIXEL_EFFECT = 2 or 3
-#pragma parameter PT_BLACK_LEVEL_THRESHOLD     "  [Dot/Phosphor] Black level threshold"    0.15 0.0 1.0 0.01
-
-// Gap / Grid Color — applies to Grid, LCD Dot, and CRT Phosphor modes
-#pragma parameter PT_GAP_GRID_COLOR           "  Gap / Grid color (0=Backing Texture, 1=Black, 2=White)" 0.0 0.0 2.0 1.0
-#pragma parameter PT_GAP_GRID_COLOR_INTENSITY       "  Gap / Grid color intensity"                     1.0 0.0 1.0 0.01
+// Pixel Effect
+#pragma parameter PT_PIXEL_EFFECT "== Pixel Effect == (0=Off, 1=Grid, 2=LCD Dot)" 1.0 0.0 2.0 1.0
+#pragma parameter PT_GAP_COLOR "     > [Grid+Dot] Gap color (0=Backing, 1=Black, 2=White)" 0.0 0.0 2.0 1.0
+#pragma parameter PT_GRID_LINE_WIDTH "     > [Grid] Grid line width" 0.25 0.0 0.5 0.01
+#pragma parameter PT_GRID_LINE_OPACITY "     > [Grid] Grid line opacity" 0.50 0.0 1.0 0.01
+#pragma parameter PT_DOT_SIZE "     > [LCD Dot] Dot size" 0.90 0.1 0.9 0.01
+#pragma parameter PT_DOT_EDGE_SOFTNESS "     > [LCD Dot] Dot edge softness (0=hard, 1=soft)" 1.0 0.0 1.0 0.01
+#pragma parameter PT_DOT_GAP_OPACITY "     > [LCD Dot] Dot gap opacity" 0.50 0.0 1.0 0.01
+#pragma parameter PT_MIN_BRIGHTNESS_FOR_DOTS "     > [LCD Dot] Min brightness for dots" 0.15 0.0 1.0 0.01
 
 // Drop Shadow
-#pragma parameter PT_SHADOW_OFFSET       "Shadow offset"                             1.0 -10.0 10.0 0.5
-#pragma parameter PT_SHADOW_DIRECTION    "  Shadow direction (0=Down Right, 1=Down Left, 2=Up Right, 3=Up Left)" 0.0 0.0 3.0 1.0
-#pragma parameter PT_SHADOW_OPACITY      "  Shadow opacity (0=off)"                  0.30 0.0 1.0 0.01
+#pragma parameter PT_DROP_SHADOW_OPACITY "== Drop shadow opacity == (0=Off)" 0.30 0.0 1.0 0.01
+#pragma parameter PT_SHADOW_DISTANCE "     > Shadow distance" 1.0 -10.0 10.0 0.5
+#pragma parameter PT_SHADOW_DIRECTION "     > Shadow direction (0=Down Right, 1=Down Left, 2=Up Right, 3=Up Left)" 0.0 0.0 3.0 1.0
 
 // Bezel Shadow
-#pragma parameter PT_BEZEL_SHADOW_STRENGTH               "Bezel shadow strength (0=off)"             0.40 0.0 1.0 0.01
+#pragma parameter PT_BEZEL_EDGE_SHADOW "== Bezel edge shadow == (0=Off)" 0.40 0.0 1.0 0.01
 
-// ── VERTEX SHADER ────────────────────────────────────────────────────────────
+// -- VERTEX SHADER ------------------------------------------------------------
 #if defined(VERTEX)
 
 #if __VERSION__ >= 130
@@ -110,15 +158,6 @@ COMPAT_VARYING   vec2 TEX0;
 COMPAT_VARYING   vec2 texel;
 COMPAT_VARYING   vec2 orig_coord;
 
-// Phosphor 9-sample neighbourhood coords packed into vec4 pairs.
-// Declared always — vertex cost on 4 vertices is negligible.
-// xy = neighbour A, zw = neighbour B.
-COMPAT_VARYING   vec4 phos_c00_c10;   // (-1,-1) and ( 0,-1)
-COMPAT_VARYING   vec4 phos_c20_c01;   // ( 1,-1) and (-1, 0)
-COMPAT_VARYING   vec4 phos_c21_c02;   // ( 1, 0) and (-1, 1)
-COMPAT_VARYING   vec4 phos_c12_c22;   // ( 0, 1) and ( 1, 1)
-COMPAT_VARYING   vec2 phos_c11;       // ( 0, 0) centre
-
 uniform mat4 MVPMatrix;
 uniform COMPAT_PRECISION vec2 OutputSize;
 uniform COMPAT_PRECISION vec2 TextureSize;
@@ -126,38 +165,15 @@ uniform COMPAT_PRECISION vec2 InputSize;
 uniform COMPAT_PRECISION vec2 OrigTextureSize;
 uniform COMPAT_PRECISION vec2 OrigInputSize;
 
-#ifdef PARAMETER_UNIFORM
-uniform COMPAT_PRECISION float PT_PHOSPHOR_DOT_SIZE;
-#else
-#define PT_PHOSPHOR_DOT_SIZE 0.50
-#endif
-
 void main()
 {
     gl_Position = MVPMatrix * VertexCoord;
     TEX0        = TexCoord.xy;
     texel       = 1.0 / TextureSize;
     orig_coord  = TEX0.xy * (TextureSize / InputSize) * (OrigInputSize / OrigTextureSize);
-
-    // Phosphor neighbourhood coords — pixel_no is position in source pixel space,
-    // d converts back to texture coordinates.
-    // Spread scaled by PT_PHOSPHOR_DOT_SIZE so dot size affects neighbourhood reach.
-    vec2  pixel_no = TEX0.xy * TextureSize / InputSize * OrigInputSize;
-    vec2  d        = 1.0 / TextureSize * InputSize / OrigInputSize;
-    float spread   = PT_PHOSPHOR_DOT_SIZE;
-
-    phos_c00_c10 = vec4((pixel_no + vec2(-1.0, -1.0) * spread) * d,
-                        (pixel_no + vec2( 0.0, -1.0) * spread) * d);
-    phos_c20_c01 = vec4((pixel_no + vec2( 1.0, -1.0) * spread) * d,
-                        (pixel_no + vec2(-1.0,  0.0) * spread) * d);
-    phos_c21_c02 = vec4((pixel_no + vec2( 1.0,  0.0) * spread) * d,
-                        (pixel_no + vec2(-1.0,  1.0) * spread) * d);
-    phos_c12_c22 = vec4((pixel_no + vec2( 0.0,  1.0) * spread) * d,
-                        (pixel_no + vec2( 1.0,  1.0) * spread) * d);
-    phos_c11     = pixel_no * d;
 }
 
-// ── FRAGMENT SHADER ──────────────────────────────────────────────────────────
+// -- FRAGMENT SHADER ----------------------------------------------------------
 #elif defined(FRAGMENT)
 
 #if __VERSION__ >= 130
@@ -191,72 +207,59 @@ uniform sampler2D OrigTexture;
 COMPAT_VARYING vec2 TEX0;
 COMPAT_VARYING vec2 texel;
 COMPAT_VARYING vec2 orig_coord;
-COMPAT_VARYING vec4 phos_c00_c10;
-COMPAT_VARYING vec4 phos_c20_c01;
-COMPAT_VARYING vec4 phos_c21_c02;
-COMPAT_VARYING vec4 phos_c12_c22;
-COMPAT_VARYING vec2 phos_c11;
 
-// ── PARAMETER UNIFORMS / FALLBACKS ───────────────────────────────────────────
+// -- PARAMETER UNIFORMS / FALLBACKS -------------------------------------------
 #ifdef PARAMETER_UNIFORM
-uniform COMPAT_PRECISION float PT_SYSTEM;
-uniform COMPAT_PRECISION float PT_MANUAL_SENSITIVITY_THRESHOLD;
-uniform COMPAT_PRECISION float PT_PIXEL_MODE;
-uniform COMPAT_PRECISION float PT_BASE_TRANSPARENCY_AMOUNT;
-uniform COMPAT_PRECISION float PT_WHITE_PIXEL_MIN_TRANSPARENCY;
-uniform COMPAT_PRECISION float PT_BACKGROUND_TINT;
-uniform COMPAT_PRECISION float PT_TINT_INTENSITY;
-uniform COMPAT_PRECISION float PT_DARK_COLOR_FILTER;
+uniform COMPAT_PRECISION float PT_GAME_SYSTEM;
+uniform COMPAT_PRECISION float PT_MANUAL_WHITE_DETECTION_LEVEL;
+uniform COMPAT_PRECISION float PT_TRANSPARENT_PIXELS;
+uniform COMPAT_PRECISION float PT_TRANSPARENCY_AMOUNT;
+uniform COMPAT_PRECISION float PT_MINIMUM_WHITE_TRANSPARENCY;
+uniform COMPAT_PRECISION float PT_BACKING_COLOR;
+uniform COMPAT_PRECISION float PT_BACKING_COLOR_STRENGTH;
+uniform COMPAT_PRECISION float PT_DARKEN_PICTURE;
 uniform COMPAT_PRECISION float PT_PIXEL_EFFECT;
-uniform COMPAT_PRECISION float PT_GRID_WIDTH;
+uniform COMPAT_PRECISION float PT_GAP_COLOR;
+uniform COMPAT_PRECISION float PT_GRID_LINE_WIDTH;
+uniform COMPAT_PRECISION float PT_GRID_LINE_OPACITY;
 uniform COMPAT_PRECISION float PT_DOT_SIZE;
-uniform COMPAT_PRECISION float PT_DOT_SHARPNESS;
-uniform COMPAT_PRECISION float PT_PHOSPHOR_DOT_SIZE;
-uniform COMPAT_PRECISION float PT_PHOSPHOR_BLOOM_SPREAD;
-uniform COMPAT_PRECISION float PT_PHOSPHOR_DOT_GAMMA;
-uniform COMPAT_PRECISION float PT_PHOSPHOR_SCANLINE_STRENGTH;
-uniform COMPAT_PRECISION float PT_PHOSPHOR_SUBPIXEL_LAYOUT;
-uniform COMPAT_PRECISION float PT_BLACK_LEVEL_THRESHOLD;
-uniform COMPAT_PRECISION float PT_GAP_GRID_COLOR;
-uniform COMPAT_PRECISION float PT_GAP_GRID_COLOR_INTENSITY;
-uniform COMPAT_PRECISION float PT_SHADOW_OFFSET;
+uniform COMPAT_PRECISION float PT_DOT_EDGE_SOFTNESS;
+uniform COMPAT_PRECISION float PT_DOT_GAP_OPACITY;
+uniform COMPAT_PRECISION float PT_MIN_BRIGHTNESS_FOR_DOTS;
+uniform COMPAT_PRECISION float PT_DROP_SHADOW_OPACITY;
+uniform COMPAT_PRECISION float PT_SHADOW_DISTANCE;
 uniform COMPAT_PRECISION float PT_SHADOW_DIRECTION;
-uniform COMPAT_PRECISION float PT_SHADOW_OPACITY;
-uniform COMPAT_PRECISION float PT_BEZEL_SHADOW_STRENGTH;
+uniform COMPAT_PRECISION float PT_BEZEL_EDGE_SHADOW;
 #else
-#define PT_SYSTEM             1.0
-#define PT_MANUAL_SENSITIVITY_THRESHOLD        0.85
-#define PT_PIXEL_MODE         0.0
-#define PT_BASE_TRANSPARENCY_AMOUNT         0.20
-#define PT_WHITE_PIXEL_MIN_TRANSPARENCY 0.20
-#define PT_BACKGROUND_TINT            1.0
-#define PT_TINT_INTENSITY  1.0
-#define PT_DARK_COLOR_FILTER  0.0
-#define PT_PIXEL_EFFECT          1.0
-#define PT_GRID_WIDTH      0.13
-#define PT_DOT_SIZE           0.60
-#define PT_DOT_SHARPNESS      0.20
-#define PT_PHOSPHOR_DOT_SIZE          0.50
-#define PT_PHOSPHOR_BLOOM_SPREAD         0.0
-#define PT_PHOSPHOR_DOT_GAMMA         2.40
-#define PT_PHOSPHOR_SCANLINE_STRENGTH      0.0
-#define PT_PHOSPHOR_SUBPIXEL_LAYOUT        0.0
-#define PT_BLACK_LEVEL_THRESHOLD    0.15
-#define PT_GAP_GRID_COLOR          0.0
-#define PT_GAP_GRID_COLOR_INTENSITY      0.30
-#define PT_SHADOW_OFFSET      1.0
-#define PT_SHADOW_DIRECTION   0.0
-#define PT_SHADOW_OPACITY     0.30
-#define PT_BEZEL_SHADOW_STRENGTH              0.30
+// Fallback defaults - generated from, and identical to, the #pragma parameter defaults above.
+#define PT_GAME_SYSTEM                   2.0
+#define PT_MANUAL_WHITE_DETECTION_LEVEL  0.85
+#define PT_TRANSPARENT_PIXELS            2.0
+#define PT_TRANSPARENCY_AMOUNT           0.10
+#define PT_MINIMUM_WHITE_TRANSPARENCY    0.20
+#define PT_BACKING_COLOR                 1.0
+#define PT_BACKING_COLOR_STRENGTH        2.0
+#define PT_DARKEN_PICTURE                0.0
+#define PT_PIXEL_EFFECT                  1.0
+#define PT_GAP_COLOR                     0.0
+#define PT_GRID_LINE_WIDTH               0.25
+#define PT_GRID_LINE_OPACITY             0.50
+#define PT_DOT_SIZE                      0.90
+#define PT_DOT_EDGE_SOFTNESS             1.0
+#define PT_DOT_GAP_OPACITY               0.50
+#define PT_MIN_BRIGHTNESS_FOR_DOTS       0.15
+#define PT_DROP_SHADOW_OPACITY           0.30
+#define PT_SHADOW_DISTANCE               1.0
+#define PT_SHADOW_DIRECTION              0.0
+#define PT_BEZEL_EDGE_SHADOW             0.40
 #endif
 
-// ── CONSTANTS ────────────────────────────────────────────────────────────────
+// -- CONSTANTS ----------------------------------------------------------------
 #define LUMA_R 0.2126
 #define LUMA_G 0.7152
 #define LUMA_B 0.0722
-#define PI     3.14159265
 
-// ── HELPER FUNCTIONS ─────────────────────────────────────────────────────────
+// -- HELPER FUNCTIONS ---------------------------------------------------------
 
 float getBrightness(vec3 c)
 {
@@ -265,10 +268,10 @@ float getBrightness(vec3 c)
 
 float resolveThreshold()
 {
-    if (PT_SYSTEM < 0.5) return PT_MANUAL_SENSITIVITY_THRESHOLD;
-    if (PT_SYSTEM < 1.5) return 0.90;
-    if (PT_SYSTEM < 2.5) return 0.85;
-    if (PT_SYSTEM < 3.5) return 0.80;
+    if (PT_GAME_SYSTEM < 0.5) return PT_MANUAL_WHITE_DETECTION_LEVEL;
+    if (PT_GAME_SYSTEM < 1.5) return 0.90;
+    if (PT_GAME_SYSTEM < 2.5) return 0.85;
+    if (PT_GAME_SYSTEM < 3.5) return 0.80;
     return 0.75;
 }
 
@@ -301,25 +304,39 @@ vec3 proceduralBackground(vec2 uv)
     return vec3(0.478 + offset);
 }
 
-// ── PIXEL EFFECT — MODE 1 : GRID ─────────────────────────────────────────────
-// fract/abs border darkening. No texture samples, no exp(), no sqrt().
-// Only PT_GRID_WIDTH (Grid width) is evaluated.
+// Smooth fade-in from black. The threshold is clamped away from zero because
+// smoothstep() is undefined when both edges are equal.
+float blackLevelFade(float rawLuma)
+{
+    return smoothstep(0.0, max(PT_MIN_BRIGHTNESS_FOR_DOTS, 0.001), rawLuma);
+}
+
+// -- PIXEL EFFECT - MODE 1 : GRID ---------------------------------------------
+// Thin lines along the borders between source pixels. No texture samples.
+// PT_GRID_LINE_WIDTH sets the line thickness (as a fraction of one source
+// pixel); PT_GRID_LINE_OPACITY sets how strongly the gap color covers the
+// pixel underneath the line.
 
 vec3 applyGrid(vec3 color, vec2 coord, vec3 gapColor)
 {
     vec2  cellUV = fract(coord * TextureSize);
-    float bx     = 1.0 - abs(cellUV.x * 2.0 - 1.0);
-    float by     = 1.0 - abs(cellUV.y * 2.0 - 1.0);
-    float gridMask = bx * by;
-    // gridMask: 1 at cell centre, 0 at cell edges.
-    // Blend between gap / grid color and pixel color based on mask and strength.
-    float t = mix(1.0, gridMask, PT_GRID_WIDTH);
-    return mix(mix(color, gapColor, PT_GAP_GRID_COLOR_INTENSITY), color, t);
+
+    // Distance from this point to the nearest pixel border:
+    // 0 on the border, 0.5 at the pixel centre.
+    float edgeDist = min(min(cellUV.x, 1.0 - cellUV.x), min(cellUV.y, 1.0 - cellUV.y));
+
+    // Each pixel holds half of the line on every side of it. A small fixed
+    // soft edge keeps the line from looking jagged. Width 0 gives no line.
+    float halfWidth = PT_GRID_LINE_WIDTH * 0.5;
+    float lineMask  = 1.0 - smoothstep(halfWidth - 0.04, halfWidth, edgeDist);
+
+    return mix(color, gapColor, lineMask * PT_GRID_LINE_OPACITY);
 }
 
-// ── PIXEL EFFECT — MODE 2 : LCD DOT ──────────────────────────────────────────
-// Gaussian falloff from dot centre with brightness-dependent dot sizing.
-// Single sample. Only PT_DOT_SIZE, PT_DOT_SHARPNESS evaluated.
+// -- PIXEL EFFECT - MODE 2 : LCD DOT ------------------------------------------
+// Round dot with an adjustable edge and brightness-dependent dot sizing.
+// Single sample. Only the dot parameters, the minimum brightness and the
+// shared gap color are evaluated.
 
 vec3 applyLCDDot(vec3 color, vec2 coord, float rawLuma, vec3 gapColor)
 {
@@ -327,7 +344,7 @@ vec3 applyLCDDot(vec3 color, vec2 coord, float rawLuma, vec3 gapColor)
     // cause unlit pixels to appear lit. Dot structure fades in smoothly
     // as raw pixel brightness rises above black.
     if (rawLuma < 0.01) return color;
-    float lumaFade = smoothstep(0.0, PT_BLACK_LEVEL_THRESHOLD, rawLuma);
+    float lumaFade = blackLevelFade(rawLuma);
     float luma     = getBrightness(color);
 
     vec2  cellUV = fract(coord * TextureSize);
@@ -335,118 +352,32 @@ vec3 applyLCDDot(vec3 color, vec2 coord, float rawLuma, vec3 gapColor)
     float dist   = sqrt(dot(delta, delta));
 
     // Brightness-dependent radius: bright pixels get slightly larger dots,
-    // dark pixels slightly smaller — consistent with physical LCD behaviour.
+    // dark pixels slightly smaller - consistent with physical LCD behaviour.
     float bloomBias = mix(0.0, 0.08, luma);
     float radius    = PT_DOT_SIZE * 0.5 + bloomBias;
 
-    // Sharpness controls Gaussian falloff rate.
-    // sharpness=0 → soft edge; sharpness=5 → near-hard edge.
-    float falloff = PT_DOT_SHARPNESS + 1.0;
-    float edge    = clamp(radius - dist, 0.0, 1.0);
-    float dotMask = pow(edge / max(radius, 0.001), falloff);
-    dotMask       = clamp(dotMask, 0.0, 1.0);
+    // Dot edge softness sets how wide the soft edge is, as a fraction of the dot
+    // radius: 0 = hard-edged disk, 1 = the edge fades all the way in to the
+    // centre. A tiny minimum keeps a hard edge from being jagged.
+    float softEdge = max(PT_DOT_EDGE_SOFTNESS * radius, 0.02);
+    float dotMask  = clamp((radius - dist) / softEdge, 0.0, 1.0);
 
-    // Apply dot mask using gap / grid color — gaps show gapColor rather than black.
+    // Outside the dot, cover the pixel with the gap color at PT_DOT_GAP_OPACITY.
     // lumaFade ensures dark pixels blend back to original color.
-    vec3 dotResult = mix(mix(color, gapColor, PT_GAP_GRID_COLOR_INTENSITY), color, dotMask);
+    vec3 dotResult = mix(color, gapColor, (1.0 - dotMask) * PT_DOT_GAP_OPACITY);
     vec3 result    = mix(color, dotResult, lumaFade);
 
     return result;
 }
 
-// ── PIXEL EFFECT — MODE 3 : CRT PHOSPHOR ─────────────────────────────────────
-// 9-sample Gaussian neighbourhood, RGB subpixel stripes, scanlines.
-// Only PT_PHOSPHOR_* parameters evaluated.
-
-// Gaussian contribution of one neighbour pixel.
-// Brightness-dependent size: bright=larger dot, dark=smaller dot.
-float phosphorDot(vec2 pixel_no, float offset_x, float offset_y, vec3 srcColor)
-{
-    vec2  delta  = fract(pixel_no) - (vec2(offset_x, offset_y) + vec2(0.5));
-    float dist   = sqrt(dot(delta, delta));
-    float bright = dot(srcColor, vec3(0.30, 0.59, 0.11));
-    float bloom  = mix(1.05, 0.95, bright);
-    return exp(-PT_PHOSPHOR_DOT_GAMMA * dist * bloom);
-}
-
-// RGB subpixel stripe mask with optional BGR layout and scanline roll-off.
-vec3 subpixelMask(float cellX, float cellY)
-{
-    float edge   = 0.08;
-    float rStripe = smoothstep(0.0,   0.0   + edge, cellX) - smoothstep(0.333, 0.333 + edge, cellX);
-    float gStripe = smoothstep(0.333, 0.333 + edge, cellX) - smoothstep(0.667, 0.667 + edge, cellX);
-    float bStripe = smoothstep(0.667, 0.667 + edge, cellX) - smoothstep(1.0,   1.0   + edge, cellX);
-
-    // Scanline: cosine roll-off vertically, strength controlled by PT_PHOSPHOR_SCANLINE_STRENGTH.
-    float scan    = 0.5 + 0.5 * cos(cellY * PI);
-    float scanMod = mix(1.0, scan, PT_PHOSPHOR_SCANLINE_STRENGTH);
-    rStripe *= scanMod;
-    gStripe *= scanMod;
-    bStripe *= scanMod;
-
-    if (PT_PHOSPHOR_SUBPIXEL_LAYOUT > 0.5)
-        return vec3(bStripe, gStripe, rStripe);   // BGR
-    else
-        return vec3(rStripe, gStripe, bStripe);   // RGB
-}
-
-vec3 applyPhosphor(vec3 color, vec2 coord, float rawLuma, vec3 gapColor)
-{
-    // Gate: uses raw input frame brightness so color correction cannot
-    // cause unlit pixels to appear lit. Phosphor structure fades in
-    // smoothly as raw pixel brightness rises above black.
-    if (rawLuma < 0.01) return color;
-    float lumaFade = smoothstep(0.0, PT_BLACK_LEVEL_THRESHOLD, rawLuma);
-
-    vec2 pixel_no = coord * TextureSize / InputSize * OrigInputSize;
-
-    // 9-sample neighbourhood using vertex-precomputed coords.
-    vec3 s11 = COMPAT_TEXTURE(Texture, phos_c11).rgb;
-    vec3 s00 = COMPAT_TEXTURE(Texture, phos_c00_c10.xy).rgb;
-    vec3 s10 = COMPAT_TEXTURE(Texture, phos_c00_c10.zw).rgb;
-    vec3 s20 = COMPAT_TEXTURE(Texture, phos_c20_c01.xy).rgb;
-    vec3 s01 = COMPAT_TEXTURE(Texture, phos_c20_c01.zw).rgb;
-    vec3 s21 = COMPAT_TEXTURE(Texture, phos_c21_c02.xy).rgb;
-    vec3 s02 = COMPAT_TEXTURE(Texture, phos_c21_c02.zw).rgb;
-    vec3 s12 = COMPAT_TEXTURE(Texture, phos_c12_c22.xy).rgb;
-    vec3 s22 = COMPAT_TEXTURE(Texture, phos_c12_c22.zw).rgb;
-
-    // Accumulate Gaussian-weighted colour from all neighbours.
-    vec3 acc = vec3(0.0);
-    acc += s11 * phosphorDot(pixel_no,  0.0,  0.0, s11);
-    acc += s00 * phosphorDot(pixel_no, -1.0, -1.0, s00);
-    acc += s10 * phosphorDot(pixel_no,  0.0, -1.0, s10);
-    acc += s20 * phosphorDot(pixel_no,  1.0, -1.0, s20);
-    acc += s01 * phosphorDot(pixel_no, -1.0,  0.0, s01);
-    acc += s21 * phosphorDot(pixel_no,  1.0,  0.0, s21);
-    acc += s02 * phosphorDot(pixel_no, -1.0,  1.0, s02);
-    acc += s12 * phosphorDot(pixel_no,  0.0,  1.0, s12);
-    acc += s22 * phosphorDot(pixel_no,  1.0,  1.0, s22);
-
-    // Blend between sharp centre dot and full neighbourhood bloom.
-    vec3 sharpDot = s11 * phosphorDot(pixel_no, 0.0, 0.0, s11);
-    vec3 bloomed  = mix(sharpDot, acc, PT_PHOSPHOR_BLOOM_SPREAD);
-
-    // Apply RGB subpixel mask — gaps / grid blend toward gapColor.
-    vec2 cellUV = fract(coord * TextureSize);
-    vec3 mask   = subpixelMask(cellUV.x, cellUV.y);
-    vec3 result = mix(mix(color, gapColor, PT_GAP_GRID_COLOR_INTENSITY), bloomed, mask);
-
-    // Blend effect with original color based on pixel brightness —
-    // dark pixels get little to no phosphor masking.
-    result = mix(color, result, lumaFade);
-
-    return result;
-}
-
-// ── UNIFIED PIXEL EFFECT DISPATCHER ──────────────────────────────────────────
-// Strictly gated — each branch only evaluates its own mode's parameters.
+// -- UNIFIED PIXEL EFFECT DISPATCHER ------------------------------------------
+// Strictly gated - each branch only evaluates its own mode's parameters.
 
 vec3 resolveGapColor(vec3 bg)
 {
-    if (PT_GAP_GRID_COLOR < 0.5) return bg;            // Backing Texture
-    if (PT_GAP_GRID_COLOR < 1.5) return vec3(0.0);    // Black
-    return vec3(1.0);                             // White
+    if (PT_GAP_COLOR < 0.5) return bg;            // Backing Texture
+    if (PT_GAP_COLOR < 1.5) return vec3(0.0);     // Black
+    return vec3(1.0);                                  // White
 }
 
 vec3 applyPixelEffect(vec3 color, vec2 coord, float rawLuma, vec3 bg)
@@ -454,20 +385,19 @@ vec3 applyPixelEffect(vec3 color, vec2 coord, float rawLuma, vec3 bg)
     if (PT_PIXEL_EFFECT < 0.5) return color;
     vec3 gapColor = resolveGapColor(bg);
     if (PT_PIXEL_EFFECT < 1.5) return applyGrid(color, coord, gapColor);
-    if (PT_PIXEL_EFFECT < 2.5) return applyLCDDot(color, coord, rawLuma, gapColor);
-    return applyPhosphor(color, coord, rawLuma, gapColor);
+    return applyLCDDot(color, coord, rawLuma, gapColor);
 }
 
-// ── BEZEL SHADOW ─────────────────────────────────────────────────────────────
+// -- BEZEL SHADOW -------------------------------------------------------------
 
 vec3 applyBezelShadow(vec3 color, vec2 coord)
 {
-    if (PT_BEZEL_SHADOW_STRENGTH < 0.001) return color;
+    if (PT_BEZEL_EDGE_SHADOW < 0.001) return color;
 
     float scale = 35.0;
-    if      (PT_SYSTEM < 1.5) scale = 22.0;
-    else if (PT_SYSTEM < 2.5) scale = 35.0;
-    else if (PT_SYSTEM < 3.5) scale = 70.0;
+    if      (PT_GAME_SYSTEM < 1.5) scale = 22.0;
+    else if (PT_GAME_SYSTEM < 2.5) scale = 35.0;
+    else if (PT_GAME_SYSTEM < 3.5) scale = 70.0;
     else                      scale = 55.0;
 
     vec2  gameUV = coord / (InputSize / TextureSize);
@@ -475,10 +405,51 @@ vec3 applyBezelShadow(vec3 color, vec2 coord)
     float shadow = clamp((1.0 - abs(uv.x)) * scale, 0.0, 1.0) *
                    clamp((1.0 - abs(uv.y)) * scale, 0.0, 1.0);
 
-    return color * mix(1.0 - PT_BEZEL_SHADOW_STRENGTH, 1.0, shadow);
+    return color * mix(1.0 - PT_BEZEL_EDGE_SHADOW, 1.0, shadow);
 }
 
-// ── MAIN ─────────────────────────────────────────────────────────────────────
+// -- BACKING MATERIAL ---------------------------------------------------------
+// The color of the screen's backing at this pixel: procedural grain, a drop
+// shadow cast by dark neighbouring pixels, then the backing color tint.
+// It shows through transparent pixels and, when Gap color is Backing, it also
+// fills the gaps of the pixel effects.
+
+vec3 computeBacking(float threshold)
+{
+    // Procedural backing texture.
+    vec3 bg = proceduralBackground(TEX0.xy);
+
+    // Drop shadow - single tap on raw frame, before palette tint.
+    if (PT_DROP_SHADOW_OPACITY > 0.001) {
+        vec2 shadowDir;
+        if      (PT_SHADOW_DIRECTION < 0.5) shadowDir = vec2(-1.0,  1.0);  // Down Right
+        else if (PT_SHADOW_DIRECTION < 1.5) shadowDir = vec2( 1.0,  1.0);  // Down Left
+        else if (PT_SHADOW_DIRECTION < 2.5) shadowDir = vec2(-1.0, -1.0);  // Up Right
+        else                                shadowDir = vec2( 1.0, -1.0);  // Up Left
+        vec2  shadowPos      = orig_coord + shadowDir * PT_SHADOW_DISTANCE * texel;
+        vec3  shadowSrc      = COMPAT_TEXTURE(OrigTexture, shadowPos).rgb;
+        float shadowBright   = getBrightness(shadowSrc);
+        float shadowSrcWhite = isWhitePixel(shadowSrc, shadowBright, threshold);
+        if (shadowSrcWhite < 0.5) {
+            float shadowStrength = (1.0 - shadowBright) * PT_DROP_SHADOW_OPACITY;
+            bg = mix(bg, bg * 0.2, shadowStrength);
+        }
+    }
+
+    // Palette tint - after shadow.
+    if (PT_BACKING_COLOR > 0.5) {
+        vec3 tint;
+        if      (PT_BACKING_COLOR < 1.5) tint = vec3(0.651, 0.675, 0.518);
+        else if (PT_BACKING_COLOR < 2.5) tint = vec3(0.737, 0.737, 0.737);
+        else                             tint = vec3(1.0,   1.0,   1.0  );
+        vec3 tinted = clamp(tint + (bg * 2.0 - vec3(1.0)), 0.0, 1.0);
+        bg = mix(bg, tinted, PT_BACKING_COLOR_STRENGTH);
+    }
+
+    return bg;
+}
+
+// -- MAIN ---------------------------------------------------------------------
 void main()
 {
     // Sample corrected frame and raw input frame.
@@ -490,69 +461,50 @@ void main()
     float pixBrightness = getBrightness(pixel);
     float rawBrightness = getBrightness(rawPixel);
 
-    // Dark color filter — on corrected frame.
-    if (PT_DARK_COLOR_FILTER > 0.5) {
-        pixel         = applyDarkFilter(pixel, PT_DARK_COLOR_FILTER);
+    // Dark color filter - on corrected frame.
+    if (PT_DARKEN_PICTURE > 0.5) {
+        pixel         = applyDarkFilter(pixel, PT_DARKEN_PICTURE);
         pixBrightness = getBrightness(pixel);
     }
 
-    // White detection — on raw frame.
+    // White detection - on raw frame.
     float threshold = resolveThreshold();
     float isWhite   = isWhitePixel(rawPixel, rawBrightness, threshold);
 
-    // White mode — non-white pixels exit early, post effects still applied.
+    // White mode - non-white pixels exit early, post effects still applied.
     float alpha = 0.0;
-    if (PT_PIXEL_MODE < 0.5 && isWhite < 0.5) {
-        vec3 result = applyPixelEffect(pixel, TEX0.xy, rawBrightness, vec3(0.0));
+    if (PT_TRANSPARENT_PIXELS < 0.5 && isWhite < 0.5) {
+        // These pixels get no transparency, but the pixel effect still runs on
+        // them. Build the backing only when the gaps actually use it (Gap color
+        // = Backing), and not for pure black pixels that LCD Dot skips anyway.
+        vec3 gapBacking = vec3(0.0);
+        if (PT_PIXEL_EFFECT > 0.5 && PT_GAP_COLOR < 0.5 &&
+            !(PT_PIXEL_EFFECT > 1.5 && rawBrightness < 0.01)) {
+            gapBacking = computeBacking(threshold);
+        }
+        vec3 result = applyPixelEffect(pixel, TEX0.xy, rawBrightness, gapBacking);
         result = applyBezelShadow(result, TEX0.xy);
         FragColor = vec4(result, lcd.a);
         return;
     }
 
-    // Procedural backing texture.
-    vec3 bg = proceduralBackground(TEX0.xy);
-
-    // Drop shadow — single tap on raw frame, before palette tint.
-    if (PT_SHADOW_OPACITY > 0.001) {
-        vec2 shadowDir;
-        if      (PT_SHADOW_DIRECTION < 0.5) shadowDir = vec2(-1.0,  1.0);  // Down Right
-        else if (PT_SHADOW_DIRECTION < 1.5) shadowDir = vec2( 1.0,  1.0);  // Down Left
-        else if (PT_SHADOW_DIRECTION < 2.5) shadowDir = vec2(-1.0, -1.0);  // Up Right
-        else                                shadowDir = vec2( 1.0, -1.0);  // Up Left
-        vec2  shadowPos      = orig_coord + shadowDir * PT_SHADOW_OFFSET * texel;
-        vec3  shadowSrc      = COMPAT_TEXTURE(OrigTexture, shadowPos).rgb;
-        float shadowBright   = getBrightness(shadowSrc);
-        float shadowSrcWhite = isWhitePixel(shadowSrc, shadowBright, threshold);
-        if (shadowSrcWhite < 0.5) {
-            float shadowStrength = (1.0 - shadowBright) * PT_SHADOW_OPACITY;
-            bg = mix(bg, bg * 0.2, shadowStrength);
-        }
-    }
-
-    // Palette tint — after shadow.
-    if (PT_BACKGROUND_TINT > 0.5) {
-        vec3 tint;
-        if      (PT_BACKGROUND_TINT < 1.5) tint = vec3(0.651, 0.675, 0.518);
-        else if (PT_BACKGROUND_TINT < 2.5) tint = vec3(0.737, 0.737, 0.737);
-        else                       tint = vec3(1.0,   1.0,   1.0  );
-        vec3 tinted = clamp(tint + (bg * 2.0 - vec3(1.0)), 0.0, 1.0);
-        bg = mix(bg, tinted, PT_TINT_INTENSITY);
-    }
+    // Backing material (grain, shadow, tint).
+    vec3 bg = computeBacking(threshold);
 
     // Transparency alpha.
-    if (PT_PIXEL_MODE < 0.5) {
-        alpha = clamp((pixBrightness / 3.0) + PT_BASE_TRANSPARENCY_AMOUNT, 0.0, 1.0);
-    } else if (PT_PIXEL_MODE < 1.5) {
-        alpha = clamp(PT_BASE_TRANSPARENCY_AMOUNT * pixBrightness * 2.665, 0.0, 1.0);
+    if (PT_TRANSPARENT_PIXELS < 0.5) {
+        alpha = clamp((pixBrightness / 3.0) + PT_TRANSPARENCY_AMOUNT, 0.0, 1.0);
+    } else if (PT_TRANSPARENT_PIXELS < 1.5) {
+        alpha = clamp(PT_TRANSPARENCY_AMOUNT * pixBrightness * 2.665, 0.0, 1.0);
     } else {
-        alpha = clamp((pixBrightness / 3.0) + PT_BASE_TRANSPARENCY_AMOUNT, 0.0, 1.0);
+        alpha = clamp((pixBrightness / 3.0) + PT_TRANSPARENCY_AMOUNT, 0.0, 1.0);
     }
 
-    if (isWhite > 0.5) alpha = max(alpha, PT_WHITE_PIXEL_MIN_TRANSPARENCY);
+    if (isWhite > 0.5) alpha = max(alpha, PT_MINIMUM_WHITE_TRANSPARENCY);
 
     vec3 result = mix(pixel, bg, alpha);
 
-    // Post-blend pixel effect and bezel — applied last.
+    // Post-blend pixel effect and bezel - applied last.
     result = applyPixelEffect(result, TEX0.xy, rawBrightness, bg);
     result = applyBezelShadow(result, TEX0.xy);
 
