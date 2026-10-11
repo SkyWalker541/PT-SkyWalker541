@@ -5,12 +5,12 @@
 
 **Performance-focused GLSL shader for low-power handhelds.**
 
-[![Version](https://img.shields.io/badge/version-v2.0.0-brightgreen?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-v2.0.1-brightgreen?style=flat-square)](#)
 [![RetroArch](https://img.shields.io/badge/RetroArch-gl%20%2F%20glcore-blue?style=flat-square)](#)
 [![NextUI](https://img.shields.io/badge/NextUI-v6.11.0%2B-blue?style=flat-square)](#)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey?style=flat-square)](#)
 
-[What It Does](#what-it-does) • [Latest Update](#-v200-update) • [Installation](#installation) • [Recommended Settings](#recommended-settings)
+[What It Does](#what-it-does) • [Latest Update](#v201-update) • [Installation](#installation) • [Recommended Settings](#recommended-settings)
 
 [![Shader Showcase](docs/showcase_banner.svg)](https://skywalker541.github.io/PT-SkyWalker541)
 
@@ -19,6 +19,12 @@
 ---
 
 > [!IMPORTANT]
+> ### v2.0.1 Update
+> A fix release. It changes no parameter names, ranges or defaults, so settings saved with v2.0.0 keep working. Just replace the shader file.
+>
+> * **Parameters missing on some Android RetroArch builds:** the *Shadow direction* menu label was longer than RetroArch's 63-character limit for parameter labels. On builds that enforce the limit, the shader's parameters did not appear at all. The label is now shorter.
+> * **GLES3 fix:** the fragment shader declared its output before the precision statement, which GLSL ES 3.00 (GLES3) rejects. The order is fixed, and the shader now compiles under both GLSL ES 1.00 and 3.00.
+>
 > ### v2.0.0 Update
 > A major release. One shader file now serves both RetroArch and NextUI (there is no longer a separate NextUI build or NextUI readme).
 >
@@ -164,6 +170,6 @@ This shader specifically targets low-power emulation devices — handhelds and b
 
 <div align="center">
 
-*PT SkyWalker541 by SkyWalker541 | v2.0.0 | RetroArch and NextUI | AI assisted development*
+*PT SkyWalker541 by SkyWalker541 | v2.0.1 | RetroArch and NextUI | AI assisted development*
 
 </div>

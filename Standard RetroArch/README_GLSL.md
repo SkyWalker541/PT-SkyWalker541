@@ -1,6 +1,6 @@
 PT SkyWalker541
 Pixel Transparency Shader for RetroArch and NextUI — GLSL
-by SkyWalker541 | v2.0.0 | works on gl / glcore drivers
+by SkyWalker541 | v2.0.1 | works on gl / glcore drivers
 
 Inspired by mattakins' pixel transparency work.
 Pixel Effect LCD Dot mode inspired by Themaister's dot shader (public domain).
@@ -14,6 +14,21 @@ intentional transparent zones. On modern displays those same pixels render as
 bright white. PT SkyWalker541 restores the original appearance by detecting
 white and bright pixels and blending them toward a procedurally generated
 backing texture.
+
+  WHAT'S NEW IN v2.0.1
+  ─────────────────────────────────────────────────────────────────
+
+v2.0.1 is a fix release. It changes no parameter names, ranges or defaults,
+so settings saved with v2.0.0 keep working. Just replace the shader file.
+
+  - Parameters missing on some Android RetroArch builds: the Shadow direction
+    menu label was longer than RetroArch's 63-character limit for parameter
+    labels. On builds that enforce the limit, the shader's parameters did not
+    appear at all. The label is now "Shadow direction (0=Down-R, 1=Down-L,
+    2=Up-R, 3=Up-L)".
+  - GLES3 fix: the fragment precision statement now comes before the
+    FragColor output, as GLSL ES 3.00 requires. The shader now compiles under
+    both GLSL ES 1.00 and 3.00.
 
   WHAT'S NEW IN v2.0.0
   ─────────────────────────────────────────────────────────────────
@@ -90,7 +105,8 @@ standard RetroArch installation. No editing of the preset file is needed.
   If the shader shows in the pass list but has no parameters and no
   effect, the driver failed to compile or link it and RetroArch
   silently fell back to no shader. v2.0.0 reduces the things that most
-  often cause this on low-end drivers (see "What's new"). If it still
+  often cause this on low-end drivers, and v2.0.1 fixes a menu label that was
+  too long for some RetroArch builds (see "What's new"). If it still
   happens on your device, start RetroArch with --verbose, load the
   shader, and report the shader compile messages from the log, together
   with your device and OS, at the project's GitHub issues page.
@@ -294,8 +310,9 @@ applies to: [Grid], [LCD Dot] or [Grid+Dot].
        > Shadow distance   default: 1.0   (range -10.0 to 10.0)
     Distance of the drop shadow. Moves X and Y together in texels.
 
-       > Shadow direction (0=Down Right, 1=Down Left, 2=Up Right, 3=Up Left)   default: 0
-    Direction the drop shadow is cast. Down Right is the default and
+       > Shadow direction (0=Down-R, 1=Down-L, 2=Up-R, 3=Up-L)   default: 0
+    Direction the drop shadow is cast: 0 = Down Right, 1 = Down Left,
+    2 = Up Right, 3 = Up Left. Down Right is the default and
     most natural, simulating light from the upper left.
 
   ── Bezel edge shadow ───────────────────────────────────────────
@@ -439,4 +456,4 @@ that parameter, so re-save your settings after updating.
 
 ───────────────────────────────────────────────────────────────────────────────
 
-PT SkyWalker541 by SkyWalker541 | AI Assisted Development | v2.0.0 | Written for RetroArch and NextUI
+PT SkyWalker541 by SkyWalker541 | AI Assisted Development | v2.0.1 | Written for RetroArch and NextUI

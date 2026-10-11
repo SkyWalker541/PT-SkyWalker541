@@ -1,7 +1,14 @@
-# PT-SkyWalker541 v2.0.0
+# PT-SkyWalker541 v2.0.1
 
 > [!IMPORTANT]
-> ### What's new in v2.0.0
+> ### What's new in v2.0.1
+>
+> A fix release. It changes no parameter names, ranges or defaults, so settings saved with v2.0.0 keep working. Just replace the shader file.
+>
+> * **Parameters missing on some Android RetroArch builds:** the *Shadow direction* menu label was longer than RetroArch's 63-character limit for parameter labels. On builds that enforce the limit, the shader's parameters did not appear at all. The label is now shorter.
+> * **GLES3 fix:** the fragment shader declared its output before the precision statement, which GLSL ES 3.00 (GLES3) rejects. The order is fixed, and the shader now compiles under both GLSL ES 1.00 and 3.00.
+>
+> ### Changes in v2.0.0 (still included)
 >
 > A major release. One shader file now serves both **RetroArch and NextUI** — there is no longer a separate NextUI build or NextUI readme.
 >
@@ -30,4 +37,4 @@ This release ships three separate archives:
 
 See **README_GLSL.md** for full documentation and recommended settings per system.
 
-*PT-SkyWalker541 by SkyWalker541 | v2.0.0 | RetroArch and NextUI*
+*PT-SkyWalker541 by SkyWalker541 | v2.0.1 | RetroArch and NextUI*
