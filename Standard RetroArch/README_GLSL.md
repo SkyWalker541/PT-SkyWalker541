@@ -1,6 +1,6 @@
 PT SkyWalker541
 Pixel Transparency Shader for RetroArch and NextUI — GLSL
-by SkyWalker541 | v2.0.1 | works on gl / glcore drivers
+by SkyWalker541 | v2.1.0 | works on gl / glcore drivers
 
 Inspired by mattakins' pixel transparency work.
 Pixel Effect LCD Dot mode inspired by Themaister's dot shader (public domain).
@@ -14,6 +14,29 @@ intentional transparent zones. On modern displays those same pixels render as
 bright white. PT SkyWalker541 restores the original appearance by detecting
 white and bright pixels and blending them toward a procedurally generated
 backing texture.
+
+  WHAT'S NEW IN v2.1.0
+  ─────────────────────────────────────────────────────────────────
+
+v2.1.0 is a feature release. It adds one optional feature, Glare and sheen,
+and it is OFF by default. With the default settings the picture is identical
+to v2.0.1. No parameter was renamed, removed or changed, so settings saved
+with v2.0.x keep working. Just replace the shader file.
+
+  - Glare and sheen (optional): a soft hotspot of light (glare) and a faint
+    rainbow tint in bands (sheen) around a light point, like sunlight
+    catching a Game Boy screen. It is drawn on the backing material only.
+    See "Glare and sheen" in the PARAMETERS section.
+  - It is a matter of taste. Turn it on, adjust it to your liking, or leave
+    it Off. Setting the "== Glare and sheen ==" switch back to 0 turns the
+    whole feature off completely.
+  - 11 new parameters (31 in total), placed under Backing color in the menu.
+  - The light point is worked out in the vertex shader, which adds one
+    varying (4 in total; v1.x used 8). With the feature Off the per-pixel
+    cost is one check on a uniform. With it On the cost has not been
+    measured on specific devices, so on a low-power handheld compare with it
+    On and Off, and turn it off (or set Sheen ripple to 0) if you see
+    slowdown.
 
   WHAT'S NEW IN v2.0.1
   ─────────────────────────────────────────────────────────────────
@@ -162,6 +185,76 @@ applies to: [Grid], [LCD Dot] or [Grid+Dot].
        > Backing color strength   default: 2.00   (range 0.00 to 2.00)
     How strongly the backing color is applied. 0 = no tint.
     Lower it if the tint feels too strong on your display.
+
+  ── Glare and sheen (optional) ──────────────────────────────────
+
+  == Glare and sheen == (0=Off, 1=On)   default: 0 (Off)
+    Master switch for this whole group. It is Off by default. Set it to 1
+    to try the effect, and back to 0 to turn the whole feature off. With
+    it at 0 the picture is identical to v2.0.1 and none of the rows below
+    has any effect.
+
+    This feature is a matter of taste. Adjust it to your liking.
+
+    What it does: it adds a soft hotspot of light (glare) and a faint
+    rainbow tint in bands (sheen) around a light point, like sunlight
+    catching a Game Boy screen. It is drawn on the backing material only:
+    the transparent areas, and the grid lines or dot gaps when Gap color =
+    Backing. Pixels that stay solid are not touched. If you cannot see it,
+    raise Transparency amount, or use Gap color = Backing, so more of the
+    backing shows. There is no tilt-sensor input; the light is moved by the
+    shader over time, or held still.
+
+       > Glare strength   default: 0.15   (range 0.00 to 1.00)
+    How bright the white hotspot is. 0 turns glare off.
+
+       > Glare spread   default: 0.35   (range 0.05 to 1.00)
+    How large the hotspot is, relative to the picture height. Higher = a
+    wider, softer patch of light.
+
+       > Sheen strength   default: 0.12   (range 0.00 to 0.50)
+    How strong the rainbow tint is. 0 turns sheen off. The tint shifts the
+    color of the backing without making it brighter or darker overall.
+
+       > Sheen band density   default: 2.0   (range 0.5 to 6.0)
+    How many color bands appear around the light. Higher = more, narrower
+    bands. Lower = fewer, wider bands.
+
+       > Sheen hue turn (1.0 = one full color cycle)   default: 0.00   (range 0.00 to 1.00)
+    Shifts which colors the bands show. 1.0 is one full trip around the
+    color cycle, so 0 and 1 look the same. Try values in between to move
+    the rainbow toward warmer or cooler colors.
+
+       > Sheen ripple (0=smooth bands)   default: 0.00   (range 0.00 to 1.00)
+    Makes the bands uneven, like film that is not perfectly smooth,
+    instead of clean rings. 0 = smooth bands, and the extra work is skipped
+    entirely. Small values (about 0.2 to 0.4) give a subtle unevenness;
+    high values are strong.
+
+       > Sheen ripple size   default: 0.6   (range 0.1 to 3.0)
+    The size of the uneven patches when Sheen ripple is above 0. Larger =
+    bigger patches. Smaller = finer, busier patches. No effect when ripple
+    is 0.
+
+       > Light home, left to right (0.5=middle)   default: 0.50   (range -0.50 to 1.50)
+    Where the light sits across the picture. 0 = the left edge, 0.5 = the
+    middle, 1 = the right edge. Values below 0 or above 1 put the light
+    just off the edge of the picture, which gives a gentler, wider wash.
+
+       > Light home, top to bottom (0.5=middle)   default: 0.45   (range -0.50 to 1.50)
+    Where the light sits down the picture. 0 = the top edge, 0.5 = the
+    middle, 1 = the bottom edge. Values outside 0 to 1 put the light off
+    the edge.
+
+       > Light drift speed (0=stay at home)   default: 0.50   (range 0.00 to 4.00)
+    How fast the light wanders slowly around its home position. 0 = the
+    light stays exactly at its home position (you can park it where you
+    like with the two Light home rows). Higher = it moves faster.
+
+    Tips: to set up a still, fixed glare, set Light drift speed to 0 and
+    place the light with the two Light home rows. To keep only one part of
+    the effect, set the other part's strength to 0 (Glare strength 0 leaves
+    only sheen; Sheen strength 0 leaves only glare).
 
   ── Darken picture ──────────────────────────────────────────────
 
@@ -372,6 +465,10 @@ GBA SP 0.80, GBA Orig 0.75) and the bezel shadow width automatically.
   Backing color are set for that system as shown above. Everything else
   can be adjusted to taste.
 
+  Glare and sheen is optional, is Off by default, and is not part of these
+  recommended settings. It is purely a matter of taste. Turn it on with
+  "== Glare and sheen ==" = 1, adjust it to your liking, or leave it Off.
+
   EMULATOR CORE SETTINGS
   ─────────────────────────────────────────────────────────────────
   These are settings in the emulator core, not the shader.
@@ -397,8 +494,10 @@ change the first number after the menu label on the matching
 
     #pragma parameter CODE_NAME "label" default min max step
 
-Then change the same parameter in the fallback "#define" block in the
-fragment shader, so both agree. The fallback values are used only when
+Then change the same parameter in the fallback "#define" block so both
+agree. (The Glare and sheen light settings, namely Glare and sheen, Light
+home X and Y, Light drift speed and Sheen hue turn, also have a second
+fallback "#define" in the vertex shader; change that one too.) The fallback values are used only when
 the host does not supply shader parameters. The menu name for each
 parameter is shown alongside for reference:
 
@@ -409,6 +508,17 @@ parameter is shown alongside for reference:
     #define PT_MINIMUM_WHITE_TRANSPARENCY    0.20   Minimum white transparency
     #define PT_BACKING_COLOR                 1.0    == Backing color ==
     #define PT_BACKING_COLOR_STRENGTH        2.0    Backing color strength
+    #define PT_GLARE_AND_SHEEN               0.0    == Glare and sheen ==
+    #define PT_GLARE_STRENGTH                0.15   Glare strength
+    #define PT_GLARE_SPREAD                  0.35   Glare spread
+    #define PT_SHEEN_STRENGTH                0.12   Sheen strength
+    #define PT_SHEEN_BAND_DENSITY            2.0    Sheen band density
+    #define PT_SHEEN_HUE_TURN                0.0    Sheen hue turn
+    #define PT_SHEEN_RIPPLE                  0.0    Sheen ripple
+    #define PT_SHEEN_RIPPLE_SIZE             0.6    Sheen ripple size
+    #define PT_LIGHT_HOME_X                  0.5    Light home, left to right
+    #define PT_LIGHT_HOME_Y                  0.45   Light home, top to bottom
+    #define PT_LIGHT_DRIFT_SPEED             0.5    Light drift speed
     #define PT_DARKEN_PICTURE                0.0    == Darken picture ==
     #define PT_PIXEL_EFFECT                  1.0    == Pixel Effect ==
     #define PT_GAP_COLOR                     0.0    [Grid+Dot] Gap color
@@ -428,7 +538,8 @@ parameter is shown alongside for reference:
   UPGRADING FROM 1.x
   ─────────────────────────────────────────────────────────────────
 
-Code names changed in 2.0.0 so they match the menu labels. A preset or
+Nothing was renamed in 2.1.0; the table below is only for settings saved
+with 1.x. Code names changed in 2.0.0 so they match the menu labels. A preset or
 parameter override that uses an old name falls back to the default value for
 that parameter, so re-save your settings after updating.
 
@@ -456,4 +567,4 @@ that parameter, so re-save your settings after updating.
 
 ───────────────────────────────────────────────────────────────────────────────
 
-PT SkyWalker541 by SkyWalker541 | AI Assisted Development | v2.0.1 | Written for RetroArch and NextUI
+PT SkyWalker541 by SkyWalker541 | AI Assisted Development | v2.1.0 | Written for RetroArch and NextUI

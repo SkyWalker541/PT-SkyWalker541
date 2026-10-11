@@ -5,12 +5,12 @@
 
 **Performance-focused GLSL shader for low-power handhelds.**
 
-[![Version](https://img.shields.io/badge/version-v2.0.1-brightgreen?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-v2.1.0-brightgreen?style=flat-square)](#)
 [![RetroArch](https://img.shields.io/badge/RetroArch-gl%20%2F%20glcore-blue?style=flat-square)](#)
 [![NextUI](https://img.shields.io/badge/NextUI-v6.11.0%2B-blue?style=flat-square)](#)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey?style=flat-square)](#)
 
-[What It Does](#what-it-does) • [Latest Update](#v201-update) • [Installation](#installation) • [Recommended Settings](#recommended-settings)
+[What It Does](#what-it-does) • [Latest Update](#v210-update) • [Installation](#installation) • [Recommended Settings](#recommended-settings)
 
 [![Shader Showcase](docs/showcase_banner.svg)](https://skywalker541.github.io/PT-SkyWalker541)
 
@@ -19,6 +19,16 @@
 ---
 
 > [!IMPORTANT]
+> ### v2.1.0 Update
+> A feature release. It adds one new, **optional** feature: **Glare and sheen**. It is **Off by default**, so with its default settings the picture is identical to v2.0.1, and settings saved with v2.0.x keep working. No parameter was renamed, removed or changed. Just replace the shader file.
+>
+> * **Glare and sheen** puts a soft hotspot of light (glare) and a faint rainbow tint (sheen) on the screen's backing material, like sunlight catching a Game Boy screen. It only shows where the backing shows: the transparent areas, and the grid lines or dot gaps when *Gap color* is Backing.
+> * **It is a matter of taste.** Set the **== Glare and sheen ==** switch to 1 to try it, then adjust the settings to your liking. You can turn it off completely at any time by setting that switch back to 0. It is not part of the Recommended Settings below.
+> * **11 new parameters** (31 in total), listed under **Glare and sheen (optional)** below and in full in **[README_GLSL.md](Standard%20RetroArch/README_GLSL.md)**.
+> * With Glare and sheen Off, the extra cost is one cheap check per pixel. The light is moved in the vertex shader, which adds one varying (4 in total). The cost with it On has not been measured on specific devices, so on a low-power handheld, compare with it On and Off and turn it off if you see slowdown.
+>
+> ---
+>
 > ### v2.0.1 Update
 > A fix release. It changes no parameter names, ranges or defaults, so settings saved with v2.0.0 keep working. Just replace the shader file.
 >
@@ -64,6 +74,7 @@ Pixel Effect LCD Dot mode inspired by Themaister's dot shader (public domain).
 * **Drop Shadow:** Casts a subtle shadow from solid pixels onto the backing material at all sprite and tile edges, with four directions.
 * **Bezel Edge Shadow:** Darkens screen edges to simulate the shadow cast by the physical bezel; width is set automatically per system.
 * **Darken Picture:** Softens overly vivid dark colors, most useful for aggressive GBC palettes.
+* **Glare and Sheen (optional, Off by default):** A soft hotspot of light and a faint rainbow tint on the backing material, with adjustable light position, drift, color and unevenness. Entirely to taste; turn it off with one switch.
 
 ---
 
@@ -96,6 +107,33 @@ Pixel Effect LCD Dot mode inspired by Themaister's dot shader (public domain).
 | **2** | **Game Boy Color** (default) | 0.85 |
 | **3** | **GBA SP** (Front-lit) | 0.80 |
 | **4** | **GBA Original** | 0.75 |
+
+---
+
+## Glare and Sheen (optional)
+
+An optional effect that is **Off by default**. It adds the look of sunlight catching a Game Boy screen: a soft hotspot of light (**glare**) and a faint, colored rainbow tint in bands (**sheen**) around a light point that sits, or slowly drifts, over the picture.
+
+It is drawn on the screen's **backing material** only: the transparent areas, and the grid lines or dot gaps when **Gap color** is Backing. Pixels that stay solid are not touched. If you cannot see it, raise **Transparency amount** or use Gap color = Backing so more of the backing shows.
+
+> [!NOTE]
+> **This feature is purely a matter of taste.** Turn on **== Glare and sheen ==** (set it to 1) and adjust the settings below until it looks right to you, or leave it Off. With the switch at 0 the shader behaves exactly as in v2.0.1. There is no tilt-sensor input: the light is moved by the shader itself over time (or held still).
+
+| Menu row | Default | Range | What it does |
+| :--- | :---: | :---: | :--- |
+| **== Glare and sheen ==** (0=Off, 1=On) | **0 (Off)** | 0 – 1 | Master switch for everything in this group. 0 = completely off. |
+| Glare strength | 0.15 | 0 – 1 | How bright the white hotspot is. 0 turns glare off. |
+| Glare spread | 0.35 | 0.05 – 1 | How large the hotspot is, relative to the picture height. |
+| Sheen strength | 0.12 | 0 – 0.5 | How strong the rainbow tint is. 0 turns sheen off. It shifts color without making the backing brighter or darker overall. |
+| Sheen band density | 2.0 | 0.5 – 6 | How many color bands appear. Higher = more, narrower bands. |
+| Sheen hue turn | 0 | 0 – 1 | Shifts the rainbow colors. 1.0 is one full color cycle, so 0 and 1 look the same. |
+| Sheen ripple (0=smooth bands) | 0 | 0 – 1 | Makes the bands uneven, like uneven film, instead of smooth rings. 0 = smooth and skips the extra work. |
+| Sheen ripple size | 0.6 | 0.1 – 3 | Size of the uneven patches when ripple is above 0. Larger = bigger patches. |
+| Light home, left to right | 0.5 | -0.5 – 1.5 | Where the light sits across the picture. 0 = left edge, 0.5 = middle, 1 = right edge. Values outside 0 – 1 put it off the edge. |
+| Light home, top to bottom | 0.45 | -0.5 – 1.5 | Where the light sits down the picture. 0 = top edge, 1 = bottom edge. |
+| Light drift speed (0=stay at home) | 0.5 | 0 – 4 | How fast the light wanders around its home position. 0 = the light stays exactly at home. |
+
+See **[README_GLSL.md](Standard%20RetroArch/README_GLSL.md)** for a longer description of each setting.
 
 ---
 
@@ -142,7 +180,7 @@ One set of settings works as a good starting point for every system. The shader'
 | Min brightness for dots | 0.15 |
 
 > [!NOTE]
-> This is a good starting point for each system when **Game system** and **Backing color** are set for that system as shown above. All parameters can be adjusted to suit your preference and screen. See **[README_GLSL.md](Standard%20RetroArch/README_GLSL.md)**, found in the Standard RetroArch folder, for full documentation.
+> This is a good starting point for each system when **Game system** and **Backing color** are set for that system as shown above. All parameters can be adjusted to suit your preference and screen. **Glare and sheen** is optional, Off by default, and not part of these recommended settings. See **[README_GLSL.md](Standard%20RetroArch/README_GLSL.md)**, found in the Standard RetroArch folder, for full documentation.
 >
 > **Low-power devices (e.g. TrimUI Brick):** The pixel transparency system uses the majority of the GPU budget on constrained hardware. **Grid** is recommended over LCD Dot as the Pixel Effect mode — LCD Dot adds additional per-pixel cost that can cause slowdown. Grid remains nearly free at any setting.
 >
@@ -170,6 +208,6 @@ This shader specifically targets low-power emulation devices — handhelds and b
 
 <div align="center">
 
-*PT SkyWalker541 by SkyWalker541 | v2.0.1 | RetroArch and NextUI | AI assisted development*
+*PT SkyWalker541 by SkyWalker541 | v2.1.0 | RetroArch and NextUI | AI assisted development*
 
 </div>

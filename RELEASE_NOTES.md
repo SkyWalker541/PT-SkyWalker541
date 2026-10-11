@@ -1,9 +1,25 @@
-# PT-SkyWalker541 v2.0.1
+# PT-SkyWalker541 v2.1.0
 
 > [!IMPORTANT]
-> ### What's new in v2.0.1
+> ### What's new in v2.1.0
 >
-> A fix release. It changes no parameter names, ranges or defaults, so settings saved with v2.0.0 keep working. Just replace the shader file.
+> A feature release. It adds one new, **optional** feature: **Glare and sheen**. It is **Off by default**, so with its default settings the picture is identical to v2.0.1. No parameter was renamed, removed or changed, so settings saved with v2.0.x keep working. Just replace the shader file.
+>
+> * **Glare and sheen:** a soft hotspot of light (glare) and a faint rainbow tint in bands (sheen) around a light point, like sunlight catching a Game Boy screen. It is drawn on the screen's backing material only: the transparent areas, and the grid lines or dot gaps when *Gap color* is Backing.
+> * **It is a matter of taste.** Set **== Glare and sheen ==** to 1 to try it and adjust the settings to your liking. Set it back to 0 and the whole feature is completely off. It is not part of the Recommended Settings.
+> * **11 new parameters** (31 in total), placed under *Backing color* in the menu:
+>     * *Glare strength* and *Glare spread*: how bright and how large the hotspot is.
+>     * *Sheen strength*, *Sheen band density* and *Sheen hue turn*: how strong the rainbow tint is, how many bands there are, and which colors they show.
+>     * *Sheen ripple* and *Sheen ripple size*: make the bands uneven, like uneven film (0 = smooth bands).
+>     * *Light home, left to right* and *Light home, top to bottom*: where the light sits.
+>     * *Light drift speed*: how fast the light wanders around its home position (0 = it stays at home).
+> * **No tilt input:** there is no sensor support in GLSL, so the light is moved by the shader over time, or held still.
+> * **Cost:** with the feature Off the extra cost is one check per pixel. With it On the cost has not been measured on specific devices, so on a low-power handheld compare with it On and Off, and turn it off if you see slowdown. The light position is worked out in the vertex shader, which adds one varying (4 in total).
+> * **Full descriptions** of every new parameter are in `README_GLSL.md` and the main `README.md`.
+>
+> ### Changes in v2.0.1 (still included)
+>
+> A fix release.
 >
 > * **Parameters missing on some Android RetroArch builds:** the *Shadow direction* menu label was longer than RetroArch's 63-character limit for parameter labels. On builds that enforce the limit, the shader's parameters did not appear at all. The label is now shorter.
 > * **GLES3 fix:** the fragment shader declared its output before the precision statement, which GLSL ES 3.00 (GLES3) rejects. The order is fixed, and the shader now compiles under both GLSL ES 1.00 and 3.00.
@@ -37,4 +53,4 @@ This release ships three separate archives:
 
 See **README_GLSL.md** for full documentation and recommended settings per system.
 
-*PT-SkyWalker541 by SkyWalker541 | v2.0.1 | RetroArch and NextUI*
+*PT-SkyWalker541 by SkyWalker541 | v2.1.0 | RetroArch and NextUI*
