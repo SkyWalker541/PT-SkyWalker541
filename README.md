@@ -67,13 +67,25 @@ Pixel Effect LCD Dot mode inspired by Themaister's dot shader (public domain).
 
 **Glare and sheen, on top of the full pixel-transparency stack.**
 
-Grid, pixel transparency, and drop shadow with the new optional light and rainbow sheen — captured on a Retroid Pocket Classic.
+Grid, pixel transparency, and drop shadow with the new optional light and rainbow sheen.
+
+### RetroArch on Retroid Pocket Classic
 
 <div align="center">
 
 |  |  |
 | :---: | :---: |
 | ![Glare and sheen on Grid, pixel transparency and drop shadow (Retroid Pocket Classic)](docs/glare_sheen_retroid_pocket_classic_1.png) | ![Glare and sheen on Grid, pixel transparency and drop shadow (Retroid Pocket Classic)](docs/glare_sheen_retroid_pocket_classic_2.png) |
+
+</div>
+
+### NextUI on TrimUI Brick
+
+<div align="center">
+
+|  |  |
+| :---: | :---: |
+| ![Glare and sheen on Grid, pixel transparency and drop shadow (TrimUI Brick, NextUI)](docs/glare_sheen_trimui_brick_1.png) | ![Glare and sheen on Grid, pixel transparency and drop shadow (TrimUI Brick, NextUI)](docs/glare_sheen_trimui_brick_2.png) |
 
 </div>
 
