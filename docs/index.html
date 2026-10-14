@@ -133,10 +133,33 @@
   }
 
   .screen-overlay video {
+    position:   absolute;
+    inset:      0;
     width:      100%;
     height:     100%;
     object-fit: cover;
     display:    block;
+    opacity:    0;
+    transition: opacity 0.18s ease;
+  }
+  .screen-overlay video.shown { opacity: 1; }
+
+  /* Shader on/off toggle (same look as the game pills) */
+  .shader-toggle {
+    margin-top: 14px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .shader-toggle .toggle-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: clamp(11px, 1.1vw, 18px);
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: #4a3a72;
+    margin-right: 4px;
   }
 
   /* Game selector pills */
@@ -454,9 +477,14 @@
     </svg>
 
     <div class="game-selector" style="margin-top: 20px; margin-bottom: 0;">
-      <button class="game-pill active" data-game-index="0">Bark Sequelo</button>
-      <button class="game-pill" data-game-index="1">Black Castle 2</button>
-      <button class="game-pill" data-game-index="2">Entomophobia DX</button>
+      <button class="game-pill active" data-game-index="0">GB &middot; Black Castle 2</button>
+      <button class="game-pill" data-game-index="1">GBC &middot; Entomophobia DX</button>
+      <button class="game-pill" data-game-index="2">GBA &middot; Goodboy Galaxy</button>
+    </div>
+    <div class="shader-toggle" role="group" aria-label="Shader on or off">
+      <span class="toggle-label">Shader</span>
+      <button class="game-pill" id="shader-off-btn" aria-pressed="false">Off</button>
+      <button class="game-pill active" id="shader-on-btn" aria-pressed="true">On</button>
     </div>
     <div class="credit" style="margin-top: 16px; margin-bottom: 0;">
       <div class="credit-line">
@@ -464,7 +492,7 @@
         <span class="credit-text">featured game</span>
         <div class="line-accent right"></div>
       </div>
-      <a id="credit-link" href="https://polynaut.itch.io/bark-sequelo" target="_blank" rel="noopener noreferrer">Bark Sequelo by Polynaut</a>
+      <a id="credit-link" href="https://user0x7f.itch.io/black-castle-2" target="_blank" rel="noopener noreferrer">Black Castle 2 by User0x7f</a>
     </div>
   </div>
 
@@ -472,7 +500,8 @@
   <div class="handheld-wrapper">
     <img class="device" src="Handheld_Generic.png" alt="PT SkyWalker541 handheld console" loading="lazy">
     <div class="screen-overlay">
-      <video id="game-video" autoplay loop muted playsinline preload="auto" src="gameplay.mp4"></video>
+      <video id="game-video-off" loop muted playsinline preload="auto" src="showcase/black-castle-2-off.mp4"></video>
+      <video id="game-video" class="shown" autoplay loop muted playsinline preload="auto" src="showcase/black-castle-2-on.mp4"></video>
     </div>
   <canvas id="game-canvas"></canvas>
 <div id="fs-transition-overlay"></div>
@@ -554,42 +583,67 @@
 
 
 <script>
+  // Each game has two separate recordings: shader ON and shader OFF.
+  // (They are separate playthroughs, so the two clips are not frame-matched;
+  // switching keeps them at the same timestamp, see switchShader below.)
   const games = [
     {
-      video:  'gameplay.mp4',
-      label:  'Bark Sequelo by Polynaut',
-      url:    'https://polynaut.itch.io/bark-sequelo'
-    },
-    {
-      video:  'gameplay2.mp4',
+      on:     'showcase/black-castle-2-on.mp4',
+      off:    'showcase/black-castle-2-off.mp4',
       label:  'Black Castle 2 by User0x7f',
       url:    'https://user0x7f.itch.io/black-castle-2'
     },
     {
-      video:  'gameplay3.mp4',
+      on:     'showcase/entomophobia-dx-on.mp4',
+      off:    'showcase/entomophobia-dx-off.mp4',
       label:  'Entomophobia DX by drgd_retro',
       url:    'https://drgd-retro.itch.io/entomophobia-dx'
+    },
+    {
+      on:     'showcase/goodboy-galaxy-on.mp4',
+      off:    'showcase/goodboy-galaxy-off.mp4',
+      label:  'Goodboy Galaxy by Goodboy Galaxy',
+      url:    'https://goodboygalaxy.itch.io/goodboy-galaxy-gba'
     }
   ];
 
-  let gameVideo = document.getElementById('game-video');
+  const vidOn  = document.getElementById('game-video');      // keeps the old id
+  const vidOff = document.getElementById('game-video-off');
   const creditLink = document.getElementById('credit-link');
-  const gamePills = Array.from(document.querySelectorAll('.game-pill'));
+  const gamePills = Array.from(document.querySelectorAll('.game-selector .game-pill'));
+  const btnOn  = document.getElementById('shader-on-btn');
+  const btnOff = document.getElementById('shader-off-btn');
+  let shaderOn = true;
+
+  function playSafe(v) {
+    const p = v.play();
+    if (p && p.catch) p.catch(() => {
+      v.addEventListener('canplay', () => v.play().catch(()=>{}), {once:true});
+    });
+  }
+
+  // Show one clip, play it, and pause the other (saves work on phones).
+  // Both stay loaded, so switching is instant and neither restarts.
+  function applyShaderState() {
+    const show = shaderOn ? vidOn : vidOff;
+    const hide = shaderOn ? vidOff : vidOn;
+    show.classList.add('shown');
+    hide.classList.remove('shown');
+    playSafe(show);
+    hide.pause();
+    btnOn.classList.toggle('active', shaderOn);
+    btnOff.classList.toggle('active', !shaderOn);
+    btnOn.setAttribute('aria-pressed', String(shaderOn));
+    btnOff.setAttribute('aria-pressed', String(!shaderOn));
+  }
 
   function selectGame(index, btn) {
     const g = games[index];
-    const overlay = document.querySelector('.screen-overlay');
-    const newVideo = document.createElement('video');
-    newVideo.id = 'game-video';
-    newVideo.autoplay = true;
-    newVideo.loop = true;
-    newVideo.muted = true;
-    newVideo.playsInline = true;
-    newVideo.preload = 'auto';
-    newVideo.src = g.video;
-    overlay.replaceChild(newVideo, gameVideo);
-    gameVideo = newVideo;
-    gameVideo.addEventListener('error', ()=>{ console.warn('Video load failed:', gameVideo.src); });
+    vidOn.src  = g.on;
+    vidOff.src = g.off;
+    vidOn.load();
+    vidOff.load();
+    applyShaderState();
 
     creditLink.textContent = g.label;
     creditLink.href = g.url;
@@ -600,15 +654,42 @@
   gamePills.forEach((button, index) => {
     button.addEventListener('click', () => selectGame(index, button));
   });
-
-  gameVideo.addEventListener('error', ()=>{ console.warn('Video load failed:', gameVideo.src); });
-
-  function tryPlayVideo() {
-    gameVideo.play().catch(() => {
-      gameVideo.addEventListener('canplay', () => gameVideo.play().catch(()=>{}), {once:true});
-    });
+  // Flip the shader. The two clips are separate playthroughs, so they are not
+  // frame-matched, but they share one timeline: the clip being switched to
+  // jumps to the same timestamp, so you land at roughly the same point.
+  function switchShader(on) {
+    if (on === shaderOn) return;
+    const from = shaderOn ? vidOn : vidOff;
+    const to   = on ? vidOn : vidOff;
+    let t = from.currentTime || 0;
+    if (isFinite(to.duration) && to.duration > 0) t = t % to.duration;
+    shaderOn = on;
+    if (to.readyState >= 1 && Math.abs(to.currentTime - t) > 0.05) {
+      let done = false;
+      const go = () => {
+        if (done) return;
+        done = true;
+        to.removeEventListener('seeked', go);
+        applyShaderState();
+      };
+      to.addEventListener('seeked', go);
+      setTimeout(go, 600);          // never get stuck if 'seeked' does not fire
+      to.currentTime = t;
+    } else {
+      applyShaderState();
+    }
   }
-  tryPlayVideo();
+  btnOn.addEventListener('click',  () => switchShader(true));
+  btnOff.addEventListener('click', () => switchShader(false));
+
+  [vidOn, vidOff].forEach(v =>
+    v.addEventListener('error', () => { console.warn('Video load failed:', v.src); }));
+
+  // Used by the mini-game: pause on launch, resume the visible clip on exit.
+  window._showcasePause  = () => { vidOn.pause(); vidOff.pause(); };
+  window._showcaseResume = () => { playSafe(shaderOn ? vidOn : vidOff); };
+
+  applyShaderState();
 </script>
 <script>
 const saucerPixels = [
@@ -4889,8 +4970,7 @@ function _launchGame(){
   }
   if(window._starCancel) window._starCancel();
   if(window._bvCancel) window._bvCancel();
-  const vid = document.getElementById('game-video');
-  if(vid && !vid.paused) vid.pause();
+  window._showcasePause && window._showcasePause();
 
   const _scrollY = window.scrollY;
   const _lockScroll = ()=>{ if(document.body.classList.contains('game-mode')) window.scrollTo(0,_scrollY); };
@@ -4923,8 +5003,7 @@ function _exitGame(){
   document.body.classList.remove('fullscreen-mode');
   window._starStart && window._starStart();
   window._bvStart && window._bvStart();
-  const vid = document.getElementById('game-video');
-  if(vid && vid.paused) vid.play();
+  window._showcaseResume && window._showcaseResume();
   if(window._scrollLock){
     window.removeEventListener('scroll', window._scrollLock, {passive:true});
     window._scrollLock = null;
