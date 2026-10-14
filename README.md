@@ -7,7 +7,6 @@
 
 [![Version](https://img.shields.io/badge/version-v2.1.0-brightgreen?style=flat-square)](#)
 [![RetroArch](https://img.shields.io/badge/RetroArch-gl%20%2F%20glcore-blue?style=flat-square)](#)
-[![NextUI](https://img.shields.io/badge/NextUI-v6.11.0%2B-blue?style=flat-square)](#)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey?style=flat-square)](#)
 
 [What It Does](#what-it-does) • [Latest Update](#v210-update) • [Installation](#installation) • [Recommended Settings](#recommended-settings)
