@@ -173,7 +173,7 @@ One set of settings works as a good starting point for every system. The shader'
 | System | Game system | Backing color |
 | :--- | :---: | :---: |
 | Game Boy / Pocket | 1 | 1 (Pocket) |
-| Game Boy Color | 2 | 1 (Pocket) |
+| Game Boy Color | 2 | 2 (Grey) |
 | GBA SP | 3 | 3 (White) |
 | GBA Original | 4 | 2 (Grey) |
 

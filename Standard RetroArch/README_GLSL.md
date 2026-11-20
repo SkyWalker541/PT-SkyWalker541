@@ -430,7 +430,7 @@ GBA SP 0.80, GBA Orig 0.75) and the bezel shadow width automatically.
   ─────────────────────────────────────────────────────────────────
   System                 Game system     Backing color
   Game Boy / Pocket      1               1  (Pocket)
-  Game Boy Color         2               1  (Pocket)
+  Game Boy Color         2               2  (Grey)
   GBA SP                 3               3  (White)
   GBA Original           4               2  (Grey)
 
